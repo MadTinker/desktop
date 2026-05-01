@@ -21,3 +21,4 @@ junit*.xml
 tslint-rules/
 playwright-videos/
 /.claude
+/.claude_temp
