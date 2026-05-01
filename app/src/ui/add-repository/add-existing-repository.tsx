@@ -91,6 +91,8 @@ export class AddExistingRepository extends React.Component<
 
     const type = await getRepositoryType(path)
 
+    console.log('validatePath called for', path, 'result:', type)
+
     const isRepository = type.kind !== 'missing' && type.kind !== 'unsafe'
     const isRepositoryUnsafe = type.kind === 'unsafe'
     const isRepositoryBare = type.kind === 'bare'

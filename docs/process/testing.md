@@ -157,8 +157,8 @@
       - [ ] Shared usage data option; selection carried through from Welcome flow
         - [ ] `anonymous usage data` link opens https://desktop.github.com/usage-data/
         - [ ] Verify positive `stats-opt-out` value in Dev Tools > Application > Local storage > file://
-  - [ ] Install command line tool installs tool at `/usr/local/bin/github` (Mac only as Windows done automagically; Helper may require password, else error message)
-    - [ ] If already installed, user sees: "The command line tool has been installed at /usr/local/bin/github"
+  - [ ] Install command line tool installs tool at `/usr/local/bin/madhub` (Mac only as Windows done automagically; Helper may require password, else error message)
+    - [ ] If already installed, user sees: "The command line tool has been installed at /usr/local/bin/madhub"
     - [ ] Clicking `OK` closes modal
   - [ ] Quit/Exit Desktop (Mac: `⌘Q`)
     - [ ] Quitting/Exiting and reopening Desktop returns you to last visited repo

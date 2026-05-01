@@ -28,6 +28,12 @@ export async function getRepositoryType(path: string): Promise<RepositoryType> {
       { successExitCodes: new Set([0, 128]) }
     )
 
+    console.log(`getRepositoryType result for ${path}:`, {
+      exitCode: result.exitCode,
+      stdout: result.stdout,
+      stderr: result.stderr,
+    })
+
     if (result.exitCode === 0) {
       const [isBare, cdup] = result.stdout.split('\n', 2)
 
