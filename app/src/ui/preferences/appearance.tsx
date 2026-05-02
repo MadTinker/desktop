@@ -4,6 +4,12 @@ import {
   supportsSystemThemeChanges,
   getCurrentlyAppliedTheme,
 } from '../lib/application-theme'
+import {
+  MadnessTheme,
+  madnessThemes,
+  madnessThemeLabels,
+  madnessThemeSwatches,
+} from '../lib/madness-theme'
 import { Row } from '../lib/row'
 import { DialogContent } from '../dialog'
 import { RadioGroup } from '../lib/radio-group'
@@ -26,6 +32,8 @@ import { formatNumber } from '../../lib/format-number'
 interface IAppearanceProps {
   readonly selectedTheme: ApplicationTheme
   readonly onSelectedThemeChanged: (theme: ApplicationTheme) => void
+  readonly selectedMadnessTheme: MadnessTheme
+  readonly onSelectedMadnessThemeChanged: (theme: MadnessTheme) => void
   readonly selectedTabSize: number
   readonly onSelectedTabSizeChanged: (tabSize: number) => void
   readonly selectedDateFormat: DateFormat
@@ -283,10 +291,50 @@ export class Appearance extends React.Component<
     )
   }
 
+  private renderMadnessThemes() {
+    const { selectedMadnessTheme, onSelectedMadnessThemeChanged } = this.props
+
+    return (
+      <div className="appearance-section madness-theme-section">
+        <h2 id="madness-theme-heading">Color Theme</h2>
+        <div className="madness-theme-grid" role="group" aria-labelledby="madness-theme-heading">
+          <button
+            className={`madness-swatch${!selectedMadnessTheme ? ' selected' : ''}`}
+            onClick={() => onSelectedMadnessThemeChanged('')}
+            aria-pressed={!selectedMadnessTheme}
+            title="No color theme"
+          >
+            <span className="swatch-preview swatch-none" />
+            <span className="swatch-label">None</span>
+          </button>
+          {madnessThemes.map(t => {
+            const s = madnessThemeSwatches[t]
+            const previewStyle = {
+              background: `linear-gradient(135deg, ${s.bg} 0%, ${s.bg} 40%, ${s.primary} 40%, ${s.primary} 70%, ${s.secondary} 70%)`,
+            }
+            return (
+              <button
+                key={t}
+                className={`madness-swatch${selectedMadnessTheme === t ? ' selected' : ''}`}
+                onClick={() => onSelectedMadnessThemeChanged(t)}
+                aria-pressed={selectedMadnessTheme === t}
+                title={madnessThemeLabels[t]}
+              >
+                <span className="swatch-preview" style={previewStyle} />
+                <span className="swatch-label">{madnessThemeLabels[t]}</span>
+              </button>
+            )
+          })}
+        </div>
+      </div>
+    )
+  }
+
   public render() {
     return (
       <DialogContent>
         {this.renderSelectedTheme()}
+        {this.renderMadnessThemes()}
         {this.renderFormatting()}
         {this.renderSelectedTabSize()}
       </DialogContent>

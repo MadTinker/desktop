@@ -7,3 +7,6 @@
 [submodule "app/static/common/choosealicense.com"]
 	path = app/static/common/choosealicense.com
 	url = https://github.com/github/choosealicense.com.git
+[submodule "app/madness-themes"]
+	path = app/madness-themes
+	url = https://github.com/MadnessEngineering/MadnessThemes

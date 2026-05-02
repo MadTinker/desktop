@@ -1,0 +1,63 @@
+.madness-theme-section {
+  // Inherits from appearance-section container styles if they exist elsewhere
+  margin-bottom: 20px;
+
+  h3 {
+    margin-bottom: 12px;
+  }
+}
+
+.madness-theme-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 8px;
+}
+
+.madness-swatch {
+  appearance: none;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  overflow: hidden;
+  padding: 4px;
+  width: 100%;
+
+  &:hover {
+    outline: 1px solid var(--box-border-contrast-color);
+  }
+
+  &:focus {
+    outline: 2px solid var(--focus-color);
+  }
+
+  &.selected {
+    outline: 2px solid var(--focus-color);
+  }
+}
+
+.swatch-preview {
+  display: block;
+  width: 100%;
+  height: 48px;
+  border-radius: 3px;
+
+  &.swatch-none {
+    background: repeating-linear-gradient(45deg, var(--box-border-color) 0, var(--box-border-color) 1px, transparent 0, transparent 50%) 0/6px 6px,
+      var(--box-background-color);
+  }
+}
+
+.swatch-label {
+  color: var(--text-secondary-color);
+  font-size: var(--font-size-sm, 11px);
+  max-width: 100%;
+  overflow: hidden;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

@@ -21,6 +21,7 @@ import {
 } from '../lib/identifier-rules'
 import { Appearance } from './appearance'
 import { ApplicationTheme } from '../lib/application-theme'
+import { MadnessTheme } from '../lib/madness-theme'
 import { OkCancelButtonGroup } from '../dialog/ok-cancel-button-group'
 import { Integrations } from './integrations'
 import {
@@ -104,6 +105,7 @@ interface IPreferencesProps {
   readonly selectedExternalEditor: string | null
   readonly selectedShell: Shell
   readonly selectedTheme: ApplicationTheme
+  readonly selectedMadnessTheme: MadnessTheme
   readonly selectedTabSize: number
   readonly useCustomEditor: boolean
   readonly customEditor: ICustomIntegration | null
@@ -576,6 +578,8 @@ export class Preferences extends React.Component<
           <Appearance
             selectedTheme={this.props.selectedTheme}
             onSelectedThemeChanged={this.onSelectedThemeChanged}
+            selectedMadnessTheme={this.props.selectedMadnessTheme}
+            onSelectedMadnessThemeChanged={this.onSelectedMadnessThemeChanged}
             selectedTabSize={this.props.selectedTabSize}
             onSelectedTabSizeChanged={this.onSelectedTabSizeChanged}
             selectedDateFormat={
@@ -835,6 +839,10 @@ export class Preferences extends React.Component<
 
   private onSelectedThemeChanged = (theme: ApplicationTheme) => {
     this.props.dispatcher.setSelectedTheme(theme)
+  }
+
+  private onSelectedMadnessThemeChanged = (theme: MadnessTheme) => {
+    this.props.dispatcher.setSelectedMadnessTheme(theme)
   }
 
   private onUnderlineLinksChanged = (underlineLinks: boolean) => {

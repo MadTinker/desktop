@@ -94,6 +94,7 @@ import { TipState, IValidBranch } from '../../models/tip'
 import { Banner, BannerType } from '../../models/banner'
 
 import { ApplicationTheme } from '../lib/application-theme'
+import { MadnessTheme } from '../lib/madness-theme'
 import { installCLI } from '../lib/install-cli'
 import {
   executeMenuItem,
@@ -2521,6 +2522,13 @@ export class Dispatcher {
    */
   public setSelectedTheme(theme: ApplicationTheme) {
     return this.appStore._setSelectedTheme(theme)
+  }
+
+  /**
+   * Set the Madness Interactive color theme overlay
+   */
+  public setSelectedMadnessTheme(theme: MadnessTheme) {
+    return this.appStore._setSelectedMadnessTheme(theme)
   }
 
   /**

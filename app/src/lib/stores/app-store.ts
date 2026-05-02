@@ -103,6 +103,11 @@ import {
   setPersistedTheme,
 } from '../../ui/lib/application-theme'
 import {
+  MadnessTheme,
+  getPersistedMadnessTheme,
+  setPersistedMadnessTheme,
+} from '../../ui/lib/madness-theme'
+import {
   getAppMenu,
   getCurrentWindowState,
   getCurrentWindowZoomFactor,
@@ -614,6 +619,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
   private selectedBranchesTab = BranchesTab.Branches
   private selectedTheme = ApplicationTheme.System
   private currentTheme: ApplicableTheme = ApplicationTheme.Light
+  private selectedMadnessTheme: MadnessTheme = ''
   private selectedTabSize = tabSizeDefault
 
   private useWindowsOpenSSH: boolean = false
@@ -1145,6 +1151,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
       selectedBranchesTab: this.selectedBranchesTab,
       selectedTheme: this.selectedTheme,
       currentTheme: this.currentTheme,
+      selectedMadnessTheme: this.selectedMadnessTheme,
       selectedTabSize: this.selectedTabSize,
       apiRepositories: this.apiRepositoriesStore.getState(),
       useWindowsOpenSSH: this.useWindowsOpenSSH,
@@ -2378,6 +2385,8 @@ export class AppStore extends TypedBaseStore<IAppState> {
     this.selectedTheme = getPersistedThemeName()
     // Make sure the persisted theme is applied
     setPersistedTheme(this.selectedTheme)
+
+    this.selectedMadnessTheme = getPersistedMadnessTheme()
 
     this.currentTheme = await getCurrentlyAppliedTheme()
 
@@ -7210,6 +7219,17 @@ export class AppStore extends TypedBaseStore<IAppState> {
   public _setSelectedTheme(theme: ApplicationTheme) {
     setPersistedTheme(theme)
     this.selectedTheme = theme
+    this.emitUpdate()
+
+    return Promise.resolve()
+  }
+
+  /**
+   * Set the Madness Interactive color theme overlay
+   */
+  public _setSelectedMadnessTheme(theme: MadnessTheme) {
+    setPersistedMadnessTheme(theme)
+    this.selectedMadnessTheme = theme
     this.emitUpdate()
 
     return Promise.resolve()

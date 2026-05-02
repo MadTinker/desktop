@@ -4,10 +4,12 @@ import {
   getThemeName,
   getCurrentlyAppliedTheme,
 } from './lib/application-theme'
+import { MadnessTheme } from './lib/madness-theme'
 import * as ipcRenderer from '../lib/ipc-renderer'
 
 interface IAppThemeProps {
   readonly theme: ApplicationTheme
+  readonly madnessTheme: MadnessTheme
 }
 
 /**
@@ -42,11 +44,35 @@ export class AppTheme extends React.PureComponent<IAppThemeProps> {
       themeToDisplay = await getCurrentlyAppliedTheme()
     }
 
+    // Madness themes are all dark-background — force dark base when one is active
+    if (this.props.madnessTheme) {
+      themeToDisplay = ApplicationTheme.Dark
+    }
+
     const newThemeClassName = `theme-${getThemeName(themeToDisplay)}`
 
     if (!document.body.classList.contains(newThemeClassName)) {
       this.clearThemes()
       document.body.classList.add(newThemeClassName)
+      this.updateColorScheme()
+    }
+
+    // Apply / update the Madness theme overlay class
+    const madnessCls = this.props.madnessTheme
+      ? `theme-madness-${this.props.madnessTheme}`
+      : null
+
+    const currentMadness = [...document.body.classList].find(c =>
+      c.startsWith('theme-madness-')
+    )
+
+    if (currentMadness !== madnessCls) {
+      if (currentMadness) {
+        document.body.classList.remove(currentMadness)
+      }
+      if (madnessCls) {
+        document.body.classList.add(madnessCls)
+      }
       this.updateColorScheme()
     }
   }

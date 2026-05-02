@@ -1594,6 +1594,7 @@ export class App extends React.Component<IAppProps, IAppState> {
             onDismissed={onPopupDismissedFn}
             selectedShell={this.state.selectedShell}
             selectedTheme={this.state.selectedTheme}
+            selectedMadnessTheme={this.state.selectedMadnessTheme}
             selectedTabSize={this.state.selectedTabSize}
             useCustomEditor={this.state.useCustomEditor}
             customEditor={this.state.customEditor}
@@ -3610,7 +3611,10 @@ export class App extends React.Component<IAppProps, IAppState> {
         className={className}
         style={{ tabSize: currentTabSize }}
       >
-        <AppTheme theme={currentTheme} />
+        <AppTheme
+          theme={currentTheme}
+          madnessTheme={this.state.selectedMadnessTheme}
+        />
         {this.renderTitlebar()}
         {this.state.showWelcomeFlow
           ? this.renderWelcomeFlow()
