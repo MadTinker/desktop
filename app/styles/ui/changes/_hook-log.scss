@@ -1,0 +1,88 @@
+.hook-log {
+  border-top: var(--base-border);
+  font-size: var(--font-size-sm);
+
+  .hook-log-header {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: var(--spacing-half);
+    width: 100%;
+    background: transparent;
+    border: none;
+    padding: var(--spacing-half) var(--spacing);
+    color: var(--text-secondary-color);
+    font-size: var(--font-size-sm);
+    font-family: inherit;
+    cursor: pointer;
+    text-align: left;
+
+    &:hover {
+      background: var(--list-item-hover-background-color);
+      color: var(--text-color);
+    }
+
+    .hook-log-icon {
+      flex-shrink: 0;
+      &.ok     { color: var(--status-success-color); }
+      &.failed { color: var(--status-error-color); }
+    }
+
+    .hook-log-title {
+      font-weight: var(--font-weight-semibold);
+      color: var(--text-color);
+    }
+
+    .hook-log-latest {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: var(--text-secondary-color);
+    }
+
+    .hook-log-chevron {
+      flex-shrink: 0;
+      color: var(--text-secondary-color);
+    }
+  }
+
+  .hook-log-entries {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    max-height: 160px;
+    overflow-y: auto;
+
+    .hook-log-entry {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: var(--spacing-half);
+      padding: var(--spacing-half) var(--spacing);
+      border-bottom: var(--base-border);
+
+      &:last-child { border-bottom: none; }
+
+      .hook-log-entry-icon {
+        flex-shrink: 0;
+        &.finished { color: var(--status-success-color); }
+        &.failed   { color: var(--status-error-color); }
+      }
+
+      .hook-log-entry-name {
+        flex: 1;
+        font-weight: var(--font-weight-semibold);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .hook-log-entry-time {
+        flex-shrink: 0;
+        color: var(--text-secondary-color);
+        font-size: var(--font-size-sm);
+      }
+    }
+  }
+}
