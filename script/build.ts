@@ -355,6 +355,7 @@ function copyDependencies() {
     const copilotDestination = path.resolve(outRoot, 'copilot')
     cpSync(copilotPkgDir, copilotDestination, {
       recursive: true,
+      verbatimSymlinks: true,
     })
 
     const nonValidPlatforms = ['darwin', 'linux', 'win32'].filter(
