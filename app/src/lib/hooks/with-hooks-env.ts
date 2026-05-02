@@ -5,6 +5,7 @@ import { join } from 'path'
 import { createProxyProcessServer } from 'process-proxy'
 import type { IGitExecutionOptions } from '../git/core'
 import { getRepoHooks } from './get-repo-hooks'
+import { getRepoHookEnabled } from './hook-state'
 import { createHooksProxy } from './hooks-proxy'
 import { getShellEnv } from './get-shell-env'
 import memoizeOne from 'memoize-one'
@@ -35,7 +36,9 @@ export async function withHooksEnv<T>(
     return fn(opts?.env)
   }
 
-  const hooks = await Array.fromAsync(getRepoHooks(path, opts.interceptHooks))
+  const hooks = (
+    await Array.fromAsync(getRepoHooks(path, opts.interceptHooks))
+  ).filter(hook => getRepoHookEnabled(path, hook))
 
   if (hooks.length === 0) {
     return fn(opts?.env)
