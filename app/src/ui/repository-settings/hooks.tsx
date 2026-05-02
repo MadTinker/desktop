@@ -42,13 +42,23 @@ const hookGroups: Record<string, ReadonlyArray<string>> = {
 }
 
 async function resolveHooksDir(repoPath: string): Promise<string> {
-  const { exitCode, stdout } = await exec(
+  // Check for custom hooksPath first
+  const configResult = await exec(
     ['config', '-z', '--get', 'core.hooksPath'],
     repoPath
   )
-  return exitCode === 0
-    ? resolve(repoPath, stdout.split('\0')[0])
-    : join(repoPath, '.git', 'hooks')
+  if (configResult.exitCode === 0) {
+    return resolve(repoPath, configResult.stdout.split('\0')[0])
+  }
+
+  // Use rev-parse --git-dir to handle submodules (where .git is a file, not a dir)
+  const gitDirResult = await exec(['rev-parse', '--git-dir'], repoPath)
+  const gitDir =
+    gitDirResult.exitCode === 0
+      ? resolve(repoPath, gitDirResult.stdout.trim())
+      : join(repoPath, '.git')
+
+  return join(gitDir, 'hooks')
 }
 
 async function discoverHooks(repoPath: string): Promise<ReadonlyArray<string>> {
