@@ -117,7 +117,7 @@ export class Branch {
   /**
    * Gets a value indicating whether the branch is a remote branch belonging to
    * one of Desktop's automatically created (and pruned) fork remotes. I.e. a
-   * remote branch from a branch which starts with `github-desktop-`.
+   * remote branch from a branch which starts with `madness-desktop-`.
    *
    * We hide branches from our known Desktop for remotes as these are considered
    * plumbing and can add noise to everywhere in the user interface where we

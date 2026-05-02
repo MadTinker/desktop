@@ -1,6 +1,6 @@
 # Roadmap
 
-The following are the larger areas of upcoming work the GitHub Desktop team intends to explore and has recently shipped. This is not inclusive of everything we're working on (see existing open pull requests for that), and it's not written in stone. We'll attempt to update this intermittently as priorities evolve, but can't guarantee that it stays up to date over time.
+The following are the larger areas of upcoming work the Madness Desktop team intends to explore and has recently shipped. This is not inclusive of everything we're working on (see existing open pull requests for that), and it's not written in stone. We'll attempt to update this intermittently as priorities evolve, but can't guarantee that it stays up to date over time.
 
 ## Major features shipped in previous releases
 
@@ -44,7 +44,7 @@ The following are the larger areas of upcoming work the GitHub Desktop team inte
 
 - Help people get set up correctly if they're behind a proxy: [#2789](https://github.com/desktop/desktop/issues/2789)
 
-#### Creating a fork using GitHub Desktop (2.3)
+#### Creating a fork using Madness Desktop (2.3)
 
 - Helps provide a pathway to create a fork when people are trying to contribute to a repository they don't have write access to: [#8548](https://github.com/desktop/desktop/issues/8548)
 
@@ -52,7 +52,7 @@ The following are the larger areas of upcoming work the GitHub Desktop team inte
 
 - Help prevent people from making commits to branches they aren't able to push to: [#7023](https://github.com/desktop/desktop/issues/7023)
 
-#### New user tutorial to get started more easily doing a full workflow in GitHub Desktop (2.2)
+#### New user tutorial to get started more easily doing a full workflow in Madness Desktop (2.2)
 
 - Tutorial entry point: [#8148](https://github.com/desktop/desktop/issues/8148)
 - GitHub workflow tutorial using GitHub Desktop: [#8149](https://github.com/desktop/desktop/issues/8149)

@@ -54,7 +54,7 @@ If you see any version number, you're good to go.
 ## Yarn
 
 Follow [this guide](https://yarnpkg.com/en/docs/install#mac-stable) to install
-a system-level `yarn`. GitHub Desktop uses a local version of `yarn`, but it
+a system-level `yarn`. Madness Desktop uses a local version of `yarn`, but it
 needs a version on your `PATH` to bootstrap itself.
 
 This is important because `yarn` uses lock files to pin dependencies. If you

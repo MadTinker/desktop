@@ -3,7 +3,7 @@
  * for when we add a remote on behalf of
  * the user.
  */
-export const ForkedRemotePrefix = 'github-desktop-'
+export const ForkedRemotePrefix = 'madness-desktop-'
 
 export function forkPullRequestRemoteName(remoteName: string) {
   return `${ForkedRemotePrefix}${remoteName}`
