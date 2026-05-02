@@ -284,6 +284,7 @@ import {
 import { ManualConflictResolution } from '../../models/manual-conflict-resolution'
 import { BranchPruner } from './helpers/branch-pruner'
 import {
+  enableAutoSwitchOnChanges,
   enableCopilotSdkCommitMessageGeneration,
   enableCustomIntegration,
 } from '../feature-flag'
@@ -323,6 +324,7 @@ import { sendNonFatalException } from '../helpers/non-fatal-exception'
 import { getDefaultDir } from '../../ui/lib/default-dir'
 import { WorkflowPreferences } from '../../models/workflow-preferences'
 import { RepositoryIndicatorUpdater } from './helpers/repository-indicator-updater'
+import { AutoSwitchMonitor } from './helpers/auto-switch-monitor'
 import { isAttributableEmailFor } from '../email'
 import { TrashNameLabel } from '../../ui/lib/context-menu'
 import { GitError as DugiteError } from 'dugite'
@@ -465,6 +467,7 @@ const tabSizeKey: string = 'tab-size'
 const shellKey = 'shell'
 
 const repositoryIndicatorsEnabledKey = 'enable-repository-indicators'
+const autoSwitchOnChangesKey = 'enable-auto-switch-on-changes'
 
 // background fetching should occur hourly when Desktop is active, but this
 // lower interval ensures user interactions like switching repositories and
@@ -520,6 +523,8 @@ export class AppStore extends TypedBaseStore<IAppState> {
   private currentBranchPruner: BranchPruner | null = null
 
   private readonly repositoryIndicatorUpdater: RepositoryIndicatorUpdater
+  private readonly autoSwitchMonitor: AutoSwitchMonitor
+  private autoSwitchOnChangesEnabled = false
 
   private showWelcomeFlow = false
   private focusCommitMessage = false
@@ -742,6 +747,29 @@ export class AppStore extends TypedBaseStore<IAppState> {
         this.repositoryIndicatorUpdater.start()
       }
     }, InitialRepositoryIndicatorTimeout)
+
+    this.autoSwitchOnChangesEnabled =
+      (getBoolean(autoSwitchOnChangesKey) ?? false) &&
+      enableAutoSwitchOnChanges()
+
+    this.autoSwitchMonitor = new AutoSwitchMonitor(
+      this.getRepositoriesForIndicatorRefresh,
+      this.refreshIndicatorForRepository,
+      id => this.localRepositoryStateLookup.get(id),
+      repo => this._selectRepository(repo),
+      () => {
+        const sel = this.selectedRepository
+        if (!sel || sel instanceof CloningRepository) {
+          return false
+        }
+        const state = this.localRepositoryStateLookup.get(sel.id)
+        return (state?.changedFilesCount ?? 0) > 0
+      }
+    )
+
+    if (this.autoSwitchOnChangesEnabled) {
+      this.autoSwitchMonitor.start()
+    }
 
     API.onTokenInvalidated(this.onTokenInvalidated)
 
@@ -1159,6 +1187,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
       optOutOfUsageTracking: this.statsStore.getOptOut(),
       currentOnboardingTutorialStep: this.currentOnboardingTutorialStep,
       repositoryIndicatorsEnabled: this.repositoryIndicatorsEnabled,
+      autoSwitchOnChangesEnabled: this.autoSwitchOnChangesEnabled,
       commitSpellcheckEnabled: this.commitSpellcheckEnabled,
       currentDragElement: this.currentDragElement,
       lastThankYou: this.lastThankYou,
@@ -3885,6 +3914,22 @@ export class AppStore extends TypedBaseStore<IAppState> {
     this.emitUpdate()
   }
 
+  public _setAutoSwitchOnChangesEnabled(enabled: boolean) {
+    if (this.autoSwitchOnChangesEnabled === enabled) {
+      return
+    }
+
+    setBoolean(autoSwitchOnChangesKey, enabled)
+    this.autoSwitchOnChangesEnabled = enabled
+    if (enabled) {
+      this.autoSwitchMonitor.start()
+    } else {
+      this.autoSwitchMonitor.stop()
+    }
+
+    this.emitUpdate()
+  }
+
   public _setCommitSpellcheckEnabled(commitSpellcheckEnabled: boolean) {
     if (this.commitSpellcheckEnabled === commitSpellcheckEnabled) {
       return
@@ -6475,6 +6520,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
 
     if (this.appIsFocused) {
       this.repositoryIndicatorUpdater.resume()
+      this.autoSwitchMonitor.resume()
       if (this.selectedRepository instanceof Repository) {
         this.startPullRequestUpdater(this.selectedRepository)
         // if we're in the tutorial and we don't have an editor yet, check for one!
@@ -6484,6 +6530,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
       }
     } else {
       this.repositoryIndicatorUpdater.pause()
+      this.autoSwitchMonitor.pause()
       this.stopPullRequestUpdater()
     }
   }

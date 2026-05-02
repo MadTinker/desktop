@@ -348,6 +348,9 @@ export interface IAppState {
    */
   readonly repositoryIndicatorsEnabled: boolean
 
+  /** Whether the app should auto-switch to repos with new changes */
+  readonly autoSwitchOnChangesEnabled: boolean
+
   /**
    * Whether or not the app should use spell check on commit summary and description
    */

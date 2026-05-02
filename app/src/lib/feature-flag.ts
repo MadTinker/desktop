@@ -122,3 +122,8 @@ export const enableHooksEnvironment = () => true
 export const enableHooksByDefault = enableBetaFeatures
 
 export const enableFormattingPreferences = enableBetaFeatures
+
+/** Should the app enable auto-switch to repos with new changes? */
+export function enableAutoSwitchOnChanges(): boolean {
+  return enableDevelopmentFeatures()
+}

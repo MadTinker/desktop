@@ -4,16 +4,19 @@ import { Checkbox, CheckboxValue } from '../lib/checkbox'
 import { LinkButton } from '../lib/link-button'
 import { SamplesURL } from '../../lib/stats'
 import { isWindowsOpenSSHAvailable } from '../../lib/ssh/ssh'
+import { enableAutoSwitchOnChanges } from '../../lib/feature-flag'
 
 interface IAdvancedPreferencesProps {
   readonly useWindowsOpenSSH: boolean
   readonly optOutOfUsageTracking: boolean
   readonly useExternalCredentialHelper: boolean
   readonly repositoryIndicatorsEnabled: boolean
+  readonly autoSwitchOnChangesEnabled: boolean
   readonly onUseWindowsOpenSSHChanged: (checked: boolean) => void
   readonly onOptOutofReportingChanged: (checked: boolean) => void
   readonly onUseExternalCredentialHelperChanged: (checked: boolean) => void
   readonly onRepositoryIndicatorsEnabledChanged: (enabled: boolean) => void
+  readonly onAutoSwitchOnChangesEnabledChanged: (enabled: boolean) => void
 }
 
 interface IAdvancedPreferencesState {
@@ -68,6 +71,12 @@ export class Advanced extends React.Component<
     this.props.onRepositoryIndicatorsEnabledChanged(event.currentTarget.checked)
   }
 
+  private onAutoSwitchOnChangesEnabledChanged = (
+    event: React.FormEvent<HTMLInputElement>
+  ) => {
+    this.props.onAutoSwitchOnChangesEnabledChanged(event.currentTarget.checked)
+  }
+
   private onUseWindowsOpenSSHChanged = (
     event: React.FormEvent<HTMLInputElement>
   ) => {
@@ -113,6 +122,30 @@ export class Advanced extends React.Component<
               performance for users with many repositories.
             </p>
           </div>
+          {enableAutoSwitchOnChanges() && (
+            <Checkbox
+              label="Auto-switch to repositories with new changes"
+              value={
+                this.props.autoSwitchOnChangesEnabled
+                  ? CheckboxValue.On
+                  : CheckboxValue.Off
+              }
+              onChange={this.onAutoSwitchOnChangesEnabledChanged}
+              ariaDescribedBy="auto-switch-description"
+            />
+          )}
+          {enableAutoSwitchOnChanges() && (
+            <div
+              id="auto-switch-description"
+              className="git-settings-description"
+            >
+              <p>
+                When enabled, the app will poll repositories every 15 seconds
+                and automatically switch to whichever repo gains new changes.
+                Will not switch if your current repo has uncommitted work.
+              </p>
+            </div>
+          )}
         </div>
         <div className="advanced-section">
           <h2>Usage</h2>

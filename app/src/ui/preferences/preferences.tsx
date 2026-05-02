@@ -112,6 +112,7 @@ interface IPreferencesProps {
   readonly useCustomShell: boolean
   readonly customShell: ICustomIntegration | null
   readonly repositoryIndicatorsEnabled: boolean
+  readonly autoSwitchOnChangesEnabled: boolean
   readonly onEditGlobalGitConfig: () => void
   readonly underlineLinks: boolean
   readonly showDiffCheckMarks: boolean
@@ -163,6 +164,7 @@ interface IPreferencesState {
    */
   readonly existingLockFilePath?: string
   readonly repositoryIndicatorsEnabled: boolean
+  readonly autoSwitchOnChangesEnabled: boolean
 
   readonly initiallySelectedTheme: ApplicationTheme
   readonly initiallySelectedTabSize: number
@@ -238,6 +240,7 @@ export class Preferences extends React.Component<
       availableShells: [],
       selectedShell: this.props.selectedShell,
       repositoryIndicatorsEnabled: this.props.repositoryIndicatorsEnabled,
+      autoSwitchOnChangesEnabled: this.props.autoSwitchOnChangesEnabled,
       initiallySelectedTheme: this.props.selectedTheme,
       initiallySelectedTabSize: this.props.selectedTabSize,
       isLoadingGitConfig: true,
@@ -663,6 +666,7 @@ export class Preferences extends React.Component<
             optOutOfUsageTracking={this.state.optOutOfUsageTracking}
             useExternalCredentialHelper={this.state.useExternalCredentialHelper}
             repositoryIndicatorsEnabled={this.state.repositoryIndicatorsEnabled}
+            autoSwitchOnChangesEnabled={this.state.autoSwitchOnChangesEnabled}
             onUseWindowsOpenSSHChanged={this.onUseWindowsOpenSSHChanged}
             onOptOutofReportingChanged={this.onOptOutofReportingChanged}
             onUseExternalCredentialHelperChanged={
@@ -670,6 +674,9 @@ export class Preferences extends React.Component<
             }
             onRepositoryIndicatorsEnabledChanged={
               this.onRepositoryIndicatorsEnabledChanged
+            }
+            onAutoSwitchOnChangesEnabledChanged={
+              this.onAutoSwitchOnChangesEnabledChanged
             }
           />
         )
@@ -704,6 +711,12 @@ export class Preferences extends React.Component<
     repositoryIndicatorsEnabled: boolean
   ) => {
     this.setState({ repositoryIndicatorsEnabled })
+  }
+
+  private onAutoSwitchOnChangesEnabledChanged = (
+    autoSwitchOnChangesEnabled: boolean
+  ) => {
+    this.setState({ autoSwitchOnChangesEnabled })
   }
 
   private onLockFileDeleted = () => {
@@ -951,6 +964,15 @@ export class Preferences extends React.Component<
       ) {
         dispatcher.setRepositoryIndicatorsEnabled(
           this.state.repositoryIndicatorsEnabled
+        )
+      }
+
+      if (
+        this.props.autoSwitchOnChangesEnabled !==
+        this.state.autoSwitchOnChangesEnabled
+      ) {
+        dispatcher.setAutoSwitchOnChangesEnabled(
+          this.state.autoSwitchOnChangesEnabled
         )
       }
 

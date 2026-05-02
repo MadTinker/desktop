@@ -2772,6 +2772,10 @@ export class Dispatcher {
     this.appStore._setRepositoryIndicatorsEnabled(repositoryIndicatorsEnabled)
   }
 
+  public setAutoSwitchOnChangesEnabled(enabled: boolean) {
+    this.appStore._setAutoSwitchOnChangesEnabled(enabled)
+  }
+
   public setCommitSpellcheckEnabled(commitSpellcheckEnabled: boolean) {
     this.appStore._setCommitSpellcheckEnabled(commitSpellcheckEnabled)
   }
