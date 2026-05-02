@@ -16,6 +16,7 @@ import { NoRemote } from './no-remote'
 import { readGitIgnoreAtRoot } from '../../lib/git'
 import { OkCancelButtonGroup } from '../dialog/ok-cancel-button-group'
 import { ForkSettings } from './fork-settings'
+import { HooksSettings } from './hooks'
 import { ForkContributionTarget } from '../../models/workflow-preferences'
 import { GitConfigLocation, GitConfig } from './git-config'
 import {
@@ -45,6 +46,7 @@ export enum RepositorySettingsTab {
   Remote = 0,
   IgnoredFiles,
   GitConfig,
+  Hooks,
   ForkSettings,
 }
 
@@ -195,6 +197,10 @@ export class RepositorySettings extends React.Component<
               <Octicon className="icon" symbol={octicons.gitCommit} />
               {__DARWIN__ ? 'Git Config' : 'Git config'}
             </span>
+            <span>
+              <Octicon className="icon" symbol={octicons.webhook} />
+              Hooks
+            </span>
             {showForkSettings && (
               <span>
                 <Octicon className="icon" symbol={octicons.repoForked} />
@@ -240,6 +246,12 @@ export class RepositorySettings extends React.Component<
           />
         )
       }
+      case RepositorySettingsTab.Hooks: {
+        return (
+          <HooksSettings repoPath={this.props.repository.path} />
+        )
+      }
+
       case RepositorySettingsTab.ForkSettings: {
         if (!isRepositoryWithForkedGitHubRepository(this.props.repository)) {
           return null
