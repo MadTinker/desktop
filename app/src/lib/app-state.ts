@@ -52,6 +52,16 @@ import type {
   IChangesetData,
   TerminalOutputListener,
 } from './git'
+
+export interface IHookLogEntry {
+  readonly id: string
+  readonly hookName: string
+  readonly status: 'finished' | 'failed'
+  readonly timestamp: Date
+  readonly repoPath: string
+  /** Terminal output captured on failure */
+  readonly output?: string
+}
 import { Popup } from '../models/popup'
 import { RepoRulesInfo } from '../models/repo-rules'
 import { IAPIRepoRuleset } from './api'
@@ -581,6 +591,7 @@ export interface IRepositoryState {
   readonly lastFetched: Date | null
 
   readonly hookProgress: HookProgress | null
+  readonly hookLog: ReadonlyArray<IHookLogEntry>
   readonly subscribeToCommitOutput: TerminalOutputListener | null
 
   /**

@@ -8,7 +8,9 @@ import {
   isRebaseConflictState,
   ChangesSelectionKind,
   CommitOptions,
+  IHookLogEntry,
 } from '../../lib/app-state'
+import { HookLog } from './hook-log'
 import { Repository } from '../../models/repository'
 import { Dispatcher } from '../dispatcher'
 import { IssuesStore, GitHubUserStore } from '../../lib/stores'
@@ -57,6 +59,7 @@ interface IChangesSidebarProps {
   readonly availableWidth: number
   readonly isCommitting: boolean
   readonly hookProgress: HookProgress | null
+  readonly hookLog: ReadonlyArray<IHookLogEntry>
   readonly onShowCommitProgress: (() => void) | undefined
   readonly isGeneratingCommitMessage: boolean
   readonly shouldShowGenerateCommitMessageCallOut: boolean
@@ -491,6 +494,7 @@ export class ChangesSidebar extends React.Component<IChangesSidebarProps, {}> {
           onUpdateCommitOptions={this.props.onUpdateCommitOptions}
         />
         {this.renderUndoCommit(rebaseConflictState)}
+        <HookLog hookLog={this.props.hookLog} />
       </div>
     )
   }

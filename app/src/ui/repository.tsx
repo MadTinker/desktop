@@ -295,6 +295,7 @@ export class RepositoryView extends React.Component<
         gitHubUserStore={this.props.gitHubUserStore}
         isCommitting={this.props.state.isCommitting}
         hookProgress={this.props.state.hookProgress}
+        hookLog={this.props.state.hookLog}
         onShowCommitProgress={
           this.props.state.subscribeToCommitOutput
             ? this.onShowCommitProgress

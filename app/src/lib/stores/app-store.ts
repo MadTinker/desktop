@@ -150,6 +150,7 @@ import {
   IConstrainedValue,
   ICompareState,
   CommitOptions,
+  IHookLogEntry,
 } from '../app-state'
 import type { ModelInfo } from '@github/copilot-sdk'
 import {
@@ -5790,6 +5791,25 @@ export class AppStore extends TypedBaseStore<IAppState> {
   private onHookProgress = (respository: Repository) => {
     return (hookProgress: HookProgress) => {
       this.repositoryStateCache.update(respository, () => ({ hookProgress }))
+
+      if (
+        hookProgress.status === 'finished' ||
+        hookProgress.status === 'failed'
+      ) {
+        const entry: IHookLogEntry = {
+          id: crypto.randomUUID(),
+          hookName: hookProgress.hookName,
+          status: hookProgress.status,
+          timestamp: new Date(),
+          repoPath: respository.path,
+        }
+        const { hookLog } = this.repositoryStateCache.get(respository)
+        const updated = [entry, ...hookLog].slice(0, 20)
+        this.repositoryStateCache.update(respository, () => ({
+          hookLog: updated,
+        }))
+      }
+
       this.emitUpdate()
     }
   }
