@@ -89,6 +89,18 @@ interface ISeamlessDiffSwitcherProps {
   // eslint-disable-next-line react/no-unused-prop-types
   readonly onOpenSubmodule?: (fullPath: string) => void
 
+  /** Called when the user clicks Initialize on an uninitialized submodule. */
+  // eslint-disable-next-line react/no-unused-prop-types
+  readonly onInitializeSubmodule?: (submodulePath: string) => void
+
+  /** Called when the user clicks Sync on a submodule. */
+  // eslint-disable-next-line react/no-unused-prop-types
+  readonly onSyncSubmodule?: (submodulePath: string) => void
+
+  /** Called when the user clicks Rollback on a modified submodule. */
+  // eslint-disable-next-line react/no-unused-prop-types
+  readonly onRollbackSubmodule?: (submodulePath: string) => void
+
   /**
    * Called when the user is viewing an image diff and requests
    * to change the diff presentation mode.
@@ -338,6 +350,9 @@ export class SeamlessDiffSwitcher extends React.Component<
       file,
       onOpenBinaryFile,
       onOpenSubmodule,
+      onInitializeSubmodule,
+      onSyncSubmodule,
+      onRollbackSubmodule,
       onChangeImageDiffType,
       onHideWhitespaceInDiffChanged,
     } = this.state.propSnapshot
@@ -374,6 +389,13 @@ export class SeamlessDiffSwitcher extends React.Component<
             onDiscardChanges={isLoadingDiff ? noop : onDiscardChanges}
             onOpenBinaryFile={isLoadingDiff ? noop : onOpenBinaryFile}
             onOpenSubmodule={isLoadingDiff ? noop : onOpenSubmodule}
+            onInitializeSubmodule={
+              isLoadingDiff ? undefined : onInitializeSubmodule
+            }
+            onSyncSubmodule={isLoadingDiff ? undefined : onSyncSubmodule}
+            onRollbackSubmodule={
+              isLoadingDiff ? undefined : onRollbackSubmodule
+            }
             onChangeImageDiffType={isLoadingDiff ? noop : onChangeImageDiffType}
             onHideWhitespaceInDiffChanged={
               isLoadingDiff ? noop : onHideWhitespaceInDiffChanged

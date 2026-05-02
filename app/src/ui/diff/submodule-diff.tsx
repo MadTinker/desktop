@@ -7,7 +7,9 @@ import * as octicons from '../octicons/octicons.generated'
 import { SuggestedAction } from '../suggested-actions'
 import { Ref } from '../lib/ref'
 import { CopyButton } from '../copy-button'
-import { shortenSHA } from '../../models/commit'
+import { shortenSHA, CommitOneLine } from '../../models/commit'
+import { getSubmoduleCommitsBetween } from '../../lib/git/submodule'
+import { Button } from '../lib/button'
 
 type SubmoduleItemIcon =
   | {
@@ -33,6 +35,9 @@ type SubmoduleItemIcon =
 
 interface ISubmoduleDiffProps {
   readonly onOpenSubmodule?: (fullPath: string) => void
+  readonly onInitializeSubmodule?: (submodulePath: string) => void
+  readonly onSyncSubmodule?: (submodulePath: string) => void
+  readonly onRollbackSubmodule?: (submodulePath: string) => void
   readonly diff: ISubmoduleDiff
 
   /**
@@ -43,9 +48,54 @@ interface ISubmoduleDiffProps {
   readonly readOnly: boolean
 }
 
-export class SubmoduleDiff extends React.Component<ISubmoduleDiffProps> {
+interface ISubmoduleDiffState {
+  readonly commits: ReadonlyArray<CommitOneLine>
+}
+
+export class SubmoduleDiff extends React.Component<
+  ISubmoduleDiffProps,
+  ISubmoduleDiffState
+> {
   public constructor(props: ISubmoduleDiffProps) {
     super(props)
+    this.state = { commits: [] }
+  }
+
+  public async componentDidMount() {
+    const { diff } = this.props
+    if (diff.oldSHA !== null && diff.newSHA !== null) {
+      try {
+        const commits = await getSubmoduleCommitsBetween(
+          diff.fullPath,
+          diff.oldSHA,
+          diff.newSHA
+        )
+        this.setState({ commits })
+      } catch {
+        // submodule may not be initialized; silently skip
+      }
+    }
+  }
+
+  public async componentDidUpdate(prevProps: ISubmoduleDiffProps) {
+    const { diff } = this.props
+    const prev = prevProps.diff
+    if (diff.oldSHA !== prev.oldSHA || diff.newSHA !== prev.newSHA) {
+      if (diff.oldSHA !== null && diff.newSHA !== null) {
+        try {
+          const commits = await getSubmoduleCommitsBetween(
+            diff.fullPath,
+            diff.oldSHA,
+            diff.newSHA
+          )
+          this.setState({ commits })
+        } catch {
+          this.setState({ commits: [] })
+        }
+      } else {
+        this.setState({ commits: [] })
+      }
+    }
   }
 
   public render() {
@@ -59,7 +109,9 @@ export class SubmoduleDiff extends React.Component<ISubmoduleDiffProps> {
           </div>
           {this.renderSubmoduleInfo()}
           {this.renderCommitChangeInfo()}
+          {this.renderCommitHistory()}
           {this.renderSubmodulesChangesInfo()}
+          {this.renderQuickActions()}
           {this.renderOpenSubmoduleAction()}
         </div>
       </div>
@@ -135,6 +187,29 @@ export class SubmoduleDiff extends React.Component<ISubmoduleDiffProps> {
     return null
   }
 
+  private renderCommitHistory() {
+    const { commits } = this.state
+    if (commits.length === 0) {
+      return null
+    }
+
+    return (
+      <div className="item submodule-commit-history">
+        <Octicon symbol={octicons.gitCommit} className="info-icon" />
+        <div className="content">
+          <p>Commits included in this change:</p>
+          <ul className="submodule-commits">
+            {commits.map(c => (
+              <li key={c.sha}>
+                <Ref>{shortenSHA(c.sha)}</Ref> {c.summary}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    )
+  }
+
   private renderCommitSHA(sha: string, which?: 'previous' | 'new') {
     const whichInfix = which === undefined ? '' : ` ${which}`
 
@@ -170,6 +245,58 @@ export class SubmoduleDiff extends React.Component<ISubmoduleDiffProps> {
         inside of the submodule before they can be part of the parent
         repository.
       </>
+    )
+  }
+
+  private renderQuickActions() {
+    const {
+      diff,
+      readOnly,
+      onInitializeSubmodule,
+      onSyncSubmodule,
+      onRollbackSubmodule,
+    } = this.props
+
+    const showInitialize =
+      diff.entryStatus === 'uninitialized' && onInitializeSubmodule !== undefined
+    const showSync = diff.url !== null && onSyncSubmodule !== undefined
+    const showRollback =
+      !readOnly &&
+      diff.oldSHA !== null &&
+      diff.newSHA !== null &&
+      onRollbackSubmodule !== undefined
+
+    if (!showInitialize && !showSync && !showRollback) {
+      return null
+    }
+
+    return (
+      <div className="item submodule-actions">
+        <Octicon symbol={octicons.zap} className="info-icon" />
+        <div className="content submodule-action-buttons">
+          {showInitialize && (
+            <Button
+              onClick={() => onInitializeSubmodule!(diff.path)}
+              type="button"
+            >
+              Initialize
+            </Button>
+          )}
+          {showSync && (
+            <Button onClick={() => onSyncSubmodule!(diff.path)} type="button">
+              Sync
+            </Button>
+          )}
+          {showRollback && (
+            <Button
+              onClick={() => onRollbackSubmodule!(diff.path)}
+              type="button"
+            >
+              Rollback
+            </Button>
+          )}
+        </div>
+      </div>
     )
   }
 

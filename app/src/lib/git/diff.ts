@@ -28,6 +28,7 @@ import { forceUnwrap } from '../fatal-error'
 import { git } from './core'
 import { NullTreeSHA } from './diff-index'
 import { GitError } from 'dugite'
+import { listSubmodules } from './submodule'
 import { IChangesetData, parseRawLogWithNumstat } from './log'
 import { getConfigValue } from './config'
 import { getMergeBase } from './merge'
@@ -678,6 +679,10 @@ async function buildSubmoduleDiff(
     newSHA = lineMatch(newSHARegex)
   }
 
+  const submodules = await listSubmodules(repository)
+  const entry = submodules.find(s => s.path === path)
+  const entryStatus = entry?.status ?? 'initialized'
+
   return {
     kind: DiffType.Submodule,
     fullPath,
@@ -686,6 +691,7 @@ async function buildSubmoduleDiff(
     status,
     oldSHA,
     newSHA,
+    entryStatus,
   }
 }
 

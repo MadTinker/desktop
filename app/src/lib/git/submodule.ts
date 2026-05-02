@@ -2,7 +2,7 @@ import * as Path from 'path'
 
 import { git, IGitStringExecutionOptions } from './core'
 import { Repository } from '../../models/repository'
-import { SubmoduleEntry } from '../../models/submodule'
+import { SubmoduleEntry, SubmoduleEntryStatus } from '../../models/submodule'
 import { pathExists } from '../../ui/lib/path-exists'
 import { executionOptionsWithProgress, IGitOutput } from '../progress'
 import {
@@ -12,6 +12,7 @@ import {
 import { AuthenticationErrors } from './authentication'
 import { IRemote } from '../../models/remote'
 import { Progress } from '../../models/progress'
+import { CommitOneLine } from '../../models/commit'
 
 /**
  * Update submodules after a git operation.
@@ -172,10 +173,11 @@ export async function listSubmodules(
   // about it if you want to learn more:
   //
   // https://git-scm.com/docs/git-describe
-  const statusRe = /^.([^ ]+) (.+) \((.+?)\)$/gm
+  const statusRe = /^(.)([^ ]+) (.+) \((.+?)\)$/gm
 
-  for (const [, sha, path, describe] of stdout.matchAll(statusRe)) {
-    submodules.push(new SubmoduleEntry(sha, path, describe))
+  for (const [, statusChar, sha, path, describe] of stdout.matchAll(statusRe)) {
+    const status = charToSubmoduleStatus(statusChar)
+    submodules.push(new SubmoduleEntry(sha, path, describe, status))
   }
 
   return submodules
@@ -194,4 +196,74 @@ export async function resetSubmodulePaths(
     repository.path,
     'updateSubmodule'
   )
+}
+
+function charToSubmoduleStatus(char: string): SubmoduleEntryStatus {
+  switch (char) {
+    case '-':
+      return 'uninitialized'
+    case '+':
+      return 'modified'
+    case 'U':
+      return 'conflict'
+    default:
+      return 'initialized'
+  }
+}
+
+/** Initialize an uninitialized submodule at the given relative path. */
+export async function initSubmodule(
+  repository: Repository,
+  submodulePath: string
+): Promise<void> {
+  await git(
+    ['submodule', 'update', '--init', '--', submodulePath],
+    repository.path,
+    'initSubmodule'
+  )
+}
+
+/** Sync and update a submodule at the given relative path. */
+export async function syncSubmodule(
+  repository: Repository,
+  submodulePath: string
+): Promise<void> {
+  await git(
+    ['submodule', 'sync', '--', submodulePath],
+    repository.path,
+    'syncSubmodule'
+  )
+  await git(
+    ['submodule', 'update', '--recursive', '--', submodulePath],
+    repository.path,
+    'syncSubmoduleUpdate'
+  )
+}
+
+/**
+ * Return commits between two SHAs in a submodule directory.
+ * Runs `git log --oneline oldSHA..newSHA` inside the submodule.
+ */
+export async function getSubmoduleCommitsBetween(
+  submodulePath: string,
+  oldSHA: string,
+  newSHA: string
+): Promise<ReadonlyArray<CommitOneLine>> {
+  const { stdout } = await git(
+    ['log', '--oneline', `${oldSHA}..${newSHA}`],
+    submodulePath,
+    'getSubmoduleCommitsBetween',
+    { successExitCodes: new Set([0, 128]) }
+  )
+
+  return stdout
+    .split('\n')
+    .filter(line => line.length > 0)
+    .map(line => {
+      const spaceIndex = line.indexOf(' ')
+      return {
+        sha: line.substring(0, spaceIndex),
+        summary: line.substring(spaceIndex + 1),
+      }
+    })
 }

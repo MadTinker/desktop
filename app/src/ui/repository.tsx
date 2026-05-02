@@ -615,6 +615,9 @@ export class RepositoryView extends React.Component<
           showDiffCheckMarks={this.props.showDiffCheckMarks}
           onOpenBinaryFile={this.onOpenBinaryFile}
           onOpenSubmodule={this.onOpenSubmodule}
+          onInitializeSubmodule={this.onInitializeSubmodule}
+          onSyncSubmodule={this.onSyncSubmodule}
+          onRollbackSubmodule={this.onRollbackSubmodule}
           onChangeImageDiffType={this.onChangeImageDiffType}
           askForConfirmationOnDiscardChanges={
             this.props.askForConfirmationOnDiscardChanges
@@ -632,6 +635,27 @@ export class RepositoryView extends React.Component<
   private onOpenSubmodule = (fullPath: string) => {
     this.props.dispatcher.incrementMetric('openSubmoduleFromDiffCount')
     this.props.dispatcher.openOrAddRepository(fullPath)
+  }
+
+  private onInitializeSubmodule = (submodulePath: string) => {
+    this.props.dispatcher.initSubmodule(
+      this.props.repository,
+      submodulePath
+    )
+  }
+
+  private onSyncSubmodule = (submodulePath: string) => {
+    this.props.dispatcher.syncSubmodule(
+      this.props.repository,
+      submodulePath
+    )
+  }
+
+  private onRollbackSubmodule = (submodulePath: string) => {
+    this.props.dispatcher.rollbackSubmodule(
+      this.props.repository,
+      submodulePath
+    )
   }
 
   private onChangeImageDiffType = (imageDiffType: ImageDiffType) => {

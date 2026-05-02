@@ -216,6 +216,9 @@ import {
   getFilesDiffText,
   TerminalOutput,
   HookProgress,
+  resetSubmodulePaths,
+  initSubmodule,
+  syncSubmodule,
 } from '../git'
 import {
   installGlobalLFSFilters,
@@ -8996,6 +8999,48 @@ export class AppStore extends TypedBaseStore<IAppState> {
     setBoolean(showChangesFilterKey, this.showChangesFilter)
     this.updateMenuLabelsForSelectedRepository()
     this.emitUpdate()
+  }
+
+  public async _initSubmodule(
+    repository: Repository,
+    submodulePath: string
+  ): Promise<void> {
+    try {
+      await initSubmodule(repository, submodulePath)
+    } catch (e) {
+      log.error(`Failed to initialize submodule at ${submodulePath}`, e)
+      this.emitError(e)
+      return
+    }
+    return this._refreshRepository(repository)
+  }
+
+  public async _syncSubmodule(
+    repository: Repository,
+    submodulePath: string
+  ): Promise<void> {
+    try {
+      await syncSubmodule(repository, submodulePath)
+    } catch (e) {
+      log.error(`Failed to sync submodule at ${submodulePath}`, e)
+      this.emitError(e)
+      return
+    }
+    return this._refreshRepository(repository)
+  }
+
+  public async _rollbackSubmodule(
+    repository: Repository,
+    submodulePath: string
+  ): Promise<void> {
+    try {
+      await resetSubmodulePaths(repository, [submodulePath])
+    } catch (e) {
+      log.error(`Failed to roll back submodule at ${submodulePath}`, e)
+      this.emitError(e)
+      return
+    }
+    return this._refreshRepository(repository)
   }
 }
 

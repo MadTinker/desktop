@@ -4148,4 +4148,28 @@ export class Dispatcher {
       this.postError(e)
     }
   }
+
+  /** Initialize an uninitialized submodule. */
+  public initSubmodule(
+    repository: Repository,
+    submodulePath: string
+  ): Promise<void> {
+    return this.appStore._initSubmodule(repository, submodulePath)
+  }
+
+  /** Sync a submodule (sync URL then update). */
+  public syncSubmodule(
+    repository: Repository,
+    submodulePath: string
+  ): Promise<void> {
+    return this.appStore._syncSubmodule(repository, submodulePath)
+  }
+
+  /** Roll back a submodule to the commit recorded in the parent index. */
+  public rollbackSubmodule(
+    repository: Repository,
+    submodulePath: string
+  ): Promise<void> {
+    return this.appStore._rollbackSubmodule(repository, submodulePath)
+  }
 }

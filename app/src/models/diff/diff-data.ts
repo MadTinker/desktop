@@ -1,6 +1,7 @@
 import { DiffHunk } from './raw-diff'
 import { Image } from './image'
 import { SubmoduleStatus } from '../status'
+import { SubmoduleEntryStatus } from '../submodule'
 /**
  * V8 has a limit on the size of string it can create, and unless we want to
  * trigger an unhandled exception we need to do the encoding conversion by hand
@@ -108,6 +109,9 @@ export interface ISubmoduleDiff {
 
   /** New SHA of the submodule, or null if it hasn't changed */
   readonly newSHA: string | null
+
+  /** Initialization state from git submodule status */
+  readonly entryStatus: SubmoduleEntryStatus
 }
 
 export interface ILargeTextDiff extends ITextDiffData {
