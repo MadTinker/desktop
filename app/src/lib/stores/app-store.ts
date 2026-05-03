@@ -3781,6 +3781,8 @@ export class AppStore extends TypedBaseStore<IAppState> {
         includingStatus: false,
         clearPartialState: false,
       })
+    } else if (section === RepositorySectionTab.Reflog) {
+      refreshSectionPromise = this.refreshReflogSection(repository)
     } else {
       return assertNever(section, `Unknown section: ${section}`)
     }
