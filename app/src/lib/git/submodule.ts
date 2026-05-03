@@ -4,14 +4,20 @@ import { git, IGitStringExecutionOptions } from './core'
 import { Repository } from '../../models/repository'
 import { SubmoduleEntry, SubmoduleEntryStatus } from '../../models/submodule'
 import { pathExists } from '../../ui/lib/path-exists'
-import { executionOptionsWithProgress, IGitOutput } from '../progress'
+import {
+  executionOptionsWithProgress,
+  IGitOutput,
+  PushProgressParser,
+  PullProgressParser,
+} from '../progress'
 import {
   envForRemoteOperation,
   getFallbackUrlForProxyResolve,
 } from './environment'
 import { AuthenticationErrors } from './authentication'
+import { getRemotes } from './remote'
 import { IRemote } from '../../models/remote'
-import { Progress } from '../../models/progress'
+import { Progress, IPushProgress, IPullProgress } from '../../models/progress'
 import { CommitOneLine } from '../../models/commit'
 
 /**
@@ -238,6 +244,148 @@ export async function syncSubmodule(
     repository.path,
     'syncSubmoduleUpdate'
   )
+}
+
+/**
+ * Push a single submodule to its configured upstream remote.
+ *
+ * Creates a lightweight Repository for the submodule path, resolves the
+ * first available remote (preferring `origin`), then runs `git push` inside
+ * the submodule working tree with optional progress reporting.  Submodules
+ * with no configured remotes are silently skipped.
+ */
+export async function pushSubmodule(
+  repository: Repository,
+  submodulePath: string,
+  progressCallback?: (progress: IPushProgress) => void
+): Promise<void> {
+  const submoduleRepo = new Repository(
+    Path.join(repository.path, submodulePath),
+    -1,
+    null,
+    false
+  )
+
+  const remotes = await getRemotes(submoduleRepo)
+  if (remotes.length === 0) {
+    return
+  }
+
+  const remote = remotes.find(r => r.name === 'origin') ?? remotes[0]
+  const args = ['push']
+
+  let opts: IGitStringExecutionOptions = {
+    env: await envForRemoteOperation(remote.url),
+    expectedErrors: AuthenticationErrors,
+  }
+
+  if (progressCallback) {
+    args.push('--progress')
+    const title = `Pushing ${submodulePath}`
+    const kind = 'push'
+
+    opts = await executionOptionsWithProgress(
+      { ...opts, trackLFSProgress: true },
+      new PushProgressParser(),
+      progress => {
+        const description =
+          progress.kind === 'progress' ? progress.details.text : progress.text
+        progressCallback({
+          kind,
+          title,
+          description,
+          value: progress.percent,
+          remote: remote.name,
+          branch: submodulePath,
+          submodule: submodulePath,
+        })
+      }
+    )
+
+    progressCallback({
+      kind: 'push',
+      title,
+      value: 0,
+      remote: remote.name,
+      branch: submodulePath,
+      submodule: submodulePath,
+    })
+  }
+
+  await git(args, submoduleRepo.path, 'pushSubmodule', opts)
+}
+
+/**
+ * Pull a single submodule from its configured upstream remote.
+ *
+ * Mirrors pushSubmodule: resolves `origin` (or the first available remote),
+ * then runs `git pull --ff --progress` inside the submodule working tree.
+ * Submodules with no configured remotes are silently skipped.
+ */
+export async function pullSubmodule(
+  repository: Repository,
+  submodulePath: string,
+  progressCallback?: (progress: IPullProgress) => void
+): Promise<void> {
+  const submoduleRepo = new Repository(
+    Path.join(repository.path, submodulePath),
+    -1,
+    null,
+    false
+  )
+
+  const remotes = await getRemotes(submoduleRepo)
+  if (remotes.length === 0) {
+    return
+  }
+
+  const remote = remotes.find(r => r.name === 'origin') ?? remotes[0]
+  const args = ['pull', '--ff']
+
+  let opts: IGitStringExecutionOptions = {
+    env: await envForRemoteOperation(remote.url),
+    expectedErrors: AuthenticationErrors,
+  }
+
+  if (progressCallback) {
+    args.push('--progress')
+    const title = `Pulling ${submodulePath}`
+    const kind = 'pull'
+
+    opts = await executionOptionsWithProgress(
+      { ...opts, trackLFSProgress: true },
+      new PullProgressParser(),
+      progress => {
+        if (progress.kind === 'context') {
+          if (!progress.text.startsWith('remote: Counting objects')) {
+            return
+          }
+        }
+
+        const description =
+          progress.kind === 'progress' ? progress.details.text : progress.text
+
+        progressCallback({
+          kind,
+          title,
+          description,
+          value: progress.percent,
+          remote: remote.name,
+          submodule: submodulePath,
+        })
+      }
+    )
+
+    progressCallback({
+      kind: 'pull',
+      title,
+      value: 0,
+      remote: remote.name,
+      submodule: submodulePath,
+    })
+  }
+
+  await git(args, submoduleRepo.path, 'pullSubmodule', opts)
 }
 
 /**

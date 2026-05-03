@@ -25,6 +25,7 @@ import { DefaultCommitMessage } from '../../models/commit-message'
 import { sendNonFatalException } from '../helpers/non-fatal-exception'
 import { IStatsStore } from '../stats'
 import { RepoRulesInfo } from '../../models/repo-rules'
+import { IReflogEntry } from '../../models/reflog-entry'
 
 export class RepositoryStateCache {
   private readonly repositoryState = new Map<string, IRepositoryState>()
@@ -378,5 +379,6 @@ function getInitialRepositoryState(): IRepositoryState {
     skipCommitHooks: false,
     signOffCommits: false,
     allowEmptyCommit: false,
+    reflogEntries: new Array<IReflogEntry>(),
   }
 }

@@ -73,10 +73,13 @@ export interface IPullProgress extends IProgress {
    * The remote that's being pulled from
    */
   readonly remote: string
+
+  /** When pulling submodules individually, the submodule path currently being pulled */
+  readonly submodule?: string
 }
 
 /**
- * An object describing the progression of a pull operation
+ * An object describing the progression of a push operation
  */
 export interface IPushProgress extends IProgress {
   kind: 'push'
@@ -90,6 +93,9 @@ export interface IPushProgress extends IProgress {
    * The branch that's being pushed
    */
   readonly branch: string
+
+  /** When pushing submodules individually, the submodule path currently being pushed */
+  readonly submodule?: string
 }
 
 /**

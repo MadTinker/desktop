@@ -1604,6 +1604,7 @@ export class App extends React.Component<IAppProps, IAppState> {
             customShell={this.state.customShell}
             repositoryIndicatorsEnabled={this.state.repositoryIndicatorsEnabled}
             autoSwitchOnChangesEnabled={this.state.autoSwitchOnChangesEnabled}
+            showReflogTab={this.state.showReflogTab}
             onEditGlobalGitConfig={this.editGlobalGitConfig}
             underlineLinks={this.state.underlineLinks}
             showDiffCheckMarks={this.state.showDiffCheckMarks}
@@ -3551,6 +3552,7 @@ export class App extends React.Component<IAppProps, IAppState> {
           onCherryPick={this.startCherryPickWithoutBranch}
           pullRequestSuggestedNextAction={state.pullRequestSuggestedNextAction}
           showChangesFilter={state.showChangesFilter}
+          showReflogTab={state.showReflogTab}
           shouldShowGenerateCommitMessageCallOut={
             !this.state.commitMessageGenerationButtonClicked
           }

@@ -53,6 +53,7 @@ import type {
   IChangesetData,
   TerminalOutputListener,
 } from './git'
+import { IReflogEntry } from '../models/reflog-entry'
 
 export interface IHookLogEntry {
   readonly id: string
@@ -354,6 +355,9 @@ export interface IAppState {
   /** Whether the app should auto-switch to repos with new changes */
   readonly autoSwitchOnChangesEnabled: boolean
 
+  /** Whether to show the Reflog tab in the repository sidebar */
+  readonly showReflogTab: boolean
+
   /**
    * Whether or not the app should use spell check on commit summary and description
    */
@@ -470,6 +474,7 @@ export type Foldout =
 export enum RepositorySectionTab {
   Changes,
   History,
+  Reflog,
 }
 
 /**
@@ -662,6 +667,9 @@ export interface IRepositoryState {
    * This option resets to false after each commit.
    */
   readonly allowEmptyCommit: boolean
+
+  /** Reflog entries loaded when the Reflog tab is selected. Empty until first load. */
+  readonly reflogEntries: ReadonlyArray<IReflogEntry>
 }
 
 export type CommitOptions = Pick<

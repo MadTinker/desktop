@@ -1,5 +1,6 @@
 import { git } from './core'
 import { Repository } from '../../models/repository'
+import { IReflogEntry } from '../../models/reflog-entry'
 
 /**
  * Get the `limit` most recently checked out branches.
@@ -124,4 +125,48 @@ export async function getBranchCheckouts(
   }
 
   return checkouts
+}
+
+/**
+ * Return the `limit` most recent reflog entries for the repository.
+ *
+ * Format: `%H %h %gd %gI %gs`
+ * - `%H` / `%h` — full/short SHA (no spaces)
+ * - `%gd` — reflog selector, e.g. "HEAD@{0}" (no spaces)
+ * - `%gI` — ISO 8601 strict date (no spaces)
+ * - `%gs` — reflog subject (may contain spaces; kept as the final field)
+ */
+export async function getReflog(
+  repository: Repository,
+  limit: number = 100
+): Promise<ReadonlyArray<IReflogEntry>> {
+  const result = await git(
+    ['reflog', '--format=%H %h %gd %gI %gs', '-n', String(limit)],
+    repository.path,
+    'getReflog',
+    { successExitCodes: new Set([0, 128]) }
+  )
+
+  if (result.exitCode === 128) {
+    return []
+  }
+
+  const entries: IReflogEntry[] = []
+  for (const line of result.stdout.split('\n')) {
+    if (!line.trim()) {
+      continue
+    }
+    const [sha, shortSha, selector, dateStr, ...rest] = line.split(' ')
+    if (!sha || !shortSha) {
+      continue
+    }
+    entries.push({
+      sha,
+      shortSha,
+      selector: selector ?? '',
+      description: rest.join(' '),
+      date: new Date(dateStr),
+    })
+  }
+  return entries
 }

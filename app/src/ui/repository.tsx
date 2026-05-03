@@ -4,6 +4,7 @@ import { Commit, CommitOneLine } from '../models/commit'
 import { TipState } from '../models/tip'
 import { UiView } from './ui-view'
 import { Changes, ChangesSidebar } from './changes'
+import { ReflogSidebar } from './reflog'
 import { NoChanges } from './changes/no-changes'
 import { MultipleSelection } from './changes/multiple-selection'
 import { FilesChangedBadge } from './changes/files-changed-badge'
@@ -117,6 +118,9 @@ interface IRepositoryViewProps {
   /** Whether or not to show the changes filter */
   readonly showChangesFilter: boolean
 
+  /** Whether to show the Reflog tab */
+  readonly showReflogTab: boolean
+
   /**
    * Whether there are any hooks in the repository that could be
    * skipped during commit with the --no-verify flag
@@ -157,6 +161,7 @@ interface IRepositoryViewState {
 const enum Tab {
   Changes = 0,
   History = 1,
+  Reflog = 2,
 }
 
 export class RepositoryView extends React.Component<
@@ -221,10 +226,13 @@ export class RepositoryView extends React.Component<
   }
 
   private renderTabs(): JSX.Element {
+    const { selectedSection } = this.props.state
     const selectedTab =
-      this.props.state.selectedSection === RepositorySectionTab.Changes
+      selectedSection === RepositorySectionTab.Changes
         ? Tab.Changes
-        : Tab.History
+        : selectedSection === RepositorySectionTab.Reflog
+          ? Tab.Reflog
+          : Tab.History
 
     return (
       <TabBar selectedIndex={selectedTab} onTabClicked={this.onTabClicked}>
@@ -236,6 +244,12 @@ export class RepositoryView extends React.Component<
         <div className="with-indicator" id="history-tab">
           <span>History</span>
         </div>
+
+        {this.props.showReflogTab && (
+          <div className="with-indicator" id="reflog-tab">
+            <span>Reflog</span>
+          </div>
+        )}
       </TabBar>
     )
   }
@@ -392,6 +406,10 @@ export class RepositoryView extends React.Component<
     )
   }
 
+  private renderReflogSidebar(): JSX.Element {
+    return <ReflogSidebar entries={this.props.state.reflogEntries} />
+  }
+
   private renderSidebarContents(): JSX.Element {
     const selectedSection = this.props.state.selectedSection
 
@@ -399,6 +417,8 @@ export class RepositoryView extends React.Component<
       return this.renderChangesSidebar()
     } else if (selectedSection === RepositorySectionTab.History) {
       return this.renderCompareSidebar()
+    } else if (selectedSection === RepositorySectionTab.Reflog) {
+      return this.renderReflogSidebar()
     } else {
       return assertNever(selectedSection, 'Unknown repository section')
     }
@@ -735,28 +755,36 @@ export class RepositoryView extends React.Component<
   }
 
   private changeTab() {
-    const section =
-      this.props.state.selectedSection === RepositorySectionTab.History
-        ? RepositorySectionTab.Changes
-        : RepositorySectionTab.History
-
-    this.props.dispatcher.changeRepositorySection(
-      this.props.repository,
-      section
-    )
+    const { selectedSection } = this.props.state
+    let next: RepositorySectionTab
+    if (selectedSection === RepositorySectionTab.Changes) {
+      next = RepositorySectionTab.History
+    } else if (
+      selectedSection === RepositorySectionTab.History &&
+      this.props.showReflogTab
+    ) {
+      next = RepositorySectionTab.Reflog
+    } else {
+      next = RepositorySectionTab.Changes
+    }
+    this.props.dispatcher.changeRepositorySection(this.props.repository, next)
   }
 
   private onTabClicked = (tab: Tab) => {
-    const section =
-      tab === Tab.History
-        ? RepositorySectionTab.History
-        : RepositorySectionTab.Changes
+    let section: RepositorySectionTab
+    if (tab === Tab.Changes) {
+      section = RepositorySectionTab.Changes
+    } else if (tab === Tab.Reflog) {
+      section = RepositorySectionTab.Reflog
+    } else {
+      section = RepositorySectionTab.History
+    }
 
     this.props.dispatcher.changeRepositorySection(
       this.props.repository,
       section
     )
-    if (!!section) {
+    if (section !== RepositorySectionTab.Changes) {
       this.props.dispatcher.updateCompareForm(this.props.repository, {
         showBranchList: false,
       })

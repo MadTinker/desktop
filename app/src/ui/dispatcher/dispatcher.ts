@@ -2780,6 +2780,10 @@ export class Dispatcher {
     this.appStore._setAutoSwitchOnChangesEnabled(enabled)
   }
 
+  public setShowReflogTab(value: boolean) {
+    this.appStore._setShowReflogTab(value)
+  }
+
   public setCommitSpellcheckEnabled(commitSpellcheckEnabled: boolean) {
     this.appStore._setCommitSpellcheckEnabled(commitSpellcheckEnabled)
   }

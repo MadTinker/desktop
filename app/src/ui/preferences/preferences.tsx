@@ -114,6 +114,7 @@ interface IPreferencesProps {
   readonly customShell: ICustomIntegration | null
   readonly repositoryIndicatorsEnabled: boolean
   readonly autoSwitchOnChangesEnabled: boolean
+  readonly showReflogTab: boolean
   readonly onEditGlobalGitConfig: () => void
   readonly underlineLinks: boolean
   readonly showDiffCheckMarks: boolean
@@ -166,6 +167,7 @@ interface IPreferencesState {
   readonly existingLockFilePath?: string
   readonly repositoryIndicatorsEnabled: boolean
   readonly autoSwitchOnChangesEnabled: boolean
+  readonly showReflogTab: boolean
 
   readonly initiallySelectedTheme: ApplicationTheme
   readonly initiallySelectedTabSize: number
@@ -242,6 +244,7 @@ export class Preferences extends React.Component<
       selectedShell: this.props.selectedShell,
       repositoryIndicatorsEnabled: this.props.repositoryIndicatorsEnabled,
       autoSwitchOnChangesEnabled: this.props.autoSwitchOnChangesEnabled,
+      showReflogTab: this.props.showReflogTab,
       initiallySelectedTheme: this.props.selectedTheme,
       initiallySelectedTabSize: this.props.selectedTabSize,
       isLoadingGitConfig: true,
@@ -670,6 +673,7 @@ export class Preferences extends React.Component<
             useExternalCredentialHelper={this.state.useExternalCredentialHelper}
             repositoryIndicatorsEnabled={this.state.repositoryIndicatorsEnabled}
             autoSwitchOnChangesEnabled={this.state.autoSwitchOnChangesEnabled}
+            showReflogTab={this.state.showReflogTab}
             onUseWindowsOpenSSHChanged={this.onUseWindowsOpenSSHChanged}
             onOptOutofReportingChanged={this.onOptOutofReportingChanged}
             onUseExternalCredentialHelperChanged={
@@ -681,6 +685,7 @@ export class Preferences extends React.Component<
             onAutoSwitchOnChangesEnabledChanged={
               this.onAutoSwitchOnChangesEnabledChanged
             }
+            onShowReflogTabChanged={this.onShowReflogTabChanged}
           />
         )
         break
@@ -720,6 +725,10 @@ export class Preferences extends React.Component<
     autoSwitchOnChangesEnabled: boolean
   ) => {
     this.setState({ autoSwitchOnChangesEnabled })
+  }
+
+  private onShowReflogTabChanged = (showReflogTab: boolean) => {
+    this.setState({ showReflogTab })
   }
 
   private onLockFileDeleted = () => {
@@ -981,6 +990,10 @@ export class Preferences extends React.Component<
         dispatcher.setAutoSwitchOnChangesEnabled(
           this.state.autoSwitchOnChangesEnabled
         )
+      }
+
+      if (this.props.showReflogTab !== this.state.showReflogTab) {
+        dispatcher.setShowReflogTab(this.state.showReflogTab)
       }
 
       if (this.state.hooksPreferencesDirty) {

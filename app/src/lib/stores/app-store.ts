@@ -228,6 +228,10 @@ import {
   resetSubmodulePaths,
   initSubmodule,
   syncSubmodule,
+  listSubmodules,
+  pushSubmodule,
+  pullSubmodule,
+  getReflog,
 } from '../git'
 import {
   installGlobalLFSFilters,
@@ -471,6 +475,7 @@ const shellKey = 'shell'
 
 const repositoryIndicatorsEnabledKey = 'enable-repository-indicators'
 const autoSwitchOnChangesKey = 'enable-auto-switch-on-changes'
+const showReflogTabKey = 'show-reflog-tab'
 
 // background fetching should occur hourly when Desktop is active, but this
 // lower interval ensures user interactions like switching repositories and
@@ -639,6 +644,8 @@ export class AppStore extends TypedBaseStore<IAppState> {
 
   private repositoryIndicatorsEnabled: boolean
 
+  private showReflogTab: boolean = false
+
   /** Which step the user needs to complete next in the onboarding tutorial */
   private currentOnboardingTutorialStep = TutorialStep.NotApplicable
   private readonly tutorialAssessor: OnboardingTutorialAssessor
@@ -755,6 +762,8 @@ export class AppStore extends TypedBaseStore<IAppState> {
     this.autoSwitchOnChangesEnabled =
       (getBoolean(autoSwitchOnChangesKey) ?? false) &&
       enableAutoSwitchOnChanges()
+
+    this.showReflogTab = getBoolean(showReflogTabKey, false)
 
     this.autoSwitchMonitor = new AutoSwitchMonitor(
       this.getRepositoriesForIndicatorRefresh,
@@ -1193,6 +1202,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
       currentOnboardingTutorialStep: this.currentOnboardingTutorialStep,
       repositoryIndicatorsEnabled: this.repositoryIndicatorsEnabled,
       autoSwitchOnChangesEnabled: this.autoSwitchOnChangesEnabled,
+      showReflogTab: this.showReflogTab,
       commitSpellcheckEnabled: this.commitSpellcheckEnabled,
       currentDragElement: this.currentDragElement,
       lastThankYou: this.lastThankYou,
@@ -3100,6 +3110,8 @@ export class AppStore extends TypedBaseStore<IAppState> {
         includingStatus: true,
         clearPartialState: false,
       })
+    } else if (selectedSection === RepositorySectionTab.Reflog) {
+      await this.refreshReflogSection(repository)
     }
 
     if (forceButtonFocus) {
@@ -3109,6 +3121,30 @@ export class AppStore extends TypedBaseStore<IAppState> {
       ) as HTMLButtonElement
       button?.focus()
     }
+  }
+
+  private async refreshReflogSection(repository: Repository): Promise<void> {
+    const entries = await getReflog(repository)
+    this.repositoryStateCache.update(repository, () => ({ reflogEntries: entries }))
+    this.emitUpdate()
+  }
+
+  public _setShowReflogTab(value: boolean): void {
+    setBoolean(showReflogTabKey, value)
+    this.showReflogTab = value
+
+    if (!value) {
+      for (const repo of this.repositories) {
+        const state = this.repositoryStateCache.get(repo)
+        if (state.selectedSection === RepositorySectionTab.Reflog) {
+          this.repositoryStateCache.update(repo, () => ({
+            selectedSection: RepositorySectionTab.History,
+          }))
+        }
+      }
+    }
+
+    this.emitUpdate()
   }
 
   /**
@@ -4833,17 +4869,27 @@ export class AppStore extends TypedBaseStore<IAppState> {
         branch: branch.name,
       })
 
-      // Let's say that a push takes roughly twice as long as a fetch,
-      // this is of course highly inaccurate.
+      // Discover initialized submodules so we can push them individually first.
+      const allSubmodules = await listSubmodules(repository)
+      const activeSubmodules = allSubmodules.filter(
+        s => s.status !== 'uninitialized'
+      )
+
+      // Weight budget: each submodule counts as 1 unit, main push 2.5, fetch 1.
+      // Reserve 10% of total for the refresh tail.
+      const submoduleWeight = activeSubmodules.length
       let pushWeight = 2.5
       let fetchWeight = 1
-
-      // Let's leave 10% at the end for refreshing
       const refreshWeight = 0.1
 
-      // Scale pull and fetch weights to be between 0 and 0.9.
-      const scale = (1 / (pushWeight + fetchWeight)) * (1 - refreshWeight)
+      const scale =
+        (1 / (submoduleWeight + pushWeight + fetchWeight)) * (1 - refreshWeight)
 
+      const scaledSubmoduleWeight = submoduleWeight * scale
+      const perSubmoduleWeight =
+        activeSubmodules.length > 0
+          ? scaledSubmoduleWeight / activeSubmodules.length
+          : 0
       pushWeight *= scale
       fetchWeight *= scale
 
@@ -4852,35 +4898,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
         repository,
       }
 
-      // This is most likely not necessary and is only here out of
-      // an abundance of caution. We're introducing support for
-      // automatically configuring Git proxies based on system
-      // proxy settings and therefore need to pass along the remote
-      // url to functions such as push, pull, fetch etc.
-      //
-      // Prior to this we relied primarily on the `branch.remote`
-      // property and used the `remote.name` as a fallback in case the
-      // branch object didn't have a remote name (i.e. if it's not
-      // published yet).
-      //
-      // The remote.name is derived from the current tip first and falls
-      // back to using the defaultRemote if the current tip isn't valid
-      // or if the current branch isn't published. There's however no
-      // guarantee that they'll be refreshed at the exact same time so
-      // there's a theoretical possibility that `branch.remote` and
-      // `remote.name` could be out of sync. I have no reason to suspect
-      // that's the case and if it is then we already have problems as
-      // the `fetchRemotes` call after the push already relies on the
-      // `remote` and not the `branch.remote`. All that said this is
-      // a critical path in the app and somehow breaking pushing would
-      // be near unforgivable so I'm introducing this `safeRemote`
-      // temporarily to ensure that there's no risk of us using an
-      // out of sync remote name while still providing envForRemoteOperation
-      // with an url to use when resolving proxies.
-      //
-      // I'm also adding a non fatal exception if this ever happens
-      // so that we can confidently remove this safeguard in a future
-      // release.
+      // See the comment in the original performPush for why we use safeRemote.
       const safeRemote: IRemote = { name: remoteName, url: remote.url }
 
       if (safeRemote.name !== remote.name) {
@@ -4894,6 +4912,21 @@ export class AppStore extends TypedBaseStore<IAppState> {
       await gitStore.performFailableOperation(
         async () => {
           let aborted = false
+
+          // Phase 1 — push each submodule individually before the main push.
+          let submoduleOffset = 0
+          for (const submodule of activeSubmodules) {
+            await pushSubmodule(repository, submodule.path, progress => {
+              this.updatePushPullFetchProgress(repository, {
+                ...progress,
+                title: pushTitle,
+                value: submoduleOffset + perSubmoduleWeight * progress.value,
+              })
+            })
+            submoduleOffset += perSubmoduleWeight
+          }
+
+          // Phase 2 — push the main repository.
           await pushRepo(
             repository,
             safeRemote,
@@ -4908,7 +4941,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
               this.updatePushPullFetchProgress(repository, {
                 ...progress,
                 title: pushTitle,
-                value: pushWeight * progress.value,
+                value: scaledSubmoduleWeight + pushWeight * progress.value,
               })
             }
           ).catch(err => (aborted ? undefined : Promise.reject(err)))
@@ -4922,14 +4955,18 @@ export class AppStore extends TypedBaseStore<IAppState> {
           await gitStore.fetchRemotes([safeRemote], false, fetchProgress => {
             this.updatePushPullFetchProgress(repository, {
               ...fetchProgress,
-              value: pushWeight + fetchProgress.value * fetchWeight,
+              value:
+                scaledSubmoduleWeight +
+                pushWeight +
+                fetchProgress.value * fetchWeight,
             })
           })
 
           const refreshTitle = __DARWIN__
             ? 'Refreshing Repository'
             : 'Refreshing repository'
-          const refreshStartProgress = pushWeight + fetchWeight
+          const refreshStartProgress =
+            scaledSubmoduleWeight + pushWeight + fetchWeight
 
           this.updatePushPullFetchProgress(repository, {
             kind: 'generic',
@@ -5104,17 +5141,29 @@ export class AppStore extends TypedBaseStore<IAppState> {
         })
 
         try {
-          // Let's say that a pull takes twice as long as a fetch,
-          // this is of course highly inaccurate.
+          // Discover initialized submodules so we can pull them individually
+          // before the main pull, providing per-submodule progress visibility.
+          const allSubmodules = await listSubmodules(repository)
+          const activeSubmodules = allSubmodules.filter(
+            s => s.status !== 'uninitialized'
+          )
+
+          // Weight budget: each submodule counts as 1 unit, main pull 2, fetch 1.
+          // Reserve 10% for the refresh tail.
+          const submoduleWeight = activeSubmodules.length
           let pullWeight = 2
           let fetchWeight = 1
-
-          // Let's leave 10% at the end for refreshing
           const refreshWeight = 0.1
 
-          // Scale pull and fetch weights to be between 0 and 0.9.
-          const scale = (1 / (pullWeight + fetchWeight)) * (1 - refreshWeight)
+          const scale =
+            (1 / (submoduleWeight + pullWeight + fetchWeight)) *
+            (1 - refreshWeight)
 
+          const scaledSubmoduleWeight = submoduleWeight * scale
+          const perSubmoduleWeight =
+            activeSubmodules.length > 0
+              ? scaledSubmoduleWeight / activeSubmodules.length
+              : 0
           pullWeight *= scale
           fetchWeight *= scale
 
@@ -5129,6 +5178,21 @@ export class AppStore extends TypedBaseStore<IAppState> {
             this.statsStore.increment('pullWithDefaultSettingCount')
           }
 
+          // Phase 1 — pull each submodule individually with per-submodule
+          // progress before the main pull's --recurse-submodules checkout.
+          let submoduleOffset = 0
+          for (const submodule of activeSubmodules) {
+            await pullSubmodule(repository, submodule.path, progress => {
+              this.updatePushPullFetchProgress(repository, {
+                ...progress,
+                title,
+                value: submoduleOffset + perSubmoduleWeight * progress.value,
+              })
+            })
+            submoduleOffset += perSubmoduleWeight
+          }
+
+          // Phase 2 — pull the main repository.
           let aborted = false
           const pullSucceeded = await gitStore
             .performFailableOperation(
@@ -5137,7 +5201,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
                   progressCallback: progress => {
                     this.updatePushPullFetchProgress(repository, {
                       ...progress,
-                      value: progress.value * pullWeight,
+                      value: scaledSubmoduleWeight + progress.value * pullWeight,
                     })
                   },
                   onHookFailure: (hookName, terminalOutput) =>
@@ -5175,7 +5239,8 @@ export class AppStore extends TypedBaseStore<IAppState> {
             )
           }
 
-          const refreshStartProgress = pullWeight + fetchWeight
+          const refreshStartProgress =
+            scaledSubmoduleWeight + pullWeight + fetchWeight
           const refreshTitle = __DARWIN__
             ? 'Refreshing Repository'
             : 'Refreshing repository'

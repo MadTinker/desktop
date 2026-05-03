@@ -12,11 +12,13 @@ interface IAdvancedPreferencesProps {
   readonly useExternalCredentialHelper: boolean
   readonly repositoryIndicatorsEnabled: boolean
   readonly autoSwitchOnChangesEnabled: boolean
+  readonly showReflogTab: boolean
   readonly onUseWindowsOpenSSHChanged: (checked: boolean) => void
   readonly onOptOutofReportingChanged: (checked: boolean) => void
   readonly onUseExternalCredentialHelperChanged: (checked: boolean) => void
   readonly onRepositoryIndicatorsEnabledChanged: (enabled: boolean) => void
   readonly onAutoSwitchOnChangesEnabledChanged: (enabled: boolean) => void
+  readonly onShowReflogTabChanged: (value: boolean) => void
 }
 
 interface IAdvancedPreferencesState {
@@ -75,6 +77,12 @@ export class Advanced extends React.Component<
     event: React.FormEvent<HTMLInputElement>
   ) => {
     this.props.onAutoSwitchOnChangesEnabledChanged(event.currentTarget.checked)
+  }
+
+  private onShowReflogTabChanged = (
+    event: React.FormEvent<HTMLInputElement>
+  ) => {
+    this.props.onShowReflogTabChanged(event.currentTarget.checked)
   }
 
   private onUseWindowsOpenSSHChanged = (
@@ -146,6 +154,16 @@ export class Advanced extends React.Component<
               </p>
             </div>
           )}
+        </div>
+        <div className="advanced-section">
+          <h2>Repository view</h2>
+          <Checkbox
+            label="Show Reflog tab in repository sidebar"
+            value={
+              this.props.showReflogTab ? CheckboxValue.On : CheckboxValue.Off
+            }
+            onChange={this.onShowReflogTabChanged}
+          />
         </div>
         <div className="advanced-section">
           <h2>Usage</h2>

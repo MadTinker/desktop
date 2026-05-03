@@ -52,26 +52,32 @@ Color palette selector in Preferences → Appearance. Theme strings context (`th
 
 ---
 
-## Phase 6: Stepped Push/Pull
+## Phase 6: Stepped Push/Pull ✅ DONE
 
-### 6A: Stepped Push
+### 6A: Stepped Push ✅
+`performPush()` in `app-store.ts` now calls `listSubmodules()` first, pushes each initialized submodule individually via `pushSubmodule()` (new helper in `lib/git/submodule.ts`), then pushes the parent. Weight budget distributes progress proportionally across submodule count + main push + fetch + refresh.
 
-Modify `app/src/lib/stores/app-store.ts` `performPush()`:
-1. Feature flag `enableSteppedSubmodulePush()` in `app/src/lib/feature-flag.ts`
-2. Before parent push: `listSubmodules()` → check each for unpushed commits → push individually with progress
-3. Then push parent
-4. Progress bar weighted: each subrepo + parent
+### 6B: Stepped Pull ✅
+`performPull()` mirrors 6A: per-submodule pull via `pullSubmodule()` before the main `pullRepo()` call. Same proportional weight scheme.
 
-### 6B: Stepped Pull (simple approach first)
+### 6C: Progress UI ✅
+`submodule?: string` added to `IPushProgress` and `IPullProgress` in `models/progress.ts`. Populated during stepped operations so the progress bar can name the submodule currently being processed.
 
-Keep `--recurse-submodules` on pull. Before pulling:
-1. Iterate submodules, fetch each individually with per-submodule progress
-2. Let pull's `--recurse-submodules` handle checkout
-3. Enriched progress descriptions: `"Pulling submodule: ui-components (2/5)"`
+---
 
-### 6C: Progress UI
+## Bonus: Reflog Tab ✅ DONE
 
-Add optional `submodule?: string` field to `IPushProgress`/`IPullProgress` in `app/src/models/progress.ts`. Existing progress bar shows submodule name during stepped operations.
+Feature-flagged third tab in the repository sidebar. Off by default; toggle at **Preferences → Advanced → "Show Reflog tab in repository sidebar"** (stored in `localStorage` key `show-reflog-tab`).
+
+- `models/reflog-entry.ts` — `IReflogEntry` interface
+- `lib/git/reflog.ts` — `getReflog(repo, limit=100)` via `git reflog --format=%H %h %gd %gI %gs`
+- `lib/app-state.ts` — `RepositorySectionTab.Reflog`, `IAppState.showReflogTab`, `IRepositoryState.reflogEntries`
+- `lib/stores/repository-state-cache.ts` — default `reflogEntries: []`
+- `lib/stores/app-store.ts` — `_setShowReflogTab()`, `refreshReflogSection()`, `_changeRepositorySection` Reflog case
+- `ui/reflog/reflog-sidebar.tsx` — list component with selector, description, short SHA, RelativeTime
+- `ui/repository.tsx` — conditional `Tab.Reflog = 2`, `renderReflogSidebar()`, updated `onTabClicked()` and Ctrl+Tab cycling
+- `ui/preferences/advanced.tsx` — "Repository view" section with checkbox
+- Full prop chain: `app.tsx` → `preferences.tsx` → `advanced.tsx`
 
 ---
 
@@ -89,15 +95,17 @@ Phase 2 (Hooks UI) ✅
 Phase 3 (Subrepo Tools) ✅
 Phase 4 (MadnessThemes) ✅
 Phase 5 (Auto-Switch Monitor) ✅
-Phase 6 (Stepped Push/Pull) ← next
-Phase 7 (Omnispindle MCP) ← after Phase 6
+Phase 6 (Stepped Push/Pull) ✅
+Bonus  (Reflog Tab) ✅
+Phase 7 (Omnispindle MCP) ← next
 ```
 
 ---
 
 ## Verification
 
-- **Phase 6**: Push repo with dirty submodules → progress shows per-submodule steps → all pushed in order
+- **Phase 6**: ✅ Push repo with dirty submodules → progress shows per-submodule steps → all pushed in order
+- **Reflog Tab**: ✅ Enable in Preferences → Advanced → click Reflog tab → entries load from `git reflog`
 - **Phase 7**: Sidebar shows live Omnispindle todo count/status via MCP
 - **Build**: `yarn build:dev` succeeds, app launches with "Madness Desktop" branding
 
