@@ -104,8 +104,11 @@ import {
 } from '../../ui/lib/application-theme'
 import {
   MadnessTheme,
+  MadnessPersonality,
   getPersistedMadnessTheme,
   setPersistedMadnessTheme,
+  getPersistedPersonality,
+  setPersistedPersonality,
 } from '../../ui/lib/madness-theme'
 import {
   getAppMenu,
@@ -625,6 +628,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
   private selectedTheme = ApplicationTheme.System
   private currentTheme: ApplicableTheme = ApplicationTheme.Light
   private selectedMadnessTheme: MadnessTheme = ''
+  private selectedPersonality: MadnessPersonality = ''
   private selectedTabSize = tabSizeDefault
 
   private useWindowsOpenSSH: boolean = false
@@ -1180,6 +1184,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
       selectedTheme: this.selectedTheme,
       currentTheme: this.currentTheme,
       selectedMadnessTheme: this.selectedMadnessTheme,
+      selectedPersonality: this.selectedPersonality,
       selectedTabSize: this.selectedTabSize,
       apiRepositories: this.apiRepositoriesStore.getState(),
       useWindowsOpenSSH: this.useWindowsOpenSSH,
@@ -2416,6 +2421,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
     setPersistedTheme(this.selectedTheme)
 
     this.selectedMadnessTheme = getPersistedMadnessTheme()
+    this.selectedPersonality = getPersistedPersonality()
 
     this.currentTheme = await getCurrentlyAppliedTheme()
 
@@ -7277,6 +7283,14 @@ export class AppStore extends TypedBaseStore<IAppState> {
   public _setSelectedMadnessTheme(theme: MadnessTheme) {
     setPersistedMadnessTheme(theme)
     this.selectedMadnessTheme = theme
+    this.emitUpdate()
+
+    return Promise.resolve()
+  }
+
+  public _setSelectedPersonality(personality: MadnessPersonality) {
+    setPersistedPersonality(personality)
+    this.selectedPersonality = personality
     this.emitUpdate()
 
     return Promise.resolve()

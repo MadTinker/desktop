@@ -1,7 +1,8 @@
 #!/usr/bin/env node
-// Converts MadnessThemes JSON color files → SCSS CSS variable overrides.
+// Converts MadnessThemes JSON files into:
+//   1. SCSS CSS variable overrides (from *-colors.json)
+//   2. TypeScript personality strings module (from *.json excluding *-colors.json)
 // Run: node scripts/generate-madness-themes.js
-// Output: app/styles/themes/_madness-<name>.scss + _madness-index.scss
 
 const fs = require('fs')
 const path = require('path')
@@ -126,7 +127,96 @@ function generateScss(themeName, displayName, colors) {
   ].join('\n')
 }
 
+// --- Personality strings extraction ---
+
+const STRINGS_OUT = path.join(__dirname, '../app/src/ui/lib/madness-theme-strings.ts')
+
+// Keys we extract from the `common` section of each personality JSON
+const STRING_KEYS = [
+  'save', 'cancel', 'close', 'edit', 'delete', 'reset', 'refresh',
+  'loading', 'error', 'success', 'failed', 'confirm',
+  'search', 'filter', 'clear', 'apply',
+]
+
+// Fallback English defaults (from standard.json)
+const DEFAULTS = {
+  save: 'Save', cancel: 'Cancel', close: 'Close', edit: 'Edit',
+  delete: 'Delete', reset: 'Reset', refresh: 'Refresh',
+  loading: 'Loading...', error: 'An error occurred', success: 'Success!',
+  failed: 'Operation failed', confirm: 'Confirm',
+  search: 'Search', filter: 'Filter', clear: 'Clear', apply: 'Apply',
+}
+
+function generatePersonalityStrings() {
+  // Glob personality JSONs (everything except *-colors.json)
+  const allJson = glob.sync(path.join(THEMES_DIR, '*.json'))
+  const personalityFiles = allJson.filter(f => !f.includes('-colors.json'))
+
+  if (personalityFiles.length === 0) {
+    console.warn('No personality JSON files found, skipping strings generation.')
+    return
+  }
+
+  const entries = {}
+
+  for (const file of personalityFiles) {
+    const data = JSON.parse(fs.readFileSync(file, 'utf8'))
+    const name = data.themeName
+    if (!name || !data.common) {
+      console.warn(`Skipping personality ${file}: missing themeName or common`)
+      continue
+    }
+
+    const strings = {}
+    for (const key of STRING_KEYS) {
+      strings[key] = data.common[key] || DEFAULTS[key]
+    }
+    entries[name] = strings
+  }
+
+  const interfaceFields = STRING_KEYS.map(k => `  ${k}: string`).join('\n')
+
+  const defaultLines = STRING_KEYS
+    .map(k => `  ${k}: ${JSON.stringify(DEFAULTS[k])}`)
+    .join(',\n')
+
+  const entryBlocks = Object.entries(entries)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([name, strings]) => {
+      const fields = STRING_KEYS
+        .map(k => `    ${k}: ${JSON.stringify(strings[k])}`)
+        .join(',\n')
+      return `  ${JSON.stringify(name)}: {\n${fields},\n  }`
+    })
+    .join(',\n')
+
+  const ts = `// Auto-generated from MadnessThemes personality JSONs — do not edit
+
+export interface ThemeStrings {
+${interfaceFields}
+}
+
+export const defaultStrings: ThemeStrings = {
+${defaultLines},
+}
+
+export const personalityStrings: Record<string, ThemeStrings> = {
+${entryBlocks},
+}
+
+export function getThemeStrings(personality: string): ThemeStrings {
+  return personalityStrings[personality] ?? defaultStrings
+}
+`
+
+  fs.writeFileSync(STRINGS_OUT, ts)
+  console.log(`  wrote ${path.relative(process.cwd(), STRINGS_OUT)} (${Object.keys(entries).length} personalities)`)
+}
+
+// --- Main ---
+
 function main() {
+  // Pass 1: SCSS color themes
   const files = glob.sync(path.join(THEMES_DIR, '*-colors.json'))
 
   if (files.length === 0) {
@@ -165,7 +255,11 @@ function main() {
   const indexFile = path.join(OUT_DIR, '_madness-index.scss')
   fs.writeFileSync(indexFile, indexContent)
   console.log(`  wrote ${path.relative(process.cwd(), indexFile)}`)
-  console.log(`Done. Generated ${generated.length} themes.`)
+  console.log(`Done. Generated ${generated.length} color themes.`)
+
+  // Pass 2: Personality strings
+  console.log()
+  generatePersonalityStrings()
 }
 
 main()

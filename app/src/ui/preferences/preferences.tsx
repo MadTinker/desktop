@@ -21,7 +21,7 @@ import {
 } from '../lib/identifier-rules'
 import { Appearance } from './appearance'
 import { ApplicationTheme } from '../lib/application-theme'
-import { MadnessTheme } from '../lib/madness-theme'
+import { MadnessTheme, MadnessPersonality } from '../lib/madness-theme'
 import { OkCancelButtonGroup } from '../dialog/ok-cancel-button-group'
 import { Integrations } from './integrations'
 import {
@@ -106,6 +106,7 @@ interface IPreferencesProps {
   readonly selectedShell: Shell
   readonly selectedTheme: ApplicationTheme
   readonly selectedMadnessTheme: MadnessTheme
+  readonly selectedPersonality: MadnessPersonality
   readonly selectedTabSize: number
   readonly useCustomEditor: boolean
   readonly customEditor: ICustomIntegration | null
@@ -583,6 +584,8 @@ export class Preferences extends React.Component<
             onSelectedThemeChanged={this.onSelectedThemeChanged}
             selectedMadnessTheme={this.props.selectedMadnessTheme}
             onSelectedMadnessThemeChanged={this.onSelectedMadnessThemeChanged}
+            selectedPersonality={this.props.selectedPersonality}
+            onSelectedPersonalityChanged={this.onSelectedPersonalityChanged}
             selectedTabSize={this.props.selectedTabSize}
             onSelectedTabSizeChanged={this.onSelectedTabSizeChanged}
             selectedDateFormat={
@@ -856,6 +859,10 @@ export class Preferences extends React.Component<
 
   private onSelectedMadnessThemeChanged = (theme: MadnessTheme) => {
     this.props.dispatcher.setSelectedMadnessTheme(theme)
+  }
+
+  private onSelectedPersonalityChanged = (personality: MadnessPersonality) => {
+    this.props.dispatcher.setSelectedPersonality(personality)
   }
 
   private onUnderlineLinksChanged = (underlineLinks: boolean) => {

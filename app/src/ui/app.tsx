@@ -102,6 +102,7 @@ import { ReleaseNotes } from './release-notes'
 import { DeletePullRequest } from './delete-branch/delete-pull-request-dialog'
 import { CommitConflictsWarning } from './merge-conflicts'
 import { AppTheme } from './app-theme'
+import { ThemeStringsProvider } from './lib/theme-strings-context'
 import { ApplicationTheme } from './lib/application-theme'
 import { RepositoryStateCache } from '../lib/stores/repository-state-cache'
 import { PopupType, Popup } from '../models/popup'
@@ -1595,6 +1596,7 @@ export class App extends React.Component<IAppProps, IAppState> {
             selectedShell={this.state.selectedShell}
             selectedTheme={this.state.selectedTheme}
             selectedMadnessTheme={this.state.selectedMadnessTheme}
+            selectedPersonality={this.state.selectedPersonality}
             selectedTabSize={this.state.selectedTabSize}
             useCustomEditor={this.state.useCustomEditor}
             customEditor={this.state.customEditor}
@@ -3607,22 +3609,24 @@ export class App extends React.Component<IAppProps, IAppState> {
     const currentTabSize = this.state.selectedTabSize
 
     return (
-      <div
-        id="desktop-app-chrome"
-        className={className}
-        style={{ tabSize: currentTabSize }}
-      >
-        <AppTheme
-          theme={currentTheme}
-          madnessTheme={this.state.selectedMadnessTheme}
-        />
-        {this.renderTitlebar()}
-        {this.state.showWelcomeFlow
-          ? this.renderWelcomeFlow()
-          : this.renderApp()}
-        {this.renderZoomInfo()}
-        {this.renderFullScreenInfo()}
-      </div>
+      <ThemeStringsProvider personality={this.state.selectedPersonality}>
+        <div
+          id="desktop-app-chrome"
+          className={className}
+          style={{ tabSize: currentTabSize }}
+        >
+          <AppTheme
+            theme={currentTheme}
+            madnessTheme={this.state.selectedMadnessTheme}
+          />
+          {this.renderTitlebar()}
+          {this.state.showWelcomeFlow
+            ? this.renderWelcomeFlow()
+            : this.renderApp()}
+          {this.renderZoomInfo()}
+          {this.renderFullScreenInfo()}
+        </div>
+      </ThemeStringsProvider>
     )
   }
 

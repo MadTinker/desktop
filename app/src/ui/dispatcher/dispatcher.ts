@@ -94,7 +94,7 @@ import { TipState, IValidBranch } from '../../models/tip'
 import { Banner, BannerType } from '../../models/banner'
 
 import { ApplicationTheme } from '../lib/application-theme'
-import { MadnessTheme } from '../lib/madness-theme'
+import { MadnessTheme, MadnessPersonality } from '../lib/madness-theme'
 import { installCLI } from '../lib/install-cli'
 import {
   executeMenuItem,
@@ -2529,6 +2529,10 @@ export class Dispatcher {
    */
   public setSelectedMadnessTheme(theme: MadnessTheme) {
     return this.appStore._setSelectedMadnessTheme(theme)
+  }
+
+  public setSelectedPersonality(personality: MadnessPersonality) {
+    return this.appStore._setSelectedPersonality(personality)
   }
 
   /**

@@ -35,7 +35,7 @@ import { WindowState } from './window-state'
 import { Shell } from './shells'
 
 import { ApplicableTheme, ApplicationTheme } from '../ui/lib/application-theme'
-import { MadnessTheme } from '../ui/lib/madness-theme'
+import { MadnessTheme, MadnessPersonality } from '../ui/lib/madness-theme'
 import { IAccountRepositories } from './stores/api-repositories-store'
 import { ManualConflictResolution } from '../models/manual-conflict-resolution'
 import { Banner } from '../models/banner'
@@ -316,6 +316,9 @@ export interface IAppState {
 
   /** The selected Madness Interactive color theme overlay */
   readonly selectedMadnessTheme: MadnessTheme
+
+  /** The selected Madness personality (themed UI strings) */
+  readonly selectedPersonality: MadnessPersonality
 
   /** The selected tab size preference */
   readonly selectedTabSize: number

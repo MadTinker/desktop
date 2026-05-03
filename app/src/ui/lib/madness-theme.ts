@@ -38,6 +38,52 @@ export const madnessThemeSwatches: Record<
   'templar-light': { primary: '#c5b358', secondary: '#a41e21', bg: '#f5f5f5' },
 }
 
+// --- Personality (independent from color theme) ---
+
+export const madnessPersonalities = [
+  'standard',
+  'banana',
+  'biomedical',
+  'corporate-clean',
+  'corporate-drone',
+  'cyan-lab',
+  'debug',
+  'dwarf',
+  'gunmetal',
+  'labops',
+  'mad-wizard',
+  'templar-light',
+] as const
+
+export type MadnessPersonality = (typeof madnessPersonalities)[number] | ''
+
+export const madnessPersonalityLabels: Record<string, string> = {
+  standard: 'Standard',
+  banana: 'Banana Jungle',
+  biomedical: 'Biomedical',
+  'corporate-clean': 'Corporate Clean',
+  'corporate-drone': 'Corporate Drone',
+  'cyan-lab': 'Cyan Laboratory',
+  debug: 'Debug Mode',
+  dwarf: 'Dwarven Mines',
+  gunmetal: 'Gunmetal Arsenal',
+  labops: 'LabOps',
+  'mad-wizard': 'Mad Wizard',
+  'templar-light': 'Templar Light',
+}
+
+const personalityKey = 'madnessPersonality'
+
+export function getPersistedPersonality(): MadnessPersonality {
+  return (localStorage.getItem(personalityKey) ?? '') as MadnessPersonality
+}
+
+export function setPersistedPersonality(p: MadnessPersonality): void {
+  localStorage.setItem(personalityKey, p)
+}
+
+// --- Color theme ---
+
 const madnessThemeKey = 'madnessTheme'
 
 export function getPersistedMadnessTheme(): MadnessTheme {

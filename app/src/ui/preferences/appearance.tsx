@@ -6,9 +6,12 @@ import {
 } from '../lib/application-theme'
 import {
   MadnessTheme,
+  MadnessPersonality,
   madnessThemes,
   madnessThemeLabels,
   madnessThemeSwatches,
+  madnessPersonalities,
+  madnessPersonalityLabels,
 } from '../lib/madness-theme'
 import { Row } from '../lib/row'
 import { DialogContent } from '../dialog'
@@ -34,6 +37,8 @@ interface IAppearanceProps {
   readonly onSelectedThemeChanged: (theme: ApplicationTheme) => void
   readonly selectedMadnessTheme: MadnessTheme
   readonly onSelectedMadnessThemeChanged: (theme: MadnessTheme) => void
+  readonly selectedPersonality: MadnessPersonality
+  readonly onSelectedPersonalityChanged: (personality: MadnessPersonality) => void
   readonly selectedTabSize: number
   readonly onSelectedTabSizeChanged: (tabSize: number) => void
   readonly selectedDateFormat: DateFormat
@@ -330,11 +335,40 @@ export class Appearance extends React.Component<
     )
   }
 
+  private onPersonalityChanged = (
+    event: React.FormEvent<HTMLSelectElement>
+  ) => {
+    this.props.onSelectedPersonalityChanged(
+      event.currentTarget.value as MadnessPersonality
+    )
+  }
+
+  private renderPersonalitySelector() {
+    return (
+      <div className="appearance-section">
+        <h2 id="personality-heading">Personality</h2>
+        <Select
+          label="UI voice"
+          value={this.props.selectedPersonality}
+          onChange={this.onPersonalityChanged}
+        >
+          <option value="">None (standard English)</option>
+          {madnessPersonalities.map(p => (
+            <option key={p} value={p}>
+              {madnessPersonalityLabels[p]}
+            </option>
+          ))}
+        </Select>
+      </div>
+    )
+  }
+
   public render() {
     return (
       <DialogContent>
         {this.renderSelectedTheme()}
         {this.renderMadnessThemes()}
+        {this.renderPersonalitySelector()}
         {this.renderFormatting()}
         {this.renderSelectedTabSize()}
       </DialogContent>
