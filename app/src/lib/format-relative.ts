@@ -15,6 +15,10 @@ const getRelativeFormatter = mem(
 )
 
 export function formatRelative(ms: number) {
+  if (!Number.isFinite(ms)) {
+    return 'unknown'
+  }
+
   const formatter = getRelativeFormatter('en-US', { numeric: 'auto' })
 
   const sign = ms < 0 ? -1 : 1

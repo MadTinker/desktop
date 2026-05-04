@@ -48,6 +48,13 @@ export function getRelativeTimeInfoFromDate(
   then: Date,
   onlyRelative: boolean = true
 ): RelativeTimeInfo {
+  if (isNaN(then.getTime())) {
+    return {
+      absoluteText: 'Invalid date',
+      relativeText: 'unknown',
+    }
+  }
+
   const diff = then.getTime() - Date.now()
   const duration = Math.abs(diff)
 

@@ -72,4 +72,10 @@ describe('RelativeTime', () => {
 
     assert.equal(screen.getByText(absoluteDate).textContent, absoluteDate)
   })
+
+  it('renders "unknown" for an invalid date', () => {
+    render(<RelativeTime date={new Date(NaN)} tooltip={false} />)
+
+    assert.equal(screen.getByText('unknown').textContent, 'unknown')
+  })
 })
