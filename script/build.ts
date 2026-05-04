@@ -356,6 +356,7 @@ function copyDependencies() {
     cpSync(copilotPkgDir, copilotDestination, {
       recursive: true,
       verbatimSymlinks: true,
+      filter: (src: string) => !src.includes(`node_modules${path.sep}.bin`),
     })
 
     const nonValidPlatforms = ['darwin', 'linux', 'win32'].filter(
