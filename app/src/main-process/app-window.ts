@@ -398,6 +398,10 @@ export class AppWindow {
     return this._rendererReadyTime
   }
 
+  public get webContents(): Electron.WebContents {
+    return this.window.webContents
+  }
+
   public destroy() {
     this.window.destroy()
   }

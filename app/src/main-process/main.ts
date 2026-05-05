@@ -60,7 +60,7 @@ let mainWindow: AppWindow | null = null
 
 const omnispindleClient = new OmnispindleClient({
   apiKey: '',
-  getWebContents: () => mainWindow?.window.webContents ?? null,
+  getWebContents: () => mainWindow?.webContents ?? null,
 })
 
 const launchTime = now()
