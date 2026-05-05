@@ -58,10 +58,9 @@ enableSourceMaps()
 
 let mainWindow: AppWindow | null = null
 
-const omnispindleClient = new OmnispindleClient({
-  apiKey: '',
-  getWebContents: () => mainWindow?.webContents ?? null,
-})
+const omnispindleClient = new OmnispindleClient(
+  () => mainWindow?.webContents ?? null
+)
 
 const launchTime = now()
 
@@ -561,8 +560,12 @@ app.on('ready', () => {
     ipcMain.on('uninstall-windows-cli', uninstallWindowsCLI)
   }
 
-  ipcMain.on('omnispindle-configure', (_, apiKey: string, pollInterval: number) => {
-    omnispindleClient.update(apiKey, pollInterval)
+  ipcMain.on('omnispindle-configure', (_, apiKey: string) => {
+    omnispindleClient.setApiKey(apiKey)
+  })
+
+  ipcMain.on('omnispindle-refresh', () => {
+    omnispindleClient.refresh()
   })
 
   /**

@@ -6,6 +6,7 @@ import * as octicons from '../octicons/octicons.generated'
 interface IOmnispindleTodosProps {
   readonly todos: ReadonlyArray<IOmnispindleTodo>
   readonly status: OmnispindleConnectionStatus
+  readonly onRefresh: () => void
 }
 
 interface IOmnispindleTodosState {
@@ -29,7 +30,7 @@ function statusLabel(status: OmnispindleConnectionStatus, count: number) {
   if (status === 'error') {
     return 'Omnispindle — connection error'
   }
-  return `Omnispindle — ${count} active todo${count === 1 ? '' : 's'}`
+  return `Omnispindle — ${count} todo${count === 1 ? '' : 's'}`
 }
 
 export class OmnispindleTodos extends React.Component<
@@ -43,6 +44,11 @@ export class OmnispindleTodos extends React.Component<
 
   private onToggle = () => {
     this.setState(prev => ({ expanded: !prev.expanded }))
+  }
+
+  private onRefresh = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    this.props.onRefresh()
   }
 
   public render() {
@@ -66,6 +72,14 @@ export class OmnispindleTodos extends React.Component<
           <span className="omnispindle-title">Omnispindle</span>
           <span className="omnispindle-summary">
             {statusLabel(status, todos.length)}
+          </span>
+          <span
+            className="omnispindle-refresh"
+            onClick={this.onRefresh}
+            title="Refresh todos"
+            role="button"
+          >
+            <Octicon symbol={octicons.sync} />
           </span>
           <Octicon
             symbol={expanded ? octicons.chevronUp : octicons.chevronDown}
@@ -92,6 +106,12 @@ export class OmnispindleTodos extends React.Component<
 
         {expanded && todos.length === 0 && status === 'connected' && (
           <p className="omnispindle-empty">No active todos</p>
+        )}
+
+        {expanded && status === 'error' && (
+          <p className="omnispindle-empty">
+            Could not reach Omnispindle. Check your API key in Settings.
+          </p>
         )}
       </div>
     )

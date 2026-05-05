@@ -41,6 +41,19 @@
       color: var(--text-secondary-color);
     }
 
+    .omnispindle-refresh {
+      flex-shrink: 0;
+      color: var(--text-secondary-color);
+      cursor: pointer;
+      padding: 2px;
+      border-radius: 3px;
+
+      &:hover {
+        color: var(--text-color);
+        background: var(--list-item-hover-background-color);
+      }
+    }
+
     .omnispindle-chevron {
       flex-shrink: 0;
       color: var(--text-secondary-color);

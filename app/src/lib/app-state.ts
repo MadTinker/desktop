@@ -429,9 +429,6 @@ export interface IAppState {
   /** Bearer token for the Omnispindle HTTP MCP endpoint */
   readonly omnispindleApiKey: string
 
-  /** Poll interval in milliseconds (default 60 000) */
-  readonly omnispindlePollInterval: number
-
   /**
    * Per-feature Copilot model selections. An absent key means the default
    * model will be used for that feature.

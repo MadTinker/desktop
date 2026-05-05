@@ -1606,7 +1606,6 @@ export class App extends React.Component<IAppProps, IAppState> {
             autoSwitchOnChangesEnabled={this.state.autoSwitchOnChangesEnabled}
             showReflogTab={this.state.showReflogTab}
             omnispindleApiKey={this.state.omnispindleApiKey}
-            omnispindlePollInterval={this.state.omnispindlePollInterval}
             onEditGlobalGitConfig={this.editGlobalGitConfig}
             underlineLinks={this.state.underlineLinks}
             showDiffCheckMarks={this.state.showDiffCheckMarks}
@@ -2824,6 +2823,10 @@ export class App extends React.Component<IAppProps, IAppState> {
     this.props.dispatcher.refreshApiRepositories(account)
   }
 
+  private onRefreshOmnispindleTodos = () => {
+    this.props.dispatcher.refreshOmnispindleTodos()
+  }
+
   private onShowIntegrationsPreferences = () => {
     this.props.dispatcher.showPopup({
       type: PopupType.Preferences,
@@ -3557,6 +3560,7 @@ export class App extends React.Component<IAppProps, IAppState> {
           showReflogTab={state.showReflogTab}
           omnispindleTodos={state.omnispindleTodos}
           omnispindleStatus={state.omnispindleStatus}
+          onRefreshOmnispindleTodos={this.onRefreshOmnispindleTodos}
           shouldShowGenerateCommitMessageCallOut={
             !this.state.commitMessageGenerationButtonClicked
           }

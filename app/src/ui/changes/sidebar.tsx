@@ -106,6 +106,7 @@ interface IChangesSidebarProps {
 
   readonly omnispindleTodos: ReadonlyArray<IOmnispindleTodo>
   readonly omnispindleStatus: OmnispindleConnectionStatus
+  readonly onRefreshOmnispindleTodos: () => void
 
   /**
    * Whether there are any hooks in the repository that could be
@@ -506,6 +507,7 @@ export class ChangesSidebar extends React.Component<IChangesSidebarProps, {}> {
         <OmnispindleTodos
           todos={this.props.omnispindleTodos}
           status={this.props.omnispindleStatus}
+          onRefresh={this.props.onRefreshOmnispindleTodos}
         />
       </div>
     )

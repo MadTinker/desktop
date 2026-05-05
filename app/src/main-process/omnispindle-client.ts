@@ -6,55 +6,25 @@ import {
 } from '../models/omnispindle'
 
 const OMNISPINDLE_URL = 'https://madnessinteractive.cc/api/mcp/'
-const DEFAULT_POLL_INTERVAL = 60_000
-
-interface IOmnispindleClientOptions {
-  readonly apiKey: string
-  readonly pollInterval?: number
-  readonly getWebContents: () => WebContents | null
-}
 
 export class OmnispindleClient {
-  private timer: ReturnType<typeof setTimeout> | null = null
-  private apiKey: string
-  private pollInterval: number
+  private apiKey: string = ''
   private readonly getWebContents: () => WebContents | null
 
-  public constructor(opts: IOmnispindleClientOptions) {
-    this.apiKey = opts.apiKey
-    this.pollInterval = opts.pollInterval ?? DEFAULT_POLL_INTERVAL
-    this.getWebContents = opts.getWebContents
+  public constructor(getWebContents: () => WebContents | null) {
+    this.getWebContents = getWebContents
   }
 
-  public start() {
-    this.stop()
-    this.poll()
-  }
-
-  public stop() {
-    if (this.timer !== null) {
-      clearTimeout(this.timer)
-      this.timer = null
-    }
-  }
-
-  public update(apiKey: string, pollInterval: number) {
+  public setApiKey(apiKey: string) {
     this.apiKey = apiKey
-    this.pollInterval = pollInterval
-    this.start()
   }
 
-  private schedule() {
-    this.timer = setTimeout(() => this.poll(), this.pollInterval)
-  }
-
-  private async poll() {
+  public async refresh() {
     const { todos, status } = await this.fetchTodos()
     const wc = this.getWebContents()
     if (wc !== null) {
       send(wc, 'omnispindle-todos-updated', todos, status)
     }
-    this.schedule()
   }
 
   private async fetchTodos(): Promise<{

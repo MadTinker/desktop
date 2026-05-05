@@ -477,8 +477,6 @@ const repositoryIndicatorsEnabledKey = 'enable-repository-indicators'
 const autoSwitchOnChangesKey = 'enable-auto-switch-on-changes'
 const showReflogTabKey = 'show-reflog-tab'
 const omnispindleApiKeyKey = 'omnispindle-api-key'
-const omnispindlePollIntervalKey = 'omnispindle-poll-interval'
-const omnispindleDefaultPollInterval = 60_000
 
 // background fetching should occur hourly when Desktop is active, but this
 // lower interval ensures user interactions like switching repositories and
@@ -687,7 +685,6 @@ export class AppStore extends TypedBaseStore<IAppState> {
   private omnispindleTodos: ReadonlyArray<import('../../models/omnispindle').IOmnispindleTodo> = []
   private omnispindleStatus: import('../../models/omnispindle').OmnispindleConnectionStatus = 'unconfigured'
   private omnispindleApiKey: string = ''
-  private omnispindlePollInterval: number = omnispindleDefaultPollInterval
 
   private selectedCopilotModels: CopilotModelSelections = {}
   private copilotModels: ReadonlyArray<ModelInfo> | null = null
@@ -774,10 +771,6 @@ export class AppStore extends TypedBaseStore<IAppState> {
     this.showReflogTab = getBoolean(showReflogTabKey, false)
 
     this.omnispindleApiKey = localStorage.getItem(omnispindleApiKeyKey) ?? ''
-    this.omnispindlePollInterval = getNumber(
-      omnispindlePollIntervalKey,
-      omnispindleDefaultPollInterval
-    )
 
     this.autoSwitchMonitor = new AutoSwitchMonitor(
       this.getRepositoriesForIndicatorRefresh,
@@ -996,12 +989,8 @@ export class AppStore extends TypedBaseStore<IAppState> {
       this.emitUpdate()
     })
 
-    // Push stored config to main so polling starts immediately on load.
-    ipcRenderer.send(
-      'omnispindle-configure',
-      this.omnispindleApiKey,
-      this.omnispindlePollInterval
-    )
+    // Push stored API key to main process.
+    ipcRenderer.send('omnispindle-configure', this.omnispindleApiKey)
   }
 
   private wireupStoreEventHandlers() {
@@ -1254,7 +1243,6 @@ export class AppStore extends TypedBaseStore<IAppState> {
       omnispindleTodos: this.omnispindleTodos,
       omnispindleStatus: this.omnispindleStatus,
       omnispindleApiKey: this.omnispindleApiKey,
-      omnispindlePollInterval: this.omnispindlePollInterval,
       selectedCopilotModels: this.selectedCopilotModels,
       copilotModels: this.copilotModels,
       copilotAvailable: this.copilotStore.isAvailable,
@@ -3181,23 +3169,12 @@ export class AppStore extends TypedBaseStore<IAppState> {
   public _setOmnispindleApiKey(apiKey: string): void {
     localStorage.setItem(omnispindleApiKeyKey, apiKey)
     this.omnispindleApiKey = apiKey
-    ipcRenderer.send(
-      'omnispindle-configure',
-      this.omnispindleApiKey,
-      this.omnispindlePollInterval
-    )
+    ipcRenderer.send('omnispindle-configure', this.omnispindleApiKey)
     this.emitUpdate()
   }
 
-  public _setOmnispindlePollInterval(ms: number): void {
-    localStorage.setItem(omnispindlePollIntervalKey, String(ms))
-    this.omnispindlePollInterval = ms
-    ipcRenderer.send(
-      'omnispindle-configure',
-      this.omnispindleApiKey,
-      this.omnispindlePollInterval
-    )
-    this.emitUpdate()
+  public _refreshOmnispindleTodos(): void {
+    ipcRenderer.send('omnispindle-refresh')
   }
 
   /**

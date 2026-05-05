@@ -95,7 +95,8 @@ export type RequestChannels = {
     todos: ReadonlyArray<IOmnispindleTodo>,
     status: OmnispindleConnectionStatus
   ) => void
-  'omnispindle-configure': (apiKey: string, pollInterval: number) => void
+  'omnispindle-configure': (apiKey: string) => void
+  'omnispindle-refresh': () => void
 }
 
 /**

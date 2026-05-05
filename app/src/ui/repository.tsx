@@ -127,6 +127,7 @@ interface IRepositoryViewProps {
 
   readonly omnispindleTodos: ReadonlyArray<IOmnispindleTodo>
   readonly omnispindleStatus: OmnispindleConnectionStatus
+  readonly onRefreshOmnispindleTodos: () => void
 
   /**
    * Whether there are any hooks in the repository that could be
@@ -350,6 +351,7 @@ export class RepositoryView extends React.Component<
         showChangesFilter={this.props.showChangesFilter}
         omnispindleTodos={this.props.omnispindleTodos}
         omnispindleStatus={this.props.omnispindleStatus}
+        onRefreshOmnispindleTodos={this.props.onRefreshOmnispindleTodos}
         hasCommitHooks={this.props.hasCommitHooks}
         skipCommitHooks={this.props.skipCommitHooks}
         signOffCommits={this.props.signOffCommits}

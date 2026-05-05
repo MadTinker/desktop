@@ -117,7 +117,6 @@ interface IPreferencesProps {
   readonly autoSwitchOnChangesEnabled: boolean
   readonly showReflogTab: boolean
   readonly omnispindleApiKey: string
-  readonly omnispindlePollInterval: number
   readonly onEditGlobalGitConfig: () => void
   readonly underlineLinks: boolean
   readonly showDiffCheckMarks: boolean
@@ -172,7 +171,6 @@ interface IPreferencesState {
   readonly autoSwitchOnChangesEnabled: boolean
   readonly showReflogTab: boolean
   readonly omnispindleApiKey: string
-  readonly omnispindlePollInterval: number
 
   readonly initiallySelectedTheme: ApplicationTheme
   readonly initiallySelectedTabSize: number
@@ -251,7 +249,6 @@ export class Preferences extends React.Component<
       autoSwitchOnChangesEnabled: this.props.autoSwitchOnChangesEnabled,
       showReflogTab: this.props.showReflogTab,
       omnispindleApiKey: this.props.omnispindleApiKey,
-      omnispindlePollInterval: this.props.omnispindlePollInterval,
       initiallySelectedTheme: this.props.selectedTheme,
       initiallySelectedTabSize: this.props.selectedTabSize,
       isLoadingGitConfig: true,
@@ -684,8 +681,6 @@ export class Preferences extends React.Component<
           <OmnispindlePreferences
             apiKey={this.state.omnispindleApiKey}
             onApiKeyChanged={this.onOmnispindleApiKeyChanged}
-            pollInterval={this.state.omnispindlePollInterval}
-            onPollIntervalChanged={this.onOmnispindlePollIntervalChanged}
           />
         )
         break
@@ -757,12 +752,6 @@ export class Preferences extends React.Component<
 
   private onOmnispindleApiKeyChanged = (omnispindleApiKey: string) => {
     this.setState({ omnispindleApiKey })
-  }
-
-  private onOmnispindlePollIntervalChanged = (
-    omnispindlePollInterval: number
-  ) => {
-    this.setState({ omnispindlePollInterval })
   }
 
   private onLockFileDeleted = () => {
@@ -1030,15 +1019,8 @@ export class Preferences extends React.Component<
         dispatcher.setShowReflogTab(this.state.showReflogTab)
       }
 
-      if (
-        this.props.omnispindleApiKey !== this.state.omnispindleApiKey ||
-        this.props.omnispindlePollInterval !==
-          this.state.omnispindlePollInterval
-      ) {
+      if (this.props.omnispindleApiKey !== this.state.omnispindleApiKey) {
         dispatcher.setOmnispindleApiKey(this.state.omnispindleApiKey)
-        dispatcher.setOmnispindlePollInterval(
-          this.state.omnispindlePollInterval
-        )
       }
 
       if (this.state.hooksPreferencesDirty) {

@@ -71,6 +71,7 @@ describe('IPC channel contract', () => {
     'uninstall-windows-cli',
     'omnispindle-todos-updated',
     'omnispindle-configure',
+    'omnispindle-refresh',
   ] as const
 
   const expectedResponseChannels = [
