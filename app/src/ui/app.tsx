@@ -3553,6 +3553,8 @@ export class App extends React.Component<IAppProps, IAppState> {
           pullRequestSuggestedNextAction={state.pullRequestSuggestedNextAction}
           showChangesFilter={state.showChangesFilter}
           showReflogTab={state.showReflogTab}
+          omnispindleTodos={state.omnispindleTodos}
+          omnispindleStatus={state.omnispindleStatus}
           shouldShowGenerateCommitMessageCallOut={
             !this.state.commitMessageGenerationButtonClicked
           }

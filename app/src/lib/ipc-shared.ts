@@ -17,6 +17,10 @@ import { DesktopNotificationPermission } from 'desktop-notifications'
 import { NotificationCallback } from 'desktop-notifications'
 import { DesktopAliveEvent } from './stores/alive-store'
 import { CLIAction } from './cli-action'
+import {
+  IOmnispindleTodo,
+  OmnispindleConnectionStatus,
+} from '../models/omnispindle'
 
 /**
  * Defines the simplex IPC channel names we use from the renderer
@@ -87,6 +91,11 @@ export type RequestChannels = {
   'show-installing-update': () => void
   'install-windows-cli': () => void
   'uninstall-windows-cli': () => void
+  'omnispindle-todos-updated': (
+    todos: ReadonlyArray<IOmnispindleTodo>,
+    status: OmnispindleConnectionStatus
+  ) => void
+  'omnispindle-configure': (apiKey: string, pollInterval: number) => void
 }
 
 /**

@@ -11,6 +11,11 @@ import {
   IHookLogEntry,
 } from '../../lib/app-state'
 import { HookLog } from './hook-log'
+import { OmnispindleTodos } from './omnispindle-todos'
+import {
+  IOmnispindleTodo,
+  OmnispindleConnectionStatus,
+} from '../../models/omnispindle'
 import { Repository } from '../../models/repository'
 import { Dispatcher } from '../dispatcher'
 import { IssuesStore, GitHubUserStore } from '../../lib/stores'
@@ -98,6 +103,9 @@ interface IChangesSidebarProps {
 
   /** Whether or not to show the changes filter */
   readonly showChangesFilter: boolean
+
+  readonly omnispindleTodos: ReadonlyArray<IOmnispindleTodo>
+  readonly omnispindleStatus: OmnispindleConnectionStatus
 
   /**
    * Whether there are any hooks in the repository that could be
@@ -495,6 +503,10 @@ export class ChangesSidebar extends React.Component<IChangesSidebarProps, {}> {
         />
         {this.renderUndoCommit(rebaseConflictState)}
         <HookLog hookLog={this.props.hookLog} />
+        <OmnispindleTodos
+          todos={this.props.omnispindleTodos}
+          status={this.props.omnispindleStatus}
+        />
       </div>
     )
   }

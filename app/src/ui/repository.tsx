@@ -28,6 +28,10 @@ import { IMenu } from '../models/app-menu'
 import { StashDiffViewer } from './stashing'
 import { StashedChangesLoadStates } from '../models/stash-entry'
 import { TutorialPanel, TutorialWelcome, TutorialDone } from './tutorial'
+import {
+  IOmnispindleTodo,
+  OmnispindleConnectionStatus,
+} from '../models/omnispindle'
 import { TutorialStep, isValidTutorialStep } from '../models/tutorial-step'
 import { openFile } from './lib/open-file'
 import { AheadBehindStore } from '../lib/stores/ahead-behind-store'
@@ -120,6 +124,9 @@ interface IRepositoryViewProps {
 
   /** Whether to show the Reflog tab */
   readonly showReflogTab: boolean
+
+  readonly omnispindleTodos: ReadonlyArray<IOmnispindleTodo>
+  readonly omnispindleStatus: OmnispindleConnectionStatus
 
   /**
    * Whether there are any hooks in the repository that could be
@@ -341,6 +348,8 @@ export class RepositoryView extends React.Component<
         commitSpellcheckEnabled={this.props.commitSpellcheckEnabled}
         showCommitLengthWarning={this.props.showCommitLengthWarning}
         showChangesFilter={this.props.showChangesFilter}
+        omnispindleTodos={this.props.omnispindleTodos}
+        omnispindleStatus={this.props.omnispindleStatus}
         hasCommitHooks={this.props.hasCommitHooks}
         skipCommitHooks={this.props.skipCommitHooks}
         signOffCommits={this.props.signOffCommits}

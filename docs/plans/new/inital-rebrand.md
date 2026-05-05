@@ -85,6 +85,8 @@ Feature-flagged third tab in the repository sidebar. Off by default; toggle at *
 
 Surface Omnispindle todo status in sidebar via MCP API calls from main process. Blocked on Phase 6 being stable.
 
+> **Status:** Unblocked. Full task breakdown in [`roadmap-v2.md`](roadmap-v2.md) — Phase 7.
+
 ---
 
 ## Dependency Graph
@@ -99,6 +101,12 @@ Phase 6 (Stepped Push/Pull) ✅
 Bonus  (Reflog Tab) ✅
 Phase 7 (Omnispindle MCP) ← next
 ```
+
+---
+
+## Next Steps
+
+See [`roadmap-v2.md`](roadmap-v2.md) for the full tagged backlog (77 items across Phases 7–14 + testing).
 
 ---
 

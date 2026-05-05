@@ -419,6 +419,18 @@ export interface IAppState {
   /** Whether the changes filter is shown */
   readonly showChangesFilter: boolean
 
+  /** Live todos fetched from the Omnispindle MCP server */
+  readonly omnispindleTodos: ReadonlyArray<import('../models/omnispindle').IOmnispindleTodo>
+
+  /** Last known connection status with the Omnispindle MCP server */
+  readonly omnispindleStatus: import('../models/omnispindle').OmnispindleConnectionStatus
+
+  /** Bearer token for the Omnispindle HTTP MCP endpoint */
+  readonly omnispindleApiKey: string
+
+  /** Poll interval in milliseconds (default 60 000) */
+  readonly omnispindlePollInterval: number
+
   /**
    * Per-feature Copilot model selections. An absent key means the default
    * model will be used for that feature.

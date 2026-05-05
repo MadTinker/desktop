@@ -51,11 +51,17 @@ import {
 import { initializeDesktopNotifications } from './notifications'
 import parseCommandLineArgs from 'minimist'
 import { CLIAction } from '../lib/cli-action'
+import { OmnispindleClient } from './omnispindle-client'
 
 app.setAppLogsPath()
 enableSourceMaps()
 
 let mainWindow: AppWindow | null = null
+
+const omnispindleClient = new OmnispindleClient({
+  apiKey: '',
+  getWebContents: () => mainWindow?.window.webContents ?? null,
+})
 
 const launchTime = now()
 
@@ -554,6 +560,10 @@ app.on('ready', () => {
     ipcMain.on('install-windows-cli', installWindowsCLI)
     ipcMain.on('uninstall-windows-cli', uninstallWindowsCLI)
   }
+
+  ipcMain.on('omnispindle-configure', (_, apiKey: string, pollInterval: number) => {
+    omnispindleClient.update(apiKey, pollInterval)
+  })
 
   /**
    * An event sent by the renderer asking for a copy of the current
