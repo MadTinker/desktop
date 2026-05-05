@@ -5929,6 +5929,9 @@ export class AppStore extends TypedBaseStore<IAppState> {
           status: hookProgress.status,
           timestamp: new Date(),
           repoPath: respository.path,
+          exitCode: hookProgress.exitCode,
+          duration: hookProgress.duration,
+          output: hookProgress.output,
         }
         const { hookLog } = this.repositoryStateCache.get(respository)
         const updated = [entry, ...hookLog].slice(0, 20)

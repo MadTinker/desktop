@@ -61,8 +61,9 @@ export interface IHookLogEntry {
   readonly status: 'finished' | 'failed'
   readonly timestamp: Date
   readonly repoPath: string
-  /** Terminal output captured on failure */
-  readonly output?: string
+  readonly exitCode: number
+  readonly duration: number
+  readonly output: string
 }
 import { Popup } from '../models/popup'
 import { RepoRulesInfo } from '../models/repo-rules'

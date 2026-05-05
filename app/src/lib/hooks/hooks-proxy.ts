@@ -201,6 +201,9 @@ export const createHooksProxy = (
     onHookProgress?.({
       hookName,
       status: exitCode === 0 ? 'finished' : 'failed',
+      exitCode,
+      duration: Date.now() - startTime,
+      output: Buffer.concat(terminalOutput).toString('utf8'),
     })
   }
 }
