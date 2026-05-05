@@ -44,6 +44,9 @@ export type HookProgress = {
     }
   | {
       readonly status: 'finished' | 'failed'
+      readonly exitCode: number
+      readonly duration: number
+      readonly output: string
     }
 )
 

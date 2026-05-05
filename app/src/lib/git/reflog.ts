@@ -127,21 +127,42 @@ export async function getBranchCheckouts(
   return checkouts
 }
 
+const REFLOG_FIELD_SEP = '\x1e'
+
+/** Derive a short action label from the reflog subject line. */
+function parseReflogAction(subject: string): string {
+  const s = subject.toLowerCase()
+  if (s.startsWith('commit')) return 'commit'
+  if (s.startsWith('checkout')) return 'checkout'
+  if (s.startsWith('merge')) return 'merge'
+  if (s.startsWith('reset')) return 'reset'
+  if (s.startsWith('rebase')) return 'rebase'
+  if (s.startsWith('cherry-pick')) return 'cherry-pick'
+  if (s.startsWith('pull')) return 'pull'
+  if (s.startsWith('push')) return 'push'
+  return 'other'
+}
+
 /**
  * Return the `limit` most recent reflog entries for the repository.
  *
- * Format: `%H %h %gd %gI %gs`
- * - `%H` / `%h` — full/short SHA (no spaces)
- * - `%gd` — reflog selector, e.g. "HEAD@{0}" (no spaces)
- * - `%gI` — ISO 8601 strict date (no spaces)
- * - `%gs` — reflog subject (may contain spaces; kept as the final field)
+ * Format (fields joined by ASCII Unit Separator \x1e):
+ *   %H   — full SHA
+ *   %h   — short SHA
+ *   %gd  — reflog selector, e.g. "HEAD@{0}"
+ *   %gI  — ISO 8601 strict date
+ *   %an  — author name
+ *   %gs  — reflog subject (may contain any chars; safe as last field)
  */
 export async function getReflog(
   repository: Repository,
   limit: number = 100
 ): Promise<ReadonlyArray<IReflogEntry>> {
+  const sep = REFLOG_FIELD_SEP
+  const format = `%H${sep}%h${sep}%gd${sep}%gI${sep}%an${sep}%gs`
+
   const result = await git(
-    ['reflog', '--format=%H %h %gd %gI %gs', '-n', String(limit)],
+    ['reflog', `--format=${format}`, '-n', String(limit)],
     repository.path,
     'getReflog',
     { successExitCodes: new Set([0, 128]) }
@@ -156,16 +177,23 @@ export async function getReflog(
     if (!line.trim()) {
       continue
     }
-    const [sha, shortSha, selector, dateStr, ...rest] = line.split(' ')
+    const parts = line.split(sep)
+    if (parts.length < 6) {
+      continue
+    }
+    const [sha, shortSha, selector, dateStr, author, ...rest] = parts
     if (!sha || !shortSha) {
       continue
     }
+    const description = rest.join(sep)
     entries.push({
       sha,
       shortSha,
       selector: selector ?? '',
-      description: rest.join(' '),
+      description,
       date: new Date(dateStr),
+      author: author ?? '',
+      action: parseReflogAction(description),
     })
   }
   return entries
