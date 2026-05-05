@@ -2784,6 +2784,14 @@ export class Dispatcher {
     this.appStore._setShowReflogTab(value)
   }
 
+  public setOmnispindleApiKey(apiKey: string) {
+    this.appStore._setOmnispindleApiKey(apiKey)
+  }
+
+  public setOmnispindlePollInterval(ms: number) {
+    this.appStore._setOmnispindlePollInterval(ms)
+  }
+
   public setCommitSpellcheckEnabled(commitSpellcheckEnabled: boolean) {
     this.appStore._setCommitSpellcheckEnabled(commitSpellcheckEnabled)
   }

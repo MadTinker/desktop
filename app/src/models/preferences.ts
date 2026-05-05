@@ -6,6 +6,7 @@ export enum PreferencesTab {
   Appearance,
   Notifications,
   Prompts,
+  Omnispindle,
   Advanced,
   Accessibility,
 }

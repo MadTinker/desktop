@@ -1605,6 +1605,8 @@ export class App extends React.Component<IAppProps, IAppState> {
             repositoryIndicatorsEnabled={this.state.repositoryIndicatorsEnabled}
             autoSwitchOnChangesEnabled={this.state.autoSwitchOnChangesEnabled}
             showReflogTab={this.state.showReflogTab}
+            omnispindleApiKey={this.state.omnispindleApiKey}
+            omnispindlePollInterval={this.state.omnispindlePollInterval}
             onEditGlobalGitConfig={this.editGlobalGitConfig}
             underlineLinks={this.state.underlineLinks}
             showDiffCheckMarks={this.state.showDiffCheckMarks}

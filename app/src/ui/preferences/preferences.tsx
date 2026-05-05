@@ -43,6 +43,7 @@ import { Prompts } from './prompts'
 import { Repository } from '../../models/repository'
 import { Notifications } from './notifications'
 import { Accessibility } from './accessibility'
+import { OmnispindlePreferences } from './omnispindle'
 import type { ModelInfo } from '@github/copilot-sdk'
 import { CopilotPreferences } from './copilot'
 import type {
@@ -115,6 +116,8 @@ interface IPreferencesProps {
   readonly repositoryIndicatorsEnabled: boolean
   readonly autoSwitchOnChangesEnabled: boolean
   readonly showReflogTab: boolean
+  readonly omnispindleApiKey: string
+  readonly omnispindlePollInterval: number
   readonly onEditGlobalGitConfig: () => void
   readonly underlineLinks: boolean
   readonly showDiffCheckMarks: boolean
@@ -168,6 +171,8 @@ interface IPreferencesState {
   readonly repositoryIndicatorsEnabled: boolean
   readonly autoSwitchOnChangesEnabled: boolean
   readonly showReflogTab: boolean
+  readonly omnispindleApiKey: string
+  readonly omnispindlePollInterval: number
 
   readonly initiallySelectedTheme: ApplicationTheme
   readonly initiallySelectedTabSize: number
@@ -245,6 +250,8 @@ export class Preferences extends React.Component<
       repositoryIndicatorsEnabled: this.props.repositoryIndicatorsEnabled,
       autoSwitchOnChangesEnabled: this.props.autoSwitchOnChangesEnabled,
       showReflogTab: this.props.showReflogTab,
+      omnispindleApiKey: this.props.omnispindleApiKey,
+      omnispindlePollInterval: this.props.omnispindlePollInterval,
       initiallySelectedTheme: this.props.selectedTheme,
       initiallySelectedTabSize: this.props.selectedTabSize,
       isLoadingGitConfig: true,
@@ -391,6 +398,10 @@ export class Preferences extends React.Component<
               <Octicon className="icon" symbol={octicons.question} />
               Prompts
             </span>
+            <span id={this.getTabId(PreferencesTab.Omnispindle)}>
+              <Octicon className="icon" symbol={octicons.zap} />
+              Omnispindle
+            </span>
             <span id={this.getTabId(PreferencesTab.Advanced)}>
               <Octicon className="icon" symbol={octicons.gear} />
               Advanced
@@ -431,6 +442,9 @@ export class Preferences extends React.Component<
         break
       case PreferencesTab.Prompts:
         suffix = 'prompts'
+        break
+      case PreferencesTab.Omnispindle:
+        suffix = 'omnispindle'
         break
       case PreferencesTab.Advanced:
         suffix = 'advanced'
@@ -665,6 +679,16 @@ export class Preferences extends React.Component<
         )
         break
       }
+      case PreferencesTab.Omnispindle:
+        View = (
+          <OmnispindlePreferences
+            apiKey={this.state.omnispindleApiKey}
+            onApiKeyChanged={this.onOmnispindleApiKeyChanged}
+            pollInterval={this.state.omnispindlePollInterval}
+            onPollIntervalChanged={this.onOmnispindlePollIntervalChanged}
+          />
+        )
+        break
       case PreferencesTab.Advanced: {
         View = (
           <Advanced
@@ -729,6 +753,16 @@ export class Preferences extends React.Component<
 
   private onShowReflogTabChanged = (showReflogTab: boolean) => {
     this.setState({ showReflogTab })
+  }
+
+  private onOmnispindleApiKeyChanged = (omnispindleApiKey: string) => {
+    this.setState({ omnispindleApiKey })
+  }
+
+  private onOmnispindlePollIntervalChanged = (
+    omnispindlePollInterval: number
+  ) => {
+    this.setState({ omnispindlePollInterval })
   }
 
   private onLockFileDeleted = () => {
@@ -994,6 +1028,17 @@ export class Preferences extends React.Component<
 
       if (this.props.showReflogTab !== this.state.showReflogTab) {
         dispatcher.setShowReflogTab(this.state.showReflogTab)
+      }
+
+      if (
+        this.props.omnispindleApiKey !== this.state.omnispindleApiKey ||
+        this.props.omnispindlePollInterval !==
+          this.state.omnispindlePollInterval
+      ) {
+        dispatcher.setOmnispindleApiKey(this.state.omnispindleApiKey)
+        dispatcher.setOmnispindlePollInterval(
+          this.state.omnispindlePollInterval
+        )
       }
 
       if (this.state.hooksPreferencesDirty) {
