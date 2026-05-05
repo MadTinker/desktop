@@ -1,0 +1,94 @@
+.omnispindle-todos {
+  border-top: var(--base-border);
+  font-size: var(--font-size-sm);
+
+  .omnispindle-header {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: var(--spacing-half);
+    width: 100%;
+    background: transparent;
+    border: none;
+    padding: var(--spacing-half) var(--spacing);
+    color: var(--text-secondary-color);
+    font-size: var(--font-size-sm);
+    font-family: inherit;
+    cursor: pointer;
+    text-align: left;
+
+    &:hover {
+      background: var(--list-item-hover-background-color);
+      color: var(--text-color);
+    }
+
+    .omnispindle-icon {
+      flex-shrink: 0;
+      &.ok    { color: var(--status-success-color); }
+      &.error { color: var(--status-error-color); }
+    }
+
+    .omnispindle-title {
+      font-weight: var(--font-weight-semibold);
+      color: var(--text-color);
+    }
+
+    .omnispindle-summary {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: var(--text-secondary-color);
+    }
+
+    .omnispindle-chevron {
+      flex-shrink: 0;
+      color: var(--text-secondary-color);
+    }
+  }
+
+  .omnispindle-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    max-height: 200px;
+    overflow-y: auto;
+
+    .omnispindle-item {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: var(--spacing-half);
+      padding: var(--spacing-half) var(--spacing);
+      border-bottom: var(--base-border);
+
+      &:last-child { border-bottom: none; }
+
+      .omnispindle-item-icon {
+        flex-shrink: 0;
+        color: var(--text-secondary-color);
+      }
+
+      .omnispindle-item-title {
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .omnispindle-item-project {
+        flex-shrink: 0;
+        font-size: var(--font-size-sm);
+        color: var(--text-secondary-color);
+        font-style: italic;
+      }
+    }
+  }
+
+  .omnispindle-empty {
+    margin: 0;
+    padding: var(--spacing-half) var(--spacing);
+    color: var(--text-secondary-color);
+    font-style: italic;
+  }
+}
