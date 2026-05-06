@@ -431,3 +431,40 @@
     }
   }
 }
+
+#preferences {
+  .automation-hooks-header-actions {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .automation-hook-sync-status {
+    font-size: 0.8rem;
+    margin: 0 0 8px;
+    padding: 4px 8px;
+    border-radius: 3px;
+
+    &.automation-hook-sync-working {
+      color: var(--text-secondary-color);
+    }
+
+    &.automation-hook-sync-ok {
+      color: var(--color-ansi-green, #28a745);
+    }
+
+    &.automation-hook-sync-error {
+      color: var(--error-color, #d73a49);
+    }
+  }
+
+  .automation-hook-btn-push {
+    color: var(--color-ansi-cyan, #0366d6);
+    border-color: var(--color-ansi-cyan, #0366d6);
+
+    &:hover {
+      background: var(--color-ansi-cyan, #0366d6);
+      color: white;
+    }
+  }
+}

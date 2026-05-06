@@ -21,6 +21,13 @@ import {
   IOmnispindleTodo,
   OmnispindleConnectionStatus,
 } from '../models/omnispindle'
+import type {
+  HooksFetchResult,
+  HookPushResult,
+  HookDeleteResult,
+  HookValidateResult,
+  RemoteHook,
+} from '../main-process/automation-hooks-sync'
 
 /**
  * Defines the simplex IPC channel names we use from the renderer
@@ -145,4 +152,14 @@ export type RequestResponseChannels = {
   ) => Promise<string | null>
   'get-notifications-permission': () => Promise<DesktopNotificationPermission>
   'request-notifications-permission': () => Promise<boolean>
+  'automation-hooks-fetch': (apiKey: string) => Promise<HooksFetchResult>
+  'automation-hooks-push': (
+    apiKey: string,
+    hook: Omit<RemoteHook, 'createdAt'>
+  ) => Promise<HookPushResult>
+  'automation-hooks-delete': (
+    apiKey: string,
+    id: string
+  ) => Promise<HookDeleteResult>
+  'automation-hooks-validate': (script: string) => Promise<HookValidateResult>
 }

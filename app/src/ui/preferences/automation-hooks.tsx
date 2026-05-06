@@ -12,6 +12,11 @@ import {
   deleteAutomationHook,
   toggleAutomationHook,
 } from '../../lib/automation-hooks/store'
+import {
+  fetchRemoteHooks,
+  pushRemoteHook,
+  validateScript,
+} from '../../lib/automation-hooks/remote'
 
 interface IAutomationHooksPreferencesProps {
   readonly omnispindleApiKey: string
@@ -25,11 +30,19 @@ type EditingHook = {
   enabled: boolean
 }
 
+type SyncStatus =
+  | { kind: 'idle' }
+  | { kind: 'syncing' }
+  | { kind: 'success'; message: string }
+  | { kind: 'error'; message: string }
+
 interface IAutomationHooksPreferencesState {
   readonly hooks: ReadonlyArray<AutomationHook>
   readonly editing: EditingHook | null
   readonly nameError: string | null
   readonly scriptError: string | null
+  readonly syncStatus: SyncStatus
+  readonly validating: boolean
 }
 
 const DEFAULT_SCRIPT = `#!/bin/bash
@@ -47,6 +60,8 @@ export class AutomationHooksPreferences extends React.Component<
       editing: null,
       nameError: null,
       scriptError: null,
+      syncStatus: { kind: 'idle' },
+      validating: false,
     }
   }
 
@@ -64,6 +79,7 @@ export class AutomationHooksPreferences extends React.Component<
       },
       nameError: null,
       scriptError: null,
+      syncStatus: { kind: 'idle' },
     })
   }
 
@@ -86,29 +102,30 @@ export class AutomationHooksPreferences extends React.Component<
   }
 
   private onNameChanged = (name: string) => {
-    const editing = this.state.editing
+    const { editing } = this.state
     if (!editing) {
       return
     }
     this.setState({ editing: { ...editing, name }, nameError: null })
   }
 
-  private onTriggerChanged = (
-    event: React.ChangeEvent<HTMLSelectElement>
-  ) => {
-    const editing = this.state.editing
+  private onTriggerChanged = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const { editing } = this.state
     if (!editing) {
       return
     }
     this.setState({
-      editing: { ...editing, trigger: event.currentTarget.value as HookTrigger },
+      editing: {
+        ...editing,
+        trigger: event.currentTarget.value as HookTrigger,
+      },
     })
   }
 
   private onScriptChanged = (
     event: React.ChangeEvent<HTMLTextAreaElement>
   ) => {
-    const editing = this.state.editing
+    const { editing } = this.state
     if (!editing) {
       return
     }
@@ -118,10 +135,8 @@ export class AutomationHooksPreferences extends React.Component<
     })
   }
 
-  private onEnabledChanged = (
-    event: React.FormEvent<HTMLInputElement>
-  ) => {
-    const editing = this.state.editing
+  private onEnabledChanged = (event: React.FormEvent<HTMLInputElement>) => {
+    const { editing } = this.state
     if (!editing) {
       return
     }
@@ -131,6 +146,24 @@ export class AutomationHooksPreferences extends React.Component<
         enabled: (event.currentTarget as HTMLInputElement).checked,
       },
     })
+  }
+
+  private onValidate = async () => {
+    const { editing } = this.state
+    if (!editing?.script) {
+      return
+    }
+    this.setState({ validating: true, scriptError: null })
+    try {
+      const result = await validateScript(editing.script)
+      if (result.isValid) {
+        this.setState({ scriptError: null })
+      } else {
+        this.setState({ scriptError: result.error ?? 'Invalid syntax' })
+      }
+    } finally {
+      this.setState({ validating: false })
+    }
   }
 
   private onSave = () => {
@@ -173,8 +206,117 @@ export class AutomationHooksPreferences extends React.Component<
     this.reload()
   }
 
+  /** Pull hooks from server, merge into local (server wins on conflict by id) */
+  private onSyncFromServer = async () => {
+    const { omnispindleApiKey } = this.props
+    if (!omnispindleApiKey) {
+      return
+    }
+    this.setState({ syncStatus: { kind: 'syncing' } })
+    try {
+      const result = await fetchRemoteHooks(omnispindleApiKey)
+      if (!result.success) {
+        this.setState({
+          syncStatus: { kind: 'error', message: result.error ?? 'Sync failed' },
+        })
+        return
+      }
+      // Merge: import remote hooks that aren't already local (matched by id)
+      const local = getAutomationHooks()
+      const localIds = new Set(local.map(h => h.id))
+      let imported = 0
+      for (const remote of result.hooks) {
+        if (!localIds.has(remote.id)) {
+          saveAutomationHook({
+            id: remote.id,
+            name: remote.name,
+            trigger: remote.trigger as HookTrigger,
+            script: remote.script,
+            enabled: remote.enabled,
+          })
+          imported++
+        }
+      }
+      this.reload()
+      this.setState({
+        syncStatus: {
+          kind: 'success',
+          message:
+            imported > 0
+              ? `Imported ${imported} hook${imported === 1 ? '' : 's'} from server`
+              : 'Already up to date',
+        },
+      })
+    } catch (err) {
+      this.setState({
+        syncStatus: {
+          kind: 'error',
+          message: err instanceof Error ? err.message : 'Sync failed',
+        },
+      })
+    }
+  }
+
+  /** Push a single local hook up to the server */
+  private onPushHook = async (hook: AutomationHook) => {
+    const { omnispindleApiKey } = this.props
+    if (!omnispindleApiKey) {
+      return
+    }
+    this.setState({ syncStatus: { kind: 'syncing' } })
+    try {
+      const result = await pushRemoteHook(omnispindleApiKey, {
+        id: hook.id,
+        name: hook.name,
+        trigger: hook.trigger,
+        script: hook.script,
+        enabled: hook.enabled,
+      })
+      this.setState({
+        syncStatus: result.success
+          ? { kind: 'success', message: `Pushed "${hook.name}" to server` }
+          : { kind: 'error', message: result.error ?? 'Push failed' },
+      })
+    } catch (err) {
+      this.setState({
+        syncStatus: {
+          kind: 'error',
+          message: err instanceof Error ? err.message : 'Push failed',
+        },
+      })
+    }
+  }
+
+  private renderSyncStatus() {
+    const { syncStatus } = this.state
+    if (syncStatus.kind === 'idle') {
+      return null
+    }
+    if (syncStatus.kind === 'syncing') {
+      return (
+        <p className="automation-hook-sync-status automation-hook-sync-working">
+          Syncing…
+        </p>
+      )
+    }
+    if (syncStatus.kind === 'success') {
+      return (
+        <p className="automation-hook-sync-status automation-hook-sync-ok">
+          {syncStatus.message}
+        </p>
+      )
+    }
+    return (
+      <p className="automation-hook-sync-status automation-hook-sync-error">
+        {syncStatus.message}
+      </p>
+    )
+  }
+
   private renderHookList() {
     const { hooks } = this.state
+    const { omnispindleApiKey } = this.props
+
     if (hooks.length === 0) {
       return (
         <div className="automation-hooks-empty">
@@ -216,6 +358,16 @@ export class AutomationHooksPreferences extends React.Component<
               >
                 {hook.enabled ? 'Disable' : 'Enable'}
               </button>
+              {omnispindleApiKey && (
+                <button
+                  className="automation-hook-btn automation-hook-btn-push"
+                  onClick={() => this.onPushHook(hook)}
+                  aria-label="Push hook to server"
+                  title="Push to Omnispindle server"
+                >
+                  ↑ Push
+                </button>
+              )}
               <button
                 className="automation-hook-btn automation-hook-btn-danger"
                 onClick={() => this.onDelete(hook.id)}
@@ -231,7 +383,7 @@ export class AutomationHooksPreferences extends React.Component<
   }
 
   private renderEditor() {
-    const { editing, nameError, scriptError } = this.state
+    const { editing, nameError, scriptError, validating } = this.state
     if (!editing) {
       return null
     }
@@ -247,9 +399,7 @@ export class AutomationHooksPreferences extends React.Component<
             onValueChanged={this.onNameChanged}
             placeholder="e.g. Notify on commit"
           />
-          {nameError && (
-            <p className="automation-hook-error">{nameError}</p>
-          )}
+          {nameError && <p className="automation-hook-error">{nameError}</p>}
         </div>
 
         <div className="automation-hook-editor-row">
@@ -294,6 +444,9 @@ export class AutomationHooksPreferences extends React.Component<
             onChange={this.onEnabledChanged}
           />
           <div className="automation-hook-editor-buttons">
+            <Button onClick={this.onValidate} disabled={validating}>
+              {validating ? 'Validating…' : 'Validate'}
+            </Button>
             <Button onClick={this.closeEditor}>Cancel</Button>
             <Button type="submit" onClick={this.onSave}>
               Save Hook
@@ -305,8 +458,9 @@ export class AutomationHooksPreferences extends React.Component<
   }
 
   public render() {
-    const { editing } = this.state
+    const { editing, syncStatus } = this.state
     const { omnispindleApiKey } = this.props
+    const syncing = syncStatus.kind === 'syncing'
 
     return (
       <DialogContent>
@@ -314,7 +468,14 @@ export class AutomationHooksPreferences extends React.Component<
           <div className="automation-hooks-header">
             <h2>Automation Hooks</h2>
             {!editing && (
-              <Button onClick={this.openNew}>+ New Hook</Button>
+              <div className="automation-hooks-header-actions">
+                {omnispindleApiKey && (
+                  <Button onClick={this.onSyncFromServer} disabled={syncing}>
+                    {syncing ? 'Syncing…' : '↓ Sync from server'}
+                  </Button>
+                )}
+                <Button onClick={this.openNew}>+ New Hook</Button>
+              </div>
             )}
           </div>
 
@@ -324,11 +485,13 @@ export class AutomationHooksPreferences extends React.Component<
             {!omnispindleApiKey && (
               <>
                 {' '}
-                Add your Omnispindle API key to sync hooks across devices.
+                Add your Omnispindle API key in the Omnispindle tab to sync
+                hooks across devices.
               </>
             )}
           </p>
 
+          {this.renderSyncStatus()}
           {editing ? this.renderEditor() : this.renderHookList()}
         </div>
       </DialogContent>

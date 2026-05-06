@@ -101,6 +101,10 @@ describe('IPC channel contract', () => {
     'show-notification',
     'get-notifications-permission',
     'request-notifications-permission',
+    'automation-hooks-fetch',
+    'automation-hooks-push',
+    'automation-hooks-delete',
+    'automation-hooks-validate',
   ] as const
 
   describe('RequestChannels', () => {

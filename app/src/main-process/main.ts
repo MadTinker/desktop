@@ -52,6 +52,12 @@ import { initializeDesktopNotifications } from './notifications'
 import parseCommandLineArgs from 'minimist'
 import { CLIAction } from '../lib/cli-action'
 import { OmnispindleClient } from './omnispindle-client'
+import {
+  fetchRemoteHooks,
+  pushRemoteHook,
+  deleteRemoteHook,
+  validateHookScript,
+} from './automation-hooks-sync'
 
 app.setAppLogsPath()
 enableSourceMaps()
@@ -567,6 +573,24 @@ app.on('ready', () => {
   ipcMain.on('omnispindle-refresh', () => {
     omnispindleClient.refresh()
   })
+
+  ipcMain.handle('automation-hooks-fetch', (_, apiKey: string) =>
+    fetchRemoteHooks(apiKey)
+  )
+
+  ipcMain.handle(
+    'automation-hooks-push',
+    (_, apiKey: string, hook: Parameters<typeof pushRemoteHook>[1]) =>
+      pushRemoteHook(apiKey, hook)
+  )
+
+  ipcMain.handle('automation-hooks-delete', (_, apiKey: string, id: string) =>
+    deleteRemoteHook(apiKey, id)
+  )
+
+  ipcMain.handle('automation-hooks-validate', (_, script: string) =>
+    validateHookScript(script)
+  )
 
   /**
    * An event sent by the renderer asking for a copy of the current
