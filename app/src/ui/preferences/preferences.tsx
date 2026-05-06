@@ -44,6 +44,7 @@ import { Repository } from '../../models/repository'
 import { Notifications } from './notifications'
 import { Accessibility } from './accessibility'
 import { OmnispindlePreferences } from './omnispindle'
+import { AutomationHooksPreferences } from './automation-hooks'
 import type { ModelInfo } from '@github/copilot-sdk'
 import { CopilotPreferences } from './copilot'
 import type {
@@ -399,6 +400,10 @@ export class Preferences extends React.Component<
               <Octicon className="icon" symbol={octicons.zap} />
               Omnispindle
             </span>
+            <span id={this.getTabId(PreferencesTab.AutomationHooks)}>
+              <Octicon className="icon" symbol={octicons.terminal} />
+              Automation
+            </span>
             <span id={this.getTabId(PreferencesTab.Advanced)}>
               <Octicon className="icon" symbol={octicons.gear} />
               Advanced
@@ -442,6 +447,9 @@ export class Preferences extends React.Component<
         break
       case PreferencesTab.Omnispindle:
         suffix = 'omnispindle'
+        break
+      case PreferencesTab.AutomationHooks:
+        suffix = 'automation-hooks'
         break
       case PreferencesTab.Advanced:
         suffix = 'advanced'
@@ -681,6 +689,13 @@ export class Preferences extends React.Component<
           <OmnispindlePreferences
             apiKey={this.state.omnispindleApiKey}
             onApiKeyChanged={this.onOmnispindleApiKeyChanged}
+          />
+        )
+        break
+      case PreferencesTab.AutomationHooks:
+        View = (
+          <AutomationHooksPreferences
+            omnispindleApiKey={this.state.omnispindleApiKey}
           />
         )
         break

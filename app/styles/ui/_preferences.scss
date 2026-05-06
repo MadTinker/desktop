@@ -276,3 +276,158 @@
     width: 100px;
   }
 }
+
+#preferences {
+  .automation-hooks-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+
+    .automation-hooks-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+
+      h2 {
+        margin: 0;
+      }
+    }
+
+    .automation-hooks-empty {
+      color: var(--text-secondary-color);
+      font-style: italic;
+    }
+
+    .automation-hooks-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .automation-hook-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 12px;
+      background: var(--box-background-color);
+      border: 1px solid var(--box-border-color);
+      border-radius: 4px;
+
+      .automation-hook-info {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+
+        .automation-hook-name {
+          font-weight: 600;
+        }
+
+        .automation-hook-trigger {
+          font-size: 0.75rem;
+          padding: 2px 6px;
+          border: 1px solid var(--box-border-color);
+          border-radius: 3px;
+          color: var(--text-secondary-color);
+        }
+
+        .automation-hook-disabled {
+          font-size: 0.75rem;
+          color: var(--text-secondary-color);
+        }
+      }
+
+      .automation-hook-actions {
+        display: flex;
+        gap: 6px;
+      }
+
+      .automation-hook-btn {
+        font-size: 0.75rem;
+        padding: 2px 8px;
+        border: 1px solid var(--box-border-color);
+        border-radius: 3px;
+        background: transparent;
+        cursor: pointer;
+        color: var(--text-color);
+
+        &:hover {
+          background: var(--box-border-color);
+        }
+
+        &.automation-hook-btn-danger {
+          color: var(--error-color, #d73a49);
+          border-color: var(--error-color, #d73a49);
+
+          &:hover {
+            background: var(--error-color, #d73a49);
+            color: white;
+          }
+        }
+      }
+    }
+
+    .automation-hook-editor {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding: 12px;
+      border: 1px solid var(--box-border-color);
+      border-radius: 4px;
+
+      h3 {
+        margin: 0;
+      }
+
+      .automation-hook-editor-row {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .automation-hook-label {
+        font-size: 0.85rem;
+        font-weight: 600;
+      }
+
+      .automation-hook-select {
+        padding: 6px 8px;
+        border: 1px solid var(--box-border-color);
+        border-radius: 4px;
+        background: var(--background-color);
+        color: var(--text-color);
+      }
+
+      .automation-hook-textarea {
+        font-family: var(--font-family-monospace, monospace);
+        font-size: 0.82rem;
+        padding: 8px;
+        border: 1px solid var(--box-border-color);
+        border-radius: 4px;
+        background: var(--background-color);
+        color: var(--text-color);
+        resize: vertical;
+        min-height: 160px;
+      }
+
+      .automation-hook-error {
+        color: var(--error-color, #d73a49);
+        font-size: 0.8rem;
+        margin: 0;
+      }
+
+      .automation-hook-editor-footer {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+
+        .automation-hook-editor-buttons {
+          display: flex;
+          gap: 8px;
+        }
+      }
+    }
+  }
+}
