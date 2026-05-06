@@ -25,12 +25,12 @@ function statusIcon(status: OmnispindleConnectionStatus) {
 
 function statusLabel(status: OmnispindleConnectionStatus, count: number) {
   if (status === 'unconfigured') {
-    return 'Omnispindle — not configured'
+    return 'click sync to fetch'
   }
   if (status === 'error') {
-    return 'Omnispindle — connection error'
+    return 'connection error'
   }
-  return `Omnispindle — ${count} todo${count === 1 ? '' : 's'}`
+  return `${count} todo${count === 1 ? '' : 's'}`
 }
 
 export class OmnispindleTodos extends React.Component<
@@ -53,17 +53,14 @@ export class OmnispindleTodos extends React.Component<
 
   public render() {
     const { todos, status } = this.props
-
-    if (status === 'unconfigured') {
-      return null
-    }
-
     const { expanded } = this.state
     const icon = statusIcon(status)
     const iconClass =
       status === 'error'
         ? 'omnispindle-icon error'
-        : 'omnispindle-icon ok'
+        : status === 'connected'
+          ? 'omnispindle-icon ok'
+          : 'omnispindle-icon'
 
     return (
       <div className="omnispindle-todos">
@@ -106,6 +103,12 @@ export class OmnispindleTodos extends React.Component<
 
         {expanded && todos.length === 0 && status === 'connected' && (
           <p className="omnispindle-empty">No active todos</p>
+        )}
+
+        {expanded && status === 'unconfigured' && (
+          <p className="omnispindle-empty">
+            Set your API key in Settings → Omnispindle, then click sync.
+          </p>
         )}
 
         {expanded && status === 'error' && (
