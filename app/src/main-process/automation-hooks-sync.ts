@@ -51,11 +51,21 @@ export async function fetchRemoteHooks(
       return { success: false, hooks: [], error: `HTTP ${res.status}` }
     }
     const json = await res.json()
-    return {
-      success: json.success ?? true,
-      hooks: Array.isArray(json.hooks) ? json.hooks : [],
-      error: json.message,
-    }
+    // Map to only the fields we use — server also returns _id, userId, lastRun, etc.
+    const rawHooks: Array<Record<string, unknown>> = Array.isArray(json.hooks)
+      ? json.hooks
+      : []
+    const hooks: RemoteHook[] = rawHooks
+      .filter(h => typeof h.id === 'string' && h.id)
+      .map(h => ({
+        id: String(h.id),
+        name: String(h.name ?? ''),
+        trigger: String(h.trigger ?? 'manual'),
+        script: String(h.script ?? ''),
+        enabled: h.enabled !== false,
+        createdAt: h.createdAt ? String(h.createdAt) : undefined,
+      }))
+    return { success: json.success ?? true, hooks, error: json.message }
   } catch (err) {
     return {
       success: false,
