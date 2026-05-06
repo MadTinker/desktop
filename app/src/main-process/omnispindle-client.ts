@@ -46,8 +46,19 @@ export class OmnispindleClient {
         return { status: 'error', message: `Server returned HTTP ${response.status}` }
       }
       const json = await response.json()
+      // JSON-RPC error response — server returned error in body with HTTP 200
+      if (json?.error) {
+        const msg =
+          json.error?.data?.details ||
+          json.error?.message ||
+          json.detail ||
+          'Server returned an error'
+        return { status: 'error', message: msg }
+      }
       if (!json?.result) {
-        return { status: 'error', message: 'Unexpected response from server' }
+        // Dump the raw body so we know exactly what came back
+        const raw = JSON.stringify(json).substring(0, 120)
+        return { status: 'error', message: `Unexpected response: ${raw}` }
       }
       return { status: 'connected', message: 'Connected successfully' }
     } catch (err) {
