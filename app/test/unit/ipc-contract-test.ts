@@ -101,6 +101,7 @@ describe('IPC channel contract', () => {
     'show-notification',
     'get-notifications-permission',
     'request-notifications-permission',
+    'omnispindle-test',
     'automation-hooks-fetch',
     'automation-hooks-push',
     'automation-hooks-delete',

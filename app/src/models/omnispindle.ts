@@ -7,3 +7,8 @@ export interface IOmnispindleTodo {
 }
 
 export type OmnispindleConnectionStatus = 'connected' | 'error' | 'unconfigured'
+
+export interface OmnispindleTestResult {
+  readonly status: OmnispindleConnectionStatus
+  readonly message?: string
+}

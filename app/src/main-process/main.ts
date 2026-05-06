@@ -574,6 +574,10 @@ app.on('ready', () => {
     omnispindleClient.refresh()
   })
 
+  ipcMain.handle('omnispindle-test', (_, apiKey: string) =>
+    omnispindleClient.testConnection(apiKey)
+  )
+
   ipcMain.handle('automation-hooks-fetch', (_, apiKey: string) =>
     fetchRemoteHooks(apiKey)
   )

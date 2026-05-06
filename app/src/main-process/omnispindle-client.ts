@@ -3,6 +3,7 @@ import { send } from './ipc-webcontents'
 import {
   IOmnispindleTodo,
   OmnispindleConnectionStatus,
+  OmnispindleTestResult,
 } from '../models/omnispindle'
 
 const OMNISPINDLE_URL = 'https://madnessinteractive.cc/api/mcp/'
@@ -17,6 +18,42 @@ export class OmnispindleClient {
 
   public setApiKey(apiKey: string) {
     this.apiKey = apiKey
+  }
+
+  public async testConnection(apiKey: string): Promise<OmnispindleTestResult> {
+    if (!apiKey) {
+      return { status: 'unconfigured', message: 'No API key provided' }
+    }
+    try {
+      const body = JSON.stringify({
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'tools/call',
+        params: { name: 'query_todos', arguments: { status: 'active', limit: 1 } },
+      })
+      const response = await fetch(OMNISPINDLE_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body,
+      })
+      if (response.status === 401) {
+        return { status: 'error', message: 'Invalid API key (401 Unauthorized)' }
+      }
+      if (!response.ok) {
+        return { status: 'error', message: `Server returned HTTP ${response.status}` }
+      }
+      const json = await response.json()
+      if (!json?.result) {
+        return { status: 'error', message: 'Unexpected response from server' }
+      }
+      return { status: 'connected', message: 'Connected successfully' }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      return { status: 'error', message: `Network error: ${msg}` }
+    }
   }
 
   public async refresh() {

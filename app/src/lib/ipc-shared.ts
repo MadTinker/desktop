@@ -20,6 +20,7 @@ import { CLIAction } from './cli-action'
 import {
   IOmnispindleTodo,
   OmnispindleConnectionStatus,
+  OmnispindleTestResult,
 } from '../models/omnispindle'
 import type {
   HooksFetchResult,
@@ -152,6 +153,7 @@ export type RequestResponseChannels = {
   ) => Promise<string | null>
   'get-notifications-permission': () => Promise<DesktopNotificationPermission>
   'request-notifications-permission': () => Promise<boolean>
+  'omnispindle-test': (apiKey: string) => Promise<OmnispindleTestResult>
   'automation-hooks-fetch': (apiKey: string) => Promise<HooksFetchResult>
   'automation-hooks-push': (
     apiKey: string,
