@@ -29,7 +29,7 @@ export class OmnispindleClient {
         jsonrpc: '2.0',
         id: 1,
         method: 'tools/call',
-        params: { name: 'query_todos', arguments: { status: 'active', limit: 1 } },
+        params: { name: 'list_todos_by_status', arguments: { status: 'pending', limit: 1 } },
       })
       const response = await fetch(OMNISPINDLE_URL, {
         method: 'POST',
@@ -89,8 +89,8 @@ export class OmnispindleClient {
         id: 1,
         method: 'tools/call',
         params: {
-          name: 'query_todos',
-          arguments: { status: 'active', limit: 50 },
+          name: 'list_todos_by_status',
+          arguments: { status: 'pending', limit: 50 },
         },
       })
 
