@@ -22,21 +22,21 @@ export class ReflogSidebar extends React.Component<IReflogSidebarProps> {
       <div className="reflog-sidebar">
         {entries.map(entry => (
           <div key={entry.selector} className="reflog-entry">
-            <div className="reflog-entry-header">
-              <span
-                className={`reflog-action reflog-action--${entry.action}`}
-                title={entry.action}
-              >
-                {entry.action}
-              </span>
-              <span className="reflog-selector">{entry.selector}</span>
-              <span className="reflog-sha">{entry.shortSha}</span>
-              <RelativeTime date={entry.date} className="reflog-date" />
+            <div className="reflog-entry-info">
+              <div className="reflog-summary">{entry.description}</div>
+              <div className="reflog-byline">
+                <span
+                  className={`reflog-action reflog-action--${entry.action}`}
+                  title={entry.action}
+                >
+                  {entry.action}
+                </span>
+                {entry.author && (
+                  <span className="reflog-author">{entry.author}</span>
+                )}
+                <RelativeTime date={entry.date} className="reflog-date" />
+              </div>
             </div>
-            {entry.author && (
-              <div className="reflog-author">{entry.author}</div>
-            )}
-            <div className="reflog-description">{entry.description}</div>
           </div>
         ))}
       </div>
