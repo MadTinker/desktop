@@ -127,6 +127,7 @@ interface IRepositoryViewProps {
 
   readonly omnispindleTodos: ReadonlyArray<IOmnispindleTodo>
   readonly omnispindleStatus: OmnispindleConnectionStatus
+  readonly omnispindleApiKey: string
   readonly onRefreshOmnispindleTodos: () => void
 
   /**
@@ -351,6 +352,7 @@ export class RepositoryView extends React.Component<
         showChangesFilter={this.props.showChangesFilter}
         omnispindleTodos={this.props.omnispindleTodos}
         omnispindleStatus={this.props.omnispindleStatus}
+        omnispindleApiKey={this.props.omnispindleApiKey}
         onRefreshOmnispindleTodos={this.props.onRefreshOmnispindleTodos}
         hasCommitHooks={this.props.hasCommitHooks}
         skipCommitHooks={this.props.skipCommitHooks}
