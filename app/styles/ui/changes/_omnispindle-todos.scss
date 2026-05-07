@@ -150,6 +150,96 @@
     &.badge-completed   { background: rgba(46, 125, 50, 0.2);   color: #a5d6a7; }
   }
 
+  .omnispindle-add-btn {
+    flex-shrink: 0;
+    background: transparent;
+    border: none;
+    color: var(--text-secondary-color);
+    cursor: pointer;
+    padding: 4px 6px;
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &:hover { color: var(--text-color); background: var(--list-item-hover-background-color); }
+    &.active { color: var(--status-error-color); }
+  }
+
+  .omnispindle-add-form {
+    padding: var(--spacing-half) var(--spacing);
+    border-bottom: var(--base-border);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .omnispindle-add-row {
+    display: flex;
+    gap: 6px;
+  }
+
+  .omnispindle-input {
+    background: var(--background-color);
+    border: var(--base-border);
+    border-radius: 4px;
+    color: var(--text-color);
+    font-size: var(--font-size-sm);
+    font-family: inherit;
+    padding: 4px 6px;
+    width: 100%;
+
+    &:focus { outline: none; border-color: var(--focus-color); }
+    &.omnispindle-input-project { flex: 1; min-width: 0; }
+  }
+
+  .omnispindle-select {
+    background: var(--background-color);
+    border: var(--base-border);
+    border-radius: 4px;
+    color: var(--text-color);
+    font-size: var(--font-size-sm);
+    font-family: inherit;
+    padding: 4px 6px;
+    cursor: pointer;
+    flex-shrink: 0;
+
+    &:focus { outline: none; border-color: var(--focus-color); }
+  }
+
+  .omnispindle-add-actions {
+    display: flex;
+    gap: 6px;
+    justify-content: flex-end;
+  }
+
+  .omnispindle-btn-submit,
+  .omnispindle-btn-cancel {
+    background: transparent;
+    border: var(--base-border);
+    border-radius: 4px;
+    color: var(--text-color);
+    font-size: var(--font-size-sm);
+    font-family: inherit;
+    padding: 3px 10px;
+    cursor: pointer;
+
+    &:hover { background: var(--list-item-hover-background-color); }
+    &:disabled { opacity: 0.5; cursor: not-allowed; }
+  }
+
+  .omnispindle-btn-submit {
+    border-color: var(--focus-color);
+    color: var(--focus-color);
+    &:hover { background: rgba(var(--focus-color-rgb, 3, 102, 214), 0.1); }
+  }
+
+  .omnispindle-submit-error {
+    margin: 0;
+    font-size: var(--font-size-sm);
+    color: var(--status-error-color);
+  }
+
   @keyframes omnispindle-spin {
     from { transform: rotate(0deg); }
     to   { transform: rotate(360deg); }

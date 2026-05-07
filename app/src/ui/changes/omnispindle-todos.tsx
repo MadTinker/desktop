@@ -3,15 +3,24 @@ import { IOmnispindleTodo, OmnispindleConnectionStatus } from '../../models/omni
 import { Octicon } from '../octicons'
 import * as octicons from '../octicons/octicons.generated'
 
+const API_BASE = 'https://madnessinteractive.cc/api'
+
 interface IOmnispindleTodosProps {
   readonly todos: ReadonlyArray<IOmnispindleTodo>
   readonly status: OmnispindleConnectionStatus
+  readonly apiKey: string
   readonly onRefresh: () => void
 }
 
 interface IOmnispindleTodosState {
   readonly expanded: boolean
   readonly loading: boolean
+  readonly adding: boolean
+  readonly newDescription: string
+  readonly newProject: string
+  readonly newPriority: string
+  readonly submitting: boolean
+  readonly submitError: string | null
 }
 
 function statusIcon(status: OmnispindleConnectionStatus) {
@@ -52,7 +61,16 @@ export class OmnispindleTodos extends React.Component<
 > {
   public constructor(props: IOmnispindleTodosProps) {
     super(props)
-    this.state = { expanded: true, loading: false }
+    this.state = {
+      expanded: true,
+      loading: false,
+      adding: false,
+      newDescription: '',
+      newProject: '',
+      newPriority: 'Medium',
+      submitting: false,
+      submitError: null,
+    }
   }
 
   public componentDidUpdate(prevProps: IOmnispindleTodosProps) {
@@ -71,9 +89,63 @@ export class OmnispindleTodos extends React.Component<
     this.props.onRefresh()
   }
 
+  private onAddClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault()
+    this.setState(prev => ({
+      adding: !prev.adding,
+      newDescription: '',
+      newProject: '',
+      newPriority: 'Medium',
+      submitError: null,
+      expanded: true,
+    }))
+  }
+
+  private onSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    const { newDescription, newProject, newPriority } = this.state
+    if (!newDescription.trim() || !newProject.trim()) return
+
+    this.setState({ submitting: true, submitError: null })
+    try {
+      const resp = await fetch(`${API_BASE}/todos`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${this.props.apiKey}`,
+        },
+        body: JSON.stringify({
+          description: newDescription.trim(),
+          project: newProject.trim().toLowerCase(),
+          priority: newPriority,
+        }),
+      })
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({}))
+        throw new Error(err.message || err.details || `HTTP ${resp.status}`)
+      }
+      this.setState({ adding: false, newDescription: '', newProject: '', submitting: false })
+      this.props.onRefresh()
+    } catch (err) {
+      this.setState({
+        submitting: false,
+        submitError: err instanceof Error ? err.message : String(err),
+      })
+    }
+  }
+
+  private onCancel = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault()
+    this.setState({ adding: false, submitError: null })
+  }
+
   public render() {
     const { todos, status } = this.props
-    const { expanded, loading } = this.state
+    const {
+      expanded, loading, adding,
+      newDescription, newProject, newPriority,
+      submitting, submitError,
+    } = this.state
     const icon = statusIcon(status)
     const iconClass =
       status === 'error'     ? 'omnispindle-icon error' :
@@ -89,6 +161,15 @@ export class OmnispindleTodos extends React.Component<
               {loading ? 'fetching…' : statusLabel(status, todos.length)}
             </span>
           </button>
+          {status === 'connected' && (
+            <button
+              className={`omnispindle-add-btn${adding ? ' active' : ''}`}
+              onClick={this.onAddClick}
+              title={adding ? 'Cancel' : 'Add todo'}
+            >
+              <Octicon symbol={adding ? octicons.x : octicons.plus} />
+            </button>
+          )}
           <button
             className={`omnispindle-refresh${loading ? ' spinning' : ''}`}
             onClick={this.onRefresh}
@@ -104,6 +185,61 @@ export class OmnispindleTodos extends React.Component<
             />
           </button>
         </div>
+
+        {adding && (
+          <form className="omnispindle-add-form" onSubmit={this.onSubmit}>
+            <input
+              className="omnispindle-input"
+              type="text"
+              placeholder="Description"
+              value={newDescription}
+              onChange={e => this.setState({ newDescription: e.target.value })}
+              autoFocus={true}
+              disabled={submitting}
+            />
+            <div className="omnispindle-add-row">
+              <input
+                className="omnispindle-input omnispindle-input-project"
+                type="text"
+                placeholder="project"
+                value={newProject}
+                onChange={e => this.setState({ newProject: e.target.value })}
+                disabled={submitting}
+              />
+              <select
+                className="omnispindle-select"
+                value={newPriority}
+                onChange={e => this.setState({ newPriority: e.target.value })}
+                disabled={submitting}
+              >
+                <option>Critical</option>
+                <option>High</option>
+                <option>Medium</option>
+                <option>Low</option>
+              </select>
+            </div>
+            {submitError && (
+              <p className="omnispindle-submit-error">{submitError}</p>
+            )}
+            <div className="omnispindle-add-actions">
+              <button
+                type="submit"
+                className="omnispindle-btn-submit"
+                disabled={submitting || !newDescription.trim() || !newProject.trim()}
+              >
+                {submitting ? 'Adding…' : 'Add'}
+              </button>
+              <button
+                type="button"
+                className="omnispindle-btn-cancel"
+                onClick={this.onCancel}
+                disabled={submitting}
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        )}
 
         {expanded && todos.length > 0 && (
           <ul className="omnispindle-list">

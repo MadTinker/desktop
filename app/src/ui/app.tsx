@@ -3560,6 +3560,7 @@ export class App extends React.Component<IAppProps, IAppState> {
           showReflogTab={state.showReflogTab}
           omnispindleTodos={state.omnispindleTodos}
           omnispindleStatus={state.omnispindleStatus}
+          omnispindleApiKey={state.omnispindleApiKey}
           onRefreshOmnispindleTodos={this.onRefreshOmnispindleTodos}
           shouldShowGenerateCommitMessageCallOut={
             !this.state.commitMessageGenerationButtonClicked
