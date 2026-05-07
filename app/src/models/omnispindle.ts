@@ -3,7 +3,7 @@ export interface IOmnispindleTodo {
   readonly title: string
   readonly status: string
   readonly project?: string
-  readonly priority?: number
+  readonly priority?: string
 }
 
 export type OmnispindleConnectionStatus = 'connected' | 'error' | 'unconfigured'

@@ -91,7 +91,7 @@ export class OmnispindleClient {
         title: String(t.description ?? t.title ?? t.name ?? ''),
         status: String(t.status ?? ''),
         project: t.project ? String(t.project) : undefined,
-        priority: typeof t.priority === 'number' ? t.priority : undefined,
+        priority: t.priority ? String(t.priority) : undefined,
       }))
 
       return { todos, status: 'connected' }
