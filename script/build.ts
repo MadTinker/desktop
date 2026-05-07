@@ -68,9 +68,6 @@ const outRoot = path.join(projectRoot, 'out')
 
 console.log(`Building for ${getChannel()}…`)
 
-console.log('Removing old distribution…')
-rmSync(getDistRoot(), { recursive: true, force: true })
-
 console.log('Copying dependencies…')
 copyDependencies()
 
@@ -119,6 +116,8 @@ verifyInjectedSassVariables(outRoot)
       return [outRoot]
     }
 
+    console.log('Removing old distribution…')
+    rmSync(getDistRoot(), { recursive: true, force: true })
     console.log('Packaging…')
     return packageApp()
   })
