@@ -16,9 +16,49 @@ import {
 } from './environment'
 import { AuthenticationErrors } from './authentication'
 import { getRemotes } from './remote'
+import { getSymbolicRef } from './refs'
 import { IRemote } from '../../models/remote'
 import { Progress, IPushProgress, IPullProgress } from '../../models/progress'
 import { CommitOneLine } from '../../models/commit'
+
+/**
+ * Resolve the push refspec for a repository that may be in detached HEAD state.
+ *
+ * Returns undefined when on a normal branch (let git use the tracking config).
+ * Returns 'HEAD:<branch>' when detached, derived from the upstream tracking ref.
+ * Returns null when detached with no upstream — caller should skip the push.
+ */
+async function resolvePushRefspec(
+  repo: Repository
+): Promise<string | null | undefined> {
+  const headRef = await getSymbolicRef(repo, 'HEAD')
+  if (headRef !== null) {
+    // On a branch — no explicit refspec needed
+    return undefined
+  }
+
+  // Detached HEAD — try to find the upstream tracking branch
+  const upstreamResult = await git(
+    ['rev-parse', '--abbrev-ref', '@{upstream}'],
+    repo.path,
+    'getUpstreamRef',
+    { successExitCodes: new Set([0, 128]) }
+  )
+
+  if (upstreamResult.exitCode !== 0) {
+    return null
+  }
+
+  // upstream is e.g. "origin/main" — strip the remote prefix
+  const upstream = upstreamResult.stdout.trim()
+  const slashIdx = upstream.indexOf('/')
+  if (slashIdx === -1) {
+    return null
+  }
+
+  const remoteBranch = upstream.slice(slashIdx + 1)
+  return `HEAD:refs/heads/${remoteBranch}`
+}
 
 /**
  * Update submodules after a git operation.
@@ -272,7 +312,20 @@ export async function pushSubmodule(
   }
 
   const remote = remotes.find(r => r.name === 'origin') ?? remotes[0]
-  const args = ['push']
+
+  const refspec = await resolvePushRefspec(submoduleRepo)
+  if (refspec === null) {
+    // Detached HEAD with no upstream tracking branch — nothing to push
+    log.warn(
+      `[pushSubmodule] ${submodulePath} is in detached HEAD with no upstream; skipping push`
+    )
+    return
+  }
+
+  const args = ['push', remote.name]
+  if (refspec !== undefined) {
+    args.push(refspec)
+  }
 
   let opts: IGitStringExecutionOptions = {
     env: await envForRemoteOperation(remote.url),
