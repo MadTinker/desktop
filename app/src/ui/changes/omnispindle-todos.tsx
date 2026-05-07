@@ -58,8 +58,8 @@ export class OmnispindleTodos extends React.Component<
     this.setState(prev => ({ expanded: !prev.expanded }))
   }
 
-  private onRefresh = (e: React.MouseEvent) => {
-    e.stopPropagation()
+  private onRefresh = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault()
     this.props.onRefresh()
   }
 
@@ -68,30 +68,33 @@ export class OmnispindleTodos extends React.Component<
     const { expanded } = this.state
     const icon = statusIcon(status)
     const iconClass =
-      status === 'error'   ? 'omnispindle-icon error' :
-      status === 'connected' ? 'omnispindle-icon ok'  : 'omnispindle-icon'
+      status === 'error'     ? 'omnispindle-icon error' :
+      status === 'connected' ? 'omnispindle-icon ok'    : 'omnispindle-icon'
 
     return (
       <div className="omnispindle-todos">
-        <button className="omnispindle-header" onClick={this.onToggle}>
-          <Octicon symbol={icon} className={iconClass} />
-          <span className="omnispindle-title">Omnispindle</span>
-          <span className="omnispindle-summary">
-            {statusLabel(status, todos.length)}
-          </span>
-          <span
+        <div className="omnispindle-header">
+          <button className="omnispindle-toggle" onClick={this.onToggle}>
+            <Octicon symbol={icon} className={iconClass} />
+            <span className="omnispindle-title">Omnispindle</span>
+            <span className="omnispindle-summary">
+              {statusLabel(status, todos.length)}
+            </span>
+          </button>
+          <button
             className="omnispindle-refresh"
             onClick={this.onRefresh}
             title="Refresh todos"
-            role="button"
           >
             <Octicon symbol={octicons.sync} />
-          </span>
-          <Octicon
-            symbol={expanded ? octicons.chevronUp : octicons.chevronDown}
-            className="omnispindle-chevron"
-          />
-        </button>
+          </button>
+          <button className="omnispindle-chevron-btn" onClick={this.onToggle}>
+            <Octicon
+              symbol={expanded ? octicons.chevronUp : octicons.chevronDown}
+              className="omnispindle-chevron"
+            />
+          </button>
+        </div>
 
         {expanded && todos.length > 0 && (
           <ul className="omnispindle-list">

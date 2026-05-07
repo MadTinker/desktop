@@ -6,20 +6,29 @@
     display: flex;
     flex-direction: row;
     align-items: center;
-    gap: var(--spacing-half);
+    gap: 0;
     width: 100%;
-    background: transparent;
-    border: none;
-    padding: var(--spacing-half) var(--spacing);
-    color: var(--text-secondary-color);
-    font-size: var(--font-size-sm);
-    font-family: inherit;
-    cursor: pointer;
-    text-align: left;
 
-    &:hover {
-      background: var(--list-item-hover-background-color);
-      color: var(--text-color);
+    .omnispindle-toggle {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: var(--spacing-half);
+      flex: 1;
+      min-width: 0;
+      background: transparent;
+      border: none;
+      padding: var(--spacing-half) var(--spacing);
+      color: var(--text-secondary-color);
+      font-size: var(--font-size-sm);
+      font-family: inherit;
+      cursor: pointer;
+      text-align: left;
+
+      &:hover {
+        background: var(--list-item-hover-background-color);
+        color: var(--text-color);
+      }
     }
 
     .omnispindle-icon {
@@ -31,6 +40,7 @@
     .omnispindle-title {
       font-weight: var(--font-weight-semibold);
       color: var(--text-color);
+      white-space: nowrap;
     }
 
     .omnispindle-summary {
@@ -41,22 +51,23 @@
       color: var(--text-secondary-color);
     }
 
-    .omnispindle-refresh {
+    .omnispindle-refresh,
+    .omnispindle-chevron-btn {
       flex-shrink: 0;
+      background: transparent;
+      border: none;
       color: var(--text-secondary-color);
       cursor: pointer;
-      padding: 2px;
+      padding: 4px 6px;
       border-radius: 3px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
 
       &:hover {
         color: var(--text-color);
         background: var(--list-item-hover-background-color);
       }
-    }
-
-    .omnispindle-chevron {
-      flex-shrink: 0;
-      color: var(--text-secondary-color);
     }
   }
 
