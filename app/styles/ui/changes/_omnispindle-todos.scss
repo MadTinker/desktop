@@ -130,6 +130,12 @@
     }
   }
 
+  .omnispindle-copied {
+    font-size: 10px;
+    color: var(--status-success-color);
+    font-weight: var(--font-weight-semibold);
+  }
+
   .omnispindle-badge {
     font-size: 10px;
     font-weight: var(--font-weight-semibold);

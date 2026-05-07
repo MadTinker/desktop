@@ -21,6 +21,7 @@ interface IOmnispindleTodosState {
   readonly newPriority: string
   readonly submitting: boolean
   readonly submitError: string | null
+  readonly copiedId: string | null
 }
 
 function statusIcon(status: OmnispindleConnectionStatus) {
@@ -70,6 +71,7 @@ export class OmnispindleTodos extends React.Component<
       newPriority: 'Medium',
       submitting: false,
       submitError: null,
+      copiedId: null,
     }
   }
 
@@ -139,12 +141,23 @@ export class OmnispindleTodos extends React.Component<
     this.setState({ adding: false, submitError: null })
   }
 
+  private onTodoContextMenu = (
+    e: React.MouseEvent<HTMLLIElement>,
+    todo: IOmnispindleTodo
+  ) => {
+    e.preventDefault()
+    navigator.clipboard.writeText(todo.id).then(() => {
+      this.setState({ copiedId: todo.id })
+      setTimeout(() => this.setState({ copiedId: null }), 1500)
+    })
+  }
+
   public render() {
     const { todos, status } = this.props
     const {
       expanded, loading, adding,
       newDescription, newProject, newPriority,
-      submitting, submitError,
+      submitting, submitError, copiedId,
     } = this.state
     const icon = statusIcon(status)
     const iconClass =
@@ -247,6 +260,8 @@ export class OmnispindleTodos extends React.Component<
               <li
                 key={todo.id}
                 className={`omnispindle-item ${priorityClass(todo.priority)}`}
+                onContextMenu={e => this.onTodoContextMenu(e, todo)}
+                title="Right-click to copy ID"
               >
                 <div className="omnispindle-item-body">
                   <span className="omnispindle-item-title">{todo.title}</span>
@@ -262,6 +277,9 @@ export class OmnispindleTodos extends React.Component<
                     <span className={`omnispindle-badge ${statusBadgeClass(todo.status)}`}>
                       {todo.status.replace('_', ' ')}
                     </span>
+                    {copiedId === todo.id && (
+                      <span className="omnispindle-copied">✓ copied</span>
+                    )}
                   </div>
                 </div>
               </li>
