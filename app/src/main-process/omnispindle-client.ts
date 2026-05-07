@@ -6,7 +6,7 @@ import {
   OmnispindleTestResult,
 } from '../models/omnispindle'
 
-const OMNISPINDLE_URL = 'https://madnessinteractive.cc/api/mcp/'
+const OMNISPINDLE_API_URL = 'https://madnessinteractive.cc/api'
 
 export class OmnispindleClient {
   private apiKey: string = ''
@@ -25,20 +25,12 @@ export class OmnispindleClient {
       return { status: 'unconfigured', message: 'No API key provided' }
     }
     try {
-      const body = JSON.stringify({
-        jsonrpc: '2.0',
-        id: 1,
-        method: 'tools/call',
-        params: { name: 'list_todos_by_status', arguments: { status: 'pending', limit: 1 } },
-      })
-      const response = await fetch(OMNISPINDLE_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${apiKey}`,
-        },
-        body,
-      })
+      const response = await fetch(
+        `${OMNISPINDLE_API_URL}/todos?status=pending&limit=1`,
+        {
+          headers: { Authorization: `Bearer ${apiKey}` },
+        }
+      )
       if (response.status === 401) {
         return { status: 'error', message: 'Invalid API key (401 Unauthorized)' }
       }
@@ -46,17 +38,7 @@ export class OmnispindleClient {
         return { status: 'error', message: `Server returned HTTP ${response.status}` }
       }
       const json = await response.json()
-      // JSON-RPC error response — server returned error in body with HTTP 200
-      if (json?.error) {
-        const msg =
-          json.error?.data?.details ||
-          json.error?.message ||
-          json.detail ||
-          'Server returned an error'
-        return { status: 'error', message: msg }
-      }
-      if (!json?.result) {
-        // Dump the raw body so we know exactly what came back
+      if (!Array.isArray(json?.todos)) {
         const raw = JSON.stringify(json).substring(0, 120)
         return { status: 'error', message: `Unexpected response: ${raw}` }
       }
@@ -84,24 +66,12 @@ export class OmnispindleClient {
     }
 
     try {
-      const body = JSON.stringify({
-        jsonrpc: '2.0',
-        id: 1,
-        method: 'tools/call',
-        params: {
-          name: 'list_todos_by_status',
-          arguments: { status: 'pending', limit: 50 },
-        },
-      })
-
-      const response = await fetch(OMNISPINDLE_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${this.apiKey}`,
-        },
-        body,
-      })
+      const response = await fetch(
+        `${OMNISPINDLE_API_URL}/todos?status=pending&limit=50`,
+        {
+          headers: { Authorization: `Bearer ${this.apiKey}` },
+        }
+      )
 
       if (!response.ok) {
         log.error(`[omnispindle] HTTP ${response.status}`)
@@ -109,22 +79,16 @@ export class OmnispindleClient {
       }
 
       const json = await response.json()
-      const result = json?.result
+      const raw: Array<any> = Array.isArray(json?.todos) ? json.todos : []
 
-      if (!result) {
+      if (!raw.length && json?.todos === undefined) {
         log.error('[omnispindle] unexpected response shape', json)
         return { todos: [], status: 'error' }
       }
 
-      const raw: Array<any> = Array.isArray(result)
-        ? result
-        : Array.isArray(result?.todos)
-          ? result.todos
-          : []
-
       const todos: ReadonlyArray<IOmnispindleTodo> = raw.map(t => ({
         id: String(t._id ?? t.id ?? Math.random()),
-        title: String(t.title ?? t.name ?? ''),
+        title: String(t.description ?? t.title ?? t.name ?? ''),
         status: String(t.status ?? ''),
         project: t.project ? String(t.project) : undefined,
         priority: typeof t.priority === 'number' ? t.priority : undefined,
