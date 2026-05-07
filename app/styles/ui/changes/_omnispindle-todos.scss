@@ -154,6 +154,40 @@
     overflow: hidden;
   }
 
+  .omnispindle-lookup-form {
+    display: flex;
+    gap: 4px;
+
+    .omnispindle-lookup-input {
+      flex: 1;
+      font-size: 11px;
+    }
+
+    .omnispindle-lookup-btn {
+      flex-shrink: 0;
+      background: transparent;
+      border: var(--base-border);
+      border-radius: 4px;
+      color: var(--text-secondary-color);
+      cursor: pointer;
+      padding: 3px 6px;
+      display: flex;
+      align-items: center;
+
+      &:hover:not(:disabled) { color: var(--text-color); background: var(--list-item-hover-background-color); }
+      &:disabled { opacity: 0.4; cursor: not-allowed; }
+    }
+  }
+
+  .omnispindle-detail-empty {
+    margin: 0;
+    color: var(--text-secondary-color);
+    font-style: italic;
+    font-size: 11px;
+    text-align: center;
+    padding: 8px 0;
+  }
+
   .omnispindle-detail-header {
     display: flex;
     align-items: center;

@@ -23,6 +23,9 @@ interface IOmnispindleTodosState {
   readonly submitError: string | null
   readonly copiedId: string | null
   readonly selectedTodo: IOmnispindleTodo | null
+  readonly lookupId: string
+  readonly lookupLoading: boolean
+  readonly lookupError: string | null
 }
 
 function statusIcon(status: OmnispindleConnectionStatus) {
@@ -74,6 +77,9 @@ export class OmnispindleTodos extends React.Component<
       submitError: null,
       copiedId: null,
       selectedTodo: null,
+      lookupId: '',
+      lookupLoading: false,
+      lookupError: null,
     }
   }
 
@@ -150,7 +156,43 @@ export class OmnispindleTodos extends React.Component<
   }
 
   private onCloseDetail = () => {
-    this.setState({ selectedTodo: null })
+    this.setState({ selectedTodo: null, lookupId: '', lookupError: null })
+  }
+
+  private onLookupChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    this.setState({ lookupId: e.target.value, lookupError: null })
+  }
+
+  private onLookupSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    const id = this.state.lookupId.trim()
+    if (!id) return
+    this.setState({ lookupLoading: true, lookupError: null })
+    try {
+      const resp = await fetch(`${API_BASE}/todos/${encodeURIComponent(id)}`, {
+        headers: { Authorization: `Bearer ${this.props.apiKey}` },
+      })
+      if (resp.status === 404) throw new Error('Todo not found')
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
+      const t = await resp.json()
+      this.setState({
+        lookupLoading: false,
+        selectedTodo: {
+          id: String(t.id ?? t._id ?? id),
+          title: String(t.description ?? t.title ?? ''),
+          status: String(t.status ?? ''),
+          project: t.project ? String(t.project) : undefined,
+          priority: t.priority ? String(t.priority) : undefined,
+          notes: t.notes ? String(t.notes) : undefined,
+          createdAt: typeof t.created_at === 'number' ? t.created_at : undefined,
+        },
+      })
+    } catch (err) {
+      this.setState({
+        lookupLoading: false,
+        lookupError: err instanceof Error ? err.message : String(err),
+      })
+    }
   }
 
   private onTodoContextMenu = (
@@ -170,6 +212,7 @@ export class OmnispindleTodos extends React.Component<
       expanded, loading, adding,
       newDescription, newProject, newPriority,
       submitting, submitError, copiedId, selectedTodo,
+      lookupId, lookupLoading, lookupError,
     } = this.state
     const icon = statusIcon(status)
     const iconClass =
@@ -316,53 +359,87 @@ export class OmnispindleTodos extends React.Component<
           </p>
         )}
 
-        {selectedTodo && this.renderDetailPanel(selectedTodo)}
+        {this.renderDetailPanel(selectedTodo, lookupId, lookupLoading, lookupError)}
       </div>
     )
   }
 
-  private renderDetailPanel(todo: IOmnispindleTodo) {
-    const age = todo.createdAt
-      ? this.formatAge(todo.createdAt)
-      : null
+  private renderDetailPanel(
+    todo: IOmnispindleTodo | null,
+    lookupId: string,
+    lookupLoading: boolean,
+    lookupError: string | null
+  ) {
+    const age = todo?.createdAt ? this.formatAge(todo.createdAt) : null
 
     return (
       <div className="omnispindle-detail-panel">
-        <div className="omnispindle-detail-header">
-          <span className={`omnispindle-detail-priority ${priorityClass(todo.priority)}`}>
-            {todo.priority ?? 'No priority'}
-          </span>
-          <span className={`omnispindle-badge ${statusBadgeClass(todo.status)}`}>
-            {todo.status.replace('_', ' ')}
-          </span>
+        <form className="omnispindle-lookup-form" onSubmit={this.onLookupSubmit}>
+          <input
+            className="omnispindle-input omnispindle-lookup-input"
+            type="text"
+            placeholder="Paste todo ID…"
+            value={lookupId}
+            onChange={this.onLookupChange}
+            disabled={lookupLoading}
+          />
           <button
-            className="omnispindle-detail-close"
-            onClick={this.onCloseDetail}
-            title="Close"
+            type="submit"
+            className="omnispindle-lookup-btn"
+            disabled={lookupLoading || !lookupId.trim()}
+            title="Fetch todo by ID"
           >
-            <Octicon symbol={octicons.x} />
+            <Octicon symbol={lookupLoading ? octicons.sync : octicons.search} />
           </button>
-        </div>
+        </form>
 
-        <p className="omnispindle-detail-description">{todo.title}</p>
-
-        {todo.notes && (
-          <p className="omnispindle-detail-notes">{todo.notes}</p>
+        {lookupError && (
+          <p className="omnispindle-submit-error">{lookupError}</p>
         )}
 
-        <div className="omnispindle-detail-footer">
-          {todo.project && (
-            <span className="omnispindle-detail-project">{todo.project}</span>
-          )}
-          {age && <span className="omnispindle-detail-age">{age}</span>}
-          <button
-            className="omnispindle-detail-copy"
-            onClick={() => navigator.clipboard.writeText(todo.id)}
-            title={todo.id}
-          >
-            Copy ID
-          </button>
-        </div>
+        {todo ? (
+          <>
+            <div className="omnispindle-detail-header">
+              <span className={`omnispindle-detail-priority ${priorityClass(todo.priority)}`}>
+                {todo.priority ?? '—'}
+              </span>
+              <span className={`omnispindle-badge ${statusBadgeClass(todo.status)}`}>
+                {todo.status.replace('_', ' ')}
+              </span>
+              <button
+                className="omnispindle-detail-close"
+                onClick={this.onCloseDetail}
+                title="Clear"
+              >
+                <Octicon symbol={octicons.x} />
+              </button>
+            </div>
+
+            <p className="omnispindle-detail-description">{todo.title}</p>
+
+            {todo.notes && (
+              <p className="omnispindle-detail-notes">{todo.notes}</p>
+            )}
+
+            <div className="omnispindle-detail-footer">
+              {todo.project && (
+                <span className="omnispindle-detail-project">{todo.project}</span>
+              )}
+              {age && <span className="omnispindle-detail-age">{age}</span>}
+              <button
+                className="omnispindle-detail-copy"
+                onClick={() => navigator.clipboard.writeText(todo.id)}
+                title={todo.id}
+              >
+                Copy ID
+              </button>
+            </div>
+          </>
+        ) : (
+          <p className="omnispindle-detail-empty">
+            Click a todo or paste an ID above
+          </p>
+        )}
       </div>
     )
   }
