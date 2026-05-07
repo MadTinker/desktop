@@ -22,6 +22,7 @@ interface IOmnispindleTodosState {
   readonly submitting: boolean
   readonly submitError: string | null
   readonly copiedId: string | null
+  readonly selectedTodo: IOmnispindleTodo | null
 }
 
 function statusIcon(status: OmnispindleConnectionStatus) {
@@ -72,6 +73,7 @@ export class OmnispindleTodos extends React.Component<
       submitting: false,
       submitError: null,
       copiedId: null,
+      selectedTodo: null,
     }
   }
 
@@ -141,6 +143,16 @@ export class OmnispindleTodos extends React.Component<
     this.setState({ adding: false, submitError: null })
   }
 
+  private onTodoClick = (todo: IOmnispindleTodo) => {
+    this.setState(prev => ({
+      selectedTodo: prev.selectedTodo?.id === todo.id ? null : todo,
+    }))
+  }
+
+  private onCloseDetail = () => {
+    this.setState({ selectedTodo: null })
+  }
+
   private onTodoContextMenu = (
     e: React.MouseEvent<HTMLLIElement>,
     todo: IOmnispindleTodo
@@ -157,7 +169,7 @@ export class OmnispindleTodos extends React.Component<
     const {
       expanded, loading, adding,
       newDescription, newProject, newPriority,
-      submitting, submitError, copiedId,
+      submitting, submitError, copiedId, selectedTodo,
     } = this.state
     const icon = statusIcon(status)
     const iconClass =
@@ -259,9 +271,10 @@ export class OmnispindleTodos extends React.Component<
             {todos.map(todo => (
               <li
                 key={todo.id}
-                className={`omnispindle-item ${priorityClass(todo.priority)}`}
+                className={`omnispindle-item ${priorityClass(todo.priority)}${selectedTodo?.id === todo.id ? ' selected' : ''}`}
+                onClick={() => this.onTodoClick(todo)}
                 onContextMenu={e => this.onTodoContextMenu(e, todo)}
-                title="Right-click to copy ID"
+                title="Click to view · Right-click to copy ID"
               >
                 <div className="omnispindle-item-body">
                   <span className="omnispindle-item-title">{todo.title}</span>
@@ -302,7 +315,63 @@ export class OmnispindleTodos extends React.Component<
             Could not reach Omnispindle. Check your API key in Settings.
           </p>
         )}
+
+        {selectedTodo && this.renderDetailPanel(selectedTodo)}
       </div>
     )
+  }
+
+  private renderDetailPanel(todo: IOmnispindleTodo) {
+    const age = todo.createdAt
+      ? this.formatAge(todo.createdAt)
+      : null
+
+    return (
+      <div className="omnispindle-detail-panel">
+        <div className="omnispindle-detail-header">
+          <span className={`omnispindle-detail-priority ${priorityClass(todo.priority)}`}>
+            {todo.priority ?? 'No priority'}
+          </span>
+          <span className={`omnispindle-badge ${statusBadgeClass(todo.status)}`}>
+            {todo.status.replace('_', ' ')}
+          </span>
+          <button
+            className="omnispindle-detail-close"
+            onClick={this.onCloseDetail}
+            title="Close"
+          >
+            <Octicon symbol={octicons.x} />
+          </button>
+        </div>
+
+        <p className="omnispindle-detail-description">{todo.title}</p>
+
+        {todo.notes && (
+          <p className="omnispindle-detail-notes">{todo.notes}</p>
+        )}
+
+        <div className="omnispindle-detail-footer">
+          {todo.project && (
+            <span className="omnispindle-detail-project">{todo.project}</span>
+          )}
+          {age && <span className="omnispindle-detail-age">{age}</span>}
+          <button
+            className="omnispindle-detail-copy"
+            onClick={() => navigator.clipboard.writeText(todo.id)}
+            title={todo.id}
+          >
+            Copy ID
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  private formatAge(ts: number): string {
+    const secs = Math.floor(Date.now() / 1000) - ts
+    if (secs < 60) return `${secs}s ago`
+    if (secs < 3600) return `${Math.floor(secs / 60)}m ago`
+    if (secs < 86400) return `${Math.floor(secs / 3600)}h ago`
+    return `${Math.floor(secs / 86400)}d ago`
   }
 }

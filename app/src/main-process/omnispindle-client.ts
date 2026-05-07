@@ -87,11 +87,13 @@ export class OmnispindleClient {
       }
 
       const todos: ReadonlyArray<IOmnispindleTodo> = raw.map(t => ({
-        id: String(t._id ?? t.id ?? Math.random()),
+        id: String(t.id ?? t._id ?? Math.random()),
         title: String(t.description ?? t.title ?? t.name ?? ''),
         status: String(t.status ?? ''),
         project: t.project ? String(t.project) : undefined,
         priority: t.priority ? String(t.priority) : undefined,
+        notes: t.notes ? String(t.notes) : undefined,
+        createdAt: typeof t.created_at === 'number' ? t.created_at : undefined,
       }))
 
       return { todos, status: 'connected' }

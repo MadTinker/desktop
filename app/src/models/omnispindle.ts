@@ -4,6 +4,8 @@ export interface IOmnispindleTodo {
   readonly status: string
   readonly project?: string
   readonly priority?: string
+  readonly notes?: string
+  readonly createdAt?: number
 }
 
 export type OmnispindleConnectionStatus = 'connected' | 'error' | 'unconfigured'
