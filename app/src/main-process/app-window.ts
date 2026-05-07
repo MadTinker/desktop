@@ -182,10 +182,16 @@ export class AppWindow {
       this.window.webContents.setVisualZoomLevelLimits(1, 1)
     })
 
-    this.window.webContents.on('did-fail-load', () => {
-      this.window.webContents.openDevTools()
-      this.window.show()
-    })
+    this.window.webContents.on(
+      'did-fail-load',
+      (_, errorCode, errorDescription, validatedURL) => {
+        log.error(
+          `[app-window] did-fail-load: ${errorCode} ${errorDescription} url=${validatedURL}`
+        )
+        this.window.webContents.openDevTools()
+        this.window.show()
+      }
+    )
 
     // TODO: This should be scoped by the window.
     ipcMain.once('renderer-ready', (_, readyTime) => {

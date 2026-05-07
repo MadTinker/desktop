@@ -65,7 +65,11 @@ if (process.env.NODE_ENV === 'production') {
   server.listen(port, 'localhost')
   server.on('listening', () => {
     console.log(`Server running at http://localhost:${port}`)
-    startApp()
+    console.log('Waiting for webpack to finish initial compilation…')
+    devMiddleware.waitUntilValid(() => {
+      console.log('Webpack compilation done — launching app')
+      startApp()
+    })
   })
   server.on('error', (err: Error) => {
     console.error(err)
