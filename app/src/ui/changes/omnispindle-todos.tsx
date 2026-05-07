@@ -11,6 +11,7 @@ interface IOmnispindleTodosProps {
 
 interface IOmnispindleTodosState {
   readonly expanded: boolean
+  readonly loading: boolean
 }
 
 function statusIcon(status: OmnispindleConnectionStatus) {
@@ -51,7 +52,13 @@ export class OmnispindleTodos extends React.Component<
 > {
   public constructor(props: IOmnispindleTodosProps) {
     super(props)
-    this.state = { expanded: true }
+    this.state = { expanded: true, loading: false }
+  }
+
+  public componentDidUpdate(prevProps: IOmnispindleTodosProps) {
+    if (prevProps.status !== this.props.status && this.state.loading) {
+      this.setState({ loading: false })
+    }
   }
 
   private onToggle = () => {
@@ -60,12 +67,13 @@ export class OmnispindleTodos extends React.Component<
 
   private onRefresh = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault()
+    this.setState({ loading: true })
     this.props.onRefresh()
   }
 
   public render() {
     const { todos, status } = this.props
-    const { expanded } = this.state
+    const { expanded, loading } = this.state
     const icon = statusIcon(status)
     const iconClass =
       status === 'error'     ? 'omnispindle-icon error' :
@@ -78,13 +86,14 @@ export class OmnispindleTodos extends React.Component<
             <Octicon symbol={icon} className={iconClass} />
             <span className="omnispindle-title">Omnispindle</span>
             <span className="omnispindle-summary">
-              {statusLabel(status, todos.length)}
+              {loading ? 'fetching…' : statusLabel(status, todos.length)}
             </span>
           </button>
           <button
-            className="omnispindle-refresh"
+            className={`omnispindle-refresh${loading ? ' spinning' : ''}`}
             onClick={this.onRefresh}
-            title="Refresh todos"
+            title={loading ? 'Fetching…' : 'Refresh todos'}
+            disabled={loading}
           >
             <Octicon symbol={octicons.sync} />
           </button>
