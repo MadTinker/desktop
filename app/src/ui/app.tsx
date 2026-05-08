@@ -50,13 +50,15 @@ import { DeleteBranch, DeleteRemoteBranch } from './delete-branch'
 import { CloningRepositoryView } from './cloning-repository'
 import {
   Toolbar,
+  ToolbarButtonStyle,
   ToolbarDropdown,
+  ToolbarDropdownStyle,
   DropdownState,
   PushPullButton,
   BranchDropdown,
   RevertProgress,
 } from './toolbar'
-import { iconForRepository, OcticonSymbol } from './octicons'
+import { iconForRepository, Octicon, OcticonSymbol, syncClockwise } from './octicons'
 import * as octicons from './octicons/octicons.generated'
 import {
   showCertificateTrustDialog,
@@ -74,6 +76,7 @@ import { Preferences } from './preferences'
 import { EditCopilotBYOKProviderDialog } from './copilot/edit-byok-provider-dialog'
 import { EditCopilotBYOKModelDialog } from './copilot/edit-byok-model-dialog'
 import { ConfirmDeleteCopilotBYOKProviderDialog } from './copilot/confirm-delete-byok-provider-dialog'
+import { SubmoduleManagementDialog } from './submodule-management/submodule-management-dialog'
 import type { IBYOKProvider } from '../lib/copilot/byok'
 import { OpenWithExternalEditor } from './open-with-external-editor/open-with-external-editor'
 import { RepositorySettings } from './repository-settings'
@@ -2657,6 +2660,16 @@ export class App extends React.Component<IAppProps, IAppState> {
           />
         )
       }
+      case PopupType.SubmoduleManagement: {
+        return (
+          <SubmoduleManagementDialog
+            key="submodule-management-dialog"
+            repository={popup.repository}
+            dispatcher={this.props.dispatcher}
+            onDismissed={onPopupDismissedFn}
+          />
+        )
+      }
       default:
         return assertNever(popup, `Unknown popup type: ${popup}`)
     }
@@ -3277,6 +3290,110 @@ export class App extends React.Component<IAppProps, IAppState> {
     )
   }
 
+  private onSubmodulesDropdownStateChanged = (newState: DropdownState) => {
+    if (newState === 'open') {
+      this.props.dispatcher.showFoldout({ type: FoldoutType.Submodules })
+    } else {
+      this.props.dispatcher.closeFoldout(FoldoutType.Submodules)
+    }
+  }
+
+  private renderSubmodulesDropdownContent = () => {
+    const selection = this.state.selectedState
+    if (!selection || selection.type !== SelectionType.Repository) {
+      return null
+    }
+    const { repository } = selection
+    const close = () =>
+      this.props.dispatcher.closeFoldout(FoldoutType.Submodules)
+
+    return (
+      <div className="submodule-toolbar-dropdown">
+        <button
+          className="submodule-dropdown-item"
+          onClick={() => {
+            close()
+            this.props.dispatcher.pullAllSubmodules(repository)
+          }}
+        >
+          <Octicon symbol={octicons.arrowDown} />
+          <div className="text-container">
+            <div className="title">Pull All Submodules</div>
+            <div className="detail">Pull latest for every active submodule</div>
+          </div>
+        </button>
+        <button
+          className="submodule-dropdown-item"
+          onClick={() => {
+            close()
+            this.props.dispatcher.pushAllSubmodules(repository)
+          }}
+        >
+          <Octicon symbol={octicons.arrowUp} />
+          <div className="text-container">
+            <div className="title">Push All Submodules</div>
+            <div className="detail">Push each active submodule to its remote</div>
+          </div>
+        </button>
+        <button
+          className="submodule-dropdown-item"
+          onClick={() => {
+            close()
+            this.props.dispatcher.initAllSubmodules(repository)
+          }}
+        >
+          <Octicon symbol={octicons.plus} />
+          <div className="text-container">
+            <div className="title">Init Uninitialized</div>
+            <div className="detail">Initialize all uninitialized submodules</div>
+          </div>
+        </button>
+        <button
+          className="submodule-dropdown-item"
+          onClick={() => {
+            close()
+            this.props.dispatcher.showSubmoduleManagement(repository)
+          }}
+        >
+          <Octicon symbol={octicons.gear} />
+          <div className="text-container">
+            <div className="title">Manage Submodules…</div>
+            <div className="detail">View status, run foreach commands</div>
+          </div>
+        </button>
+      </div>
+    )
+  }
+
+  private renderSubmodulesPullButton(): JSX.Element | null {
+    const selection = this.state.selectedState
+    if (!selection || selection.type !== SelectionType.Repository) {
+      return null
+    }
+
+    const networkActionInProgress = selection.state.isPushPullFetchInProgress
+    const isDropdownOpen =
+      this.state.currentFoldout !== null &&
+      this.state.currentFoldout.type === FoldoutType.Submodules
+
+    return (
+      <ToolbarDropdown
+        buttonClassName="submodules-button"
+        style={ToolbarButtonStyle.Subtitle}
+        dropdownStyle={ToolbarDropdownStyle.MultiOption}
+        title="Submodules"
+        description="Batch submodule operations"
+        icon={syncClockwise}
+        iconClassName={networkActionInProgress ? 'spin' : ''}
+        disabled={networkActionInProgress}
+        dropdownState={isDropdownOpen ? 'open' : 'closed'}
+        onDropdownStateChanged={this.onSubmodulesDropdownStateChanged}
+        dropdownContentRenderer={this.renderSubmodulesDropdownContent}
+        ariaLabel="Submodule operations"
+      />
+    )
+  }
+
   private showCreateBranch = () => {
     const selection = this.state.selectedState
 
@@ -3473,6 +3590,7 @@ export class App extends React.Component<IAppProps, IAppState> {
         </div>
         {this.renderBranchToolbarButton()}
         {this.renderPushPullToolbarButton()}
+        {this.renderSubmodulesPullButton()}
       </Toolbar>
     )
   }

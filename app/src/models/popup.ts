@@ -111,6 +111,7 @@ export enum PopupType {
   EditCopilotBYOKProvider = 'EditCopilotBYOKProvider',
   EditCopilotBYOKModel = 'EditCopilotBYOKModel',
   ConfirmDeleteCopilotBYOKProvider = 'ConfirmDeleteCopilotBYOKProvider',
+  SubmoduleManagement = 'SubmoduleManagement',
 }
 
 interface IBasePopup {
@@ -497,4 +498,5 @@ export type PopupDetail =
       type: PopupType.CommitProgress
       subscribeToCommitOutput: TerminalOutputListener
     }
+  | { type: PopupType.SubmoduleManagement; repository: Repository }
 export type Popup = IBasePopup & PopupDetail

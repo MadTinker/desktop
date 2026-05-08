@@ -457,6 +457,7 @@ export enum FoldoutType {
   AppMenu,
   AddMenu,
   PushPull,
+  Submodules,
 }
 
 export type AppMenuFoldout = {
@@ -480,6 +481,7 @@ export type Foldout =
   | BranchFoldout
   | AppMenuFoldout
   | { type: FoldoutType.PushPull }
+  | { type: FoldoutType.Submodules }
 
 export enum RepositorySectionTab {
   Changes,

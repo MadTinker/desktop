@@ -1,0 +1,210 @@
+// Submodule Management Dialog + Toolbar Dropdown
+
+.submodule-toolbar-dropdown {
+  display: flex;
+  flex-direction: column;
+  padding: var(--spacing-half) 0;
+
+  .submodule-dropdown-item {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: var(--spacing);
+    padding: var(--spacing-half) var(--spacing);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: var(--text-color);
+    text-align: left;
+    width: 100%;
+
+    &:hover {
+      background: var(--list-item-hover-background-color);
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .octicon {
+      flex-shrink: 0;
+      color: var(--text-secondary-color);
+    }
+
+    .text-container {
+      display: flex;
+      flex-direction: column;
+
+      .title {
+        font-size: var(--font-size-md);
+        font-weight: 600;
+      }
+
+      .detail {
+        font-size: var(--font-size-sm);
+        color: var(--text-secondary-color);
+      }
+    }
+  }
+}
+
+#submodule-management {
+  min-width: 560px;
+
+  .tab-bar {
+    margin: 0 var(--spacing);
+  }
+
+  .submodule-loading {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-half);
+    color: var(--text-secondary-color);
+    padding: var(--spacing);
+  }
+
+  .submodule-empty {
+    color: var(--text-secondary-color);
+    font-style: italic;
+    padding: var(--spacing);
+    margin: 0;
+  }
+
+  .submodule-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    max-height: 380px;
+    overflow-y: auto;
+  }
+
+  .submodule-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: var(--spacing-half);
+    padding: 5px var(--spacing);
+    border-bottom: 1px solid var(--box-border-color);
+
+    &:last-child {
+      border-bottom: none;
+    }
+  }
+
+  .submodule-badge {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 600;
+    flex-shrink: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+
+    &.initialized {
+      background: var(--color-new);
+      color: #000;
+    }
+
+    &.uninitialized {
+      background: var(--color-modified);
+      color: #000;
+    }
+
+    &.modified {
+      background: var(--status-warning-color, #f57c00);
+      color: #fff;
+    }
+
+    &.conflict {
+      background: var(--status-error-color);
+      color: #fff;
+    }
+  }
+
+  .submodule-path {
+    flex: 1;
+    font-size: var(--font-size-sm);
+    font-family: var(--font-family-monospace, monospace);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--text-color);
+  }
+
+  .submodule-actions {
+    display: flex;
+    flex-direction: row;
+    gap: 4px;
+    flex-shrink: 0;
+
+    button {
+      padding: 2px 8px;
+      font-size: var(--font-size-sm);
+    }
+  }
+
+  .submodule-bulk-actions {
+    display: flex;
+    flex-direction: row;
+    gap: var(--spacing-half);
+    flex: 1;
+  }
+
+  // Foreach tab
+  .submodule-foreach-description {
+    margin: 0 0 var(--spacing-half);
+    color: var(--text-secondary-color);
+    font-size: var(--font-size-sm);
+  }
+
+  .submodule-foreach-form {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: var(--spacing-half);
+    margin-bottom: var(--spacing);
+
+    .submodule-foreach-input {
+      flex: 1;
+      font-family: var(--font-family-monospace, monospace);
+      font-size: var(--font-size-sm);
+      padding: 4px 8px;
+      background: var(--background-color);
+      color: var(--text-color);
+      border: 1px solid var(--box-border-color);
+      border-radius: var(--border-radius);
+
+      &:focus {
+        outline: none;
+        border-color: var(--focus-color);
+      }
+    }
+
+    .submodule-foreach-recursive {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: var(--font-size-sm);
+      white-space: nowrap;
+      cursor: pointer;
+    }
+  }
+
+  .submodule-foreach-output {
+    display: block;
+    width: 100%;
+    height: 220px;
+    font-family: var(--font-family-monospace, monospace);
+    font-size: var(--font-size-sm);
+    background: var(--background-color);
+    color: var(--text-color);
+    border: 1px solid var(--box-border-color);
+    border-radius: var(--border-radius);
+    padding: var(--spacing-half);
+    resize: vertical;
+    overflow-y: auto;
+    box-sizing: border-box;
+  }
+}

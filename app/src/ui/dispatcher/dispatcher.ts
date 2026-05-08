@@ -4200,4 +4200,44 @@ export class Dispatcher {
   ): Promise<void> {
     return this.appStore._rollbackSubmodule(repository, submodulePath)
   }
+
+  /** Pull all initialized submodules to their latest upstream commits. */
+  public pullAllSubmodules(repository: Repository): Promise<void> {
+    return this.appStore._pullAllSubmodules(repository)
+  }
+
+  /** Initialize all uninitialized submodules. */
+  public initAllSubmodules(repository: Repository): Promise<void> {
+    return this.appStore._initAllSubmodules(repository)
+  }
+
+  /** Push all initialized submodules to their configured upstream remotes. */
+  public pushAllSubmodules(repository: Repository): Promise<void> {
+    return this.appStore._pushAllSubmodules(repository)
+  }
+
+  /** Run a shell command across all submodules and return combined stdout. */
+  public foreachSubmodule(
+    repository: Repository,
+    command: string,
+    recursive: boolean
+  ): Promise<string> {
+    return this.appStore._foreachSubmodule(repository, command, recursive)
+  }
+
+  /** Pull a single submodule from its configured upstream. */
+  public pullSubmodule(
+    repository: Repository,
+    submodulePath: string
+  ): Promise<void> {
+    return this.appStore._pullSubmodule(repository, submodulePath)
+  }
+
+  /** Open the submodule management dialog. */
+  public showSubmoduleManagement(repository: Repository): Promise<void> {
+    return this.appStore._showPopup({
+      type: PopupType.SubmoduleManagement,
+      repository,
+    })
+  }
 }

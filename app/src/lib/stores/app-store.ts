@@ -231,6 +231,10 @@ import {
   listSubmodules,
   pushSubmodule,
   pullSubmodule,
+  pullAllSubmodules,
+  initAllSubmodules,
+  pushAllSubmodules,
+  foreachSubmodule,
   getReflog,
 } from '../git'
 import {
@@ -9238,6 +9242,106 @@ export class AppStore extends TypedBaseStore<IAppState> {
       await resetSubmodulePaths(repository, [submodulePath])
     } catch (e) {
       log.error(`Failed to roll back submodule at ${submodulePath}`, e)
+      this.emitError(e)
+      return
+    }
+    return this._refreshRepository(repository)
+  }
+
+  /** Pull all initialized submodules to their latest upstream commits. */
+  public async _pullAllSubmodules(repository: Repository): Promise<void> {
+    return this.withPushPullFetch(repository, async () => {
+      try {
+        await pullAllSubmodules(repository, progress => {
+          const { index, total } = progress
+          this.updatePushPullFetchProgress(repository, {
+            ...progress,
+            title: `Pulling submodules (${index + 1}/${total})`,
+            value: (index + progress.value) / total,
+          })
+        })
+      } catch (e) {
+        log.error('Failed to pull all submodules', e)
+        this.emitError(e)
+        return
+      }
+
+      this.updatePushPullFetchProgress(repository, null)
+      await this._refreshRepository(repository)
+    })
+  }
+
+  /** Initialize all uninitialized submodules with progress tracking. */
+  public async _initAllSubmodules(repository: Repository): Promise<void> {
+    return this.withPushPullFetch(repository, async () => {
+      try {
+        await initAllSubmodules(repository, ({ index, total, path }) => {
+          this.updatePushPullFetchProgress(repository, {
+            kind: 'pull',
+            title: `Initializing submodules (${index + 1}/${total})`,
+            description: path,
+            value: index / total,
+            remote: '',
+          })
+        })
+      } catch (e) {
+        log.error('Failed to initialize all submodules', e)
+        this.emitError(e)
+        return
+      }
+
+      this.updatePushPullFetchProgress(repository, null)
+      await this._refreshRepository(repository)
+    })
+  }
+
+  /** Push all initialized submodules with progress tracking. */
+  public async _pushAllSubmodules(repository: Repository): Promise<void> {
+    return this.withPushPullFetch(repository, async () => {
+      try {
+        await pushAllSubmodules(repository, progress => {
+          const { index, total } = progress
+          this.updatePushPullFetchProgress(repository, {
+            ...progress,
+            title: `Pushing submodules (${index + 1}/${total})`,
+            value: (index + progress.value) / total,
+          })
+        })
+      } catch (e) {
+        log.error('Failed to push all submodules', e)
+        this.emitError(e)
+        return
+      }
+
+      this.updatePushPullFetchProgress(repository, null)
+      await this._refreshRepository(repository)
+    })
+  }
+
+  /** Run a shell command across all submodules and return combined stdout. */
+  public async _foreachSubmodule(
+    repository: Repository,
+    command: string,
+    recursive: boolean
+  ): Promise<string> {
+    try {
+      return await foreachSubmodule(repository, command, recursive)
+    } catch (e) {
+      log.error('Failed to run submodule foreach', e)
+      this.emitError(e)
+      return ''
+    }
+  }
+
+  /** Pull a single submodule from its configured upstream. */
+  public async _pullSubmodule(
+    repository: Repository,
+    submodulePath: string
+  ): Promise<void> {
+    try {
+      await pullSubmodule(repository, submodulePath)
+    } catch (e) {
+      log.error(`Failed to pull submodule at ${submodulePath}`, e)
       this.emitError(e)
       return
     }

@@ -442,6 +442,121 @@ export async function pullSubmodule(
 }
 
 /**
+ * Pull all initialized submodules to their latest upstream commits.
+ *
+ * Equivalent to running `git pull --ff` inside each initialized submodule.
+ * Submodules that are uninitialized or have no remotes are skipped silently.
+ *
+ * @param repository - The parent repository containing the submodules
+ * @param progressCallback - Optional per-submodule progress callback. Receives
+ *   pull progress enriched with the current submodule index and total count so
+ *   the caller can render aggregate progress.
+ */
+export async function pullAllSubmodules(
+  repository: Repository,
+  progressCallback?: (
+    progress: IPullProgress & { index: number; total: number }
+  ) => void
+): Promise<void> {
+  const allSubmodules = await listSubmodules(repository)
+  const active = allSubmodules.filter(s => s.status !== 'uninitialized')
+  const total = active.length
+
+  for (let i = 0; i < total; i++) {
+    const submodule = active[i]
+    await pullSubmodule(
+      repository,
+      submodule.path,
+      progressCallback
+        ? progress => progressCallback({ ...progress, index: i, total })
+        : undefined
+    )
+  }
+}
+
+/**
+ * Initialize all uninitialized submodules.
+ *
+ * Filters to only submodules with status 'uninitialized' and calls
+ * initSubmodule for each. Already-initialized submodules are skipped.
+ */
+export async function initAllSubmodules(
+  repository: Repository,
+  progressCallback?: (progress: {
+    index: number
+    total: number
+    path: string
+  }) => void
+): Promise<void> {
+  const allSubmodules = await listSubmodules(repository)
+  const uninit = allSubmodules.filter(s => s.status === 'uninitialized')
+  const total = uninit.length
+
+  for (let i = 0; i < total; i++) {
+    const submodule = uninit[i]
+    progressCallback?.({ index: i, total, path: submodule.path })
+    await initSubmodule(repository, submodule.path)
+  }
+}
+
+/**
+ * Push all initialized submodules to their configured upstream remotes.
+ *
+ * Mirrors pullAllSubmodules: iterates active submodules and calls
+ * pushSubmodule for each. Submodules with no remotes are skipped silently.
+ */
+export async function pushAllSubmodules(
+  repository: Repository,
+  progressCallback?: (
+    progress: IPushProgress & { index: number; total: number }
+  ) => void
+): Promise<void> {
+  const allSubmodules = await listSubmodules(repository)
+  const active = allSubmodules.filter(s => s.status !== 'uninitialized')
+  const total = active.length
+
+  for (let i = 0; i < total; i++) {
+    const submodule = active[i]
+    await pushSubmodule(
+      repository,
+      submodule.path,
+      progressCallback
+        ? progress => progressCallback({ ...progress, index: i, total })
+        : undefined
+    )
+  }
+}
+
+/**
+ * Run a shell command in every submodule via `git submodule foreach`.
+ *
+ * @param repository - The parent repository
+ * @param command - Shell command to run in each submodule (e.g. "git status")
+ * @param recursive - Pass --recursive to also traverse nested submodules
+ * @returns Combined stdout from all submodules
+ */
+export async function foreachSubmodule(
+  repository: Repository,
+  command: string,
+  recursive: boolean
+): Promise<string> {
+  const args = ['submodule', 'foreach']
+  if (recursive) {
+    args.push('--recursive')
+  }
+  args.push(command)
+
+  const { stdout } = await git(
+    args,
+    repository.path,
+    'foreachSubmodule',
+    { successExitCodes: new Set([0, 1]) }
+  )
+
+  return stdout
+}
+
+/**
  * Return commits between two SHAs in a submodule directory.
  * Runs `git log --oneline oldSHA..newSHA` inside the submodule.
  */
