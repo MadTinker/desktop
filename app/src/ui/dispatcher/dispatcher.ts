@@ -4233,6 +4233,14 @@ export class Dispatcher {
     return this.appStore._pullSubmodule(repository, submodulePath)
   }
 
+  /** Push a single submodule to its configured upstream. */
+  public pushSubmodule(
+    repository: Repository,
+    submodulePath: string
+  ): Promise<void> {
+    return this.appStore._pushSubmodule(repository, submodulePath)
+  }
+
   /** Open the submodule management dialog. */
   public showSubmoduleManagement(repository: Repository): Promise<void> {
     return this.appStore._showPopup({

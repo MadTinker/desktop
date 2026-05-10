@@ -9347,6 +9347,21 @@ export class AppStore extends TypedBaseStore<IAppState> {
     }
     return this._refreshRepository(repository)
   }
+
+  /** Push a single submodule to its configured upstream. */
+  public async _pushSubmodule(
+    repository: Repository,
+    submodulePath: string
+  ): Promise<void> {
+    try {
+      await pushSubmodule(repository, submodulePath)
+    } catch (e) {
+      log.error(`Failed to push submodule at ${submodulePath}`, e)
+      this.emitError(e)
+      return
+    }
+    return this._refreshRepository(repository)
+  }
 }
 
 /**

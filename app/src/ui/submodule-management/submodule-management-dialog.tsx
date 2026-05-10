@@ -124,6 +124,14 @@ export class SubmoduleManagementDialog extends React.Component<
     await this.loadSubmodules()
   }
 
+  private onPushSubmodule = async (submodulePath: string) => {
+    await this.props.dispatcher.pushSubmodule(
+      this.props.repository,
+      submodulePath
+    )
+    await this.loadSubmodules()
+  }
+
   private onRollbackSubmodule = async (submodulePath: string) => {
     await this.props.dispatcher.rollbackSubmodule(
       this.props.repository,
@@ -175,6 +183,7 @@ export class SubmoduleManagementDialog extends React.Component<
             <>
               <Button onClick={() => this.onSyncSubmodule(path)}>Sync</Button>
               <Button onClick={() => this.onPullSubmodule(path)}>Pull</Button>
+              <Button onClick={() => this.onPushSubmodule(path)}>Push</Button>
             </>
           )}
           {isModified && (
