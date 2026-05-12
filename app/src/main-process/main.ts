@@ -57,6 +57,7 @@ import {
   pushRemoteHook,
   deleteRemoteHook,
   validateHookScript,
+  executeHookScript,
 } from './automation-hooks-sync'
 
 app.setAppLogsPath()
@@ -594,6 +595,12 @@ app.on('ready', () => {
 
   ipcMain.handle('automation-hooks-validate', (_, script: string) =>
     validateHookScript(script)
+  )
+
+  ipcMain.handle(
+    'automation-hooks-execute',
+    (_, script: string, env?: Record<string, string>) =>
+      executeHookScript(script, env)
   )
 
   /**

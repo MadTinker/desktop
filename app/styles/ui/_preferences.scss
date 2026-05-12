@@ -418,6 +418,12 @@
         margin: 0;
       }
 
+      .automation-hook-warning {
+        color: var(--color-ansi-yellow, #e36209);
+        font-size: 0.8rem;
+        margin: 0;
+      }
+
       .automation-hook-editor-footer {
         flex-direction: row;
         justify-content: space-between;
@@ -465,6 +471,66 @@
     &:hover {
       background: var(--color-ansi-cyan, #0366d6);
       color: white;
+    }
+  }
+
+  .automation-hook-btn-run {
+    color: var(--color-ansi-green, #28a745);
+    border-color: var(--color-ansi-green, #28a745);
+
+    &:hover {
+      background: var(--color-ansi-green, #28a745);
+      color: white;
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: wait;
+    }
+  }
+
+  .automation-hook-run-result {
+    margin-top: 6px;
+    padding: 8px;
+    border-radius: 4px;
+    font-size: 0.82rem;
+    border: 1px solid var(--box-border-color);
+    background: var(--box-alt-background-color);
+
+    .automation-hook-run-status {
+      font-weight: 600;
+    }
+
+    .automation-hook-run-error {
+      display: block;
+      color: var(--error-color, #d73a49);
+      margin-top: 4px;
+    }
+
+    .automation-hook-run-output {
+      margin-top: 6px;
+      padding: 6px;
+      background: var(--background-color);
+      border-radius: 3px;
+      font-family: var(--font-family-monospace);
+      font-size: 0.78rem;
+      max-height: 150px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    &.automation-hook-run-running {
+      color: var(--text-secondary-color);
+      font-style: italic;
+    }
+
+    &.automation-hook-run-success {
+      border-color: var(--color-ansi-green, #28a745);
+    }
+
+    &.automation-hook-run-failed {
+      border-color: var(--error-color, #d73a49);
     }
   }
 }

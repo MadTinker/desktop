@@ -401,6 +401,7 @@ import {
 import { updateStore } from '../../ui/lib/update-store'
 import { BypassReasonType } from '../../ui/secret-scanning/bypass-push-protection-dialog'
 import { getRepoHooks } from '../hooks/get-repo-hooks'
+import { fireAutomationHooks } from '../automation-hooks/executor'
 
 const LastSelectedRepositoryIDKey = 'last-selected-repository-id'
 
@@ -2524,6 +2525,18 @@ export class AppStore extends TypedBaseStore<IAppState> {
     this.accountsStore.refresh()
 
     this.updateMenuLabelsForSelectedRepository()
+
+    // Fire session-start automation hooks
+    fireAutomationHooks('session-start').catch(err =>
+      log.error('automation hooks (session-start) failed:', err)
+    )
+
+    // Fire session-close automation hooks on window unload
+    window.addEventListener('beforeunload', () => {
+      fireAutomationHooks('session-close').catch(err =>
+        log.error('automation hooks (session-close) failed:', err)
+      )
+    })
   }
 
   /**
@@ -3522,6 +3535,14 @@ export class AppStore extends TypedBaseStore<IAppState> {
       )
 
       if (result !== undefined) {
+        // Fire automation hooks for post-commit (non-blocking)
+        fireAutomationHooks('post-commit', {
+          MADNESS_REPO_PATH: repository.path,
+          MADNESS_COMMIT_SHA: result,
+        }).catch(err =>
+          log.error('automation hooks (post-commit) failed:', err)
+        )
+
         await this._recordCommitStats(
           gitStore,
           repository,

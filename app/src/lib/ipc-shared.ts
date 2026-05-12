@@ -27,6 +27,7 @@ import type {
   HookPushResult,
   HookDeleteResult,
   HookValidateResult,
+  HookExecuteResult,
   RemoteHook,
 } from '../main-process/automation-hooks-sync'
 
@@ -164,4 +165,8 @@ export type RequestResponseChannels = {
     id: string
   ) => Promise<HookDeleteResult>
   'automation-hooks-validate': (script: string) => Promise<HookValidateResult>
+  'automation-hooks-execute': (
+    script: string,
+    env?: Record<string, string>
+  ) => Promise<HookExecuteResult>
 }

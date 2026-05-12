@@ -17,6 +17,10 @@ import {
   pushRemoteHook,
   validateScript,
 } from '../../lib/automation-hooks/remote'
+import {
+  executeHookById,
+  type HookExecutionEvent,
+} from '../../lib/automation-hooks/executor'
 
 interface IAutomationHooksPreferencesProps {
   readonly omnispindleApiKey: string
@@ -36,6 +40,11 @@ type SyncStatus =
   | { kind: 'success'; message: string }
   | { kind: 'error'; message: string }
 
+type ExecutionState =
+  | { kind: 'idle' }
+  | { kind: 'running'; hookId: string }
+  | { kind: 'done'; hookId: string; event: HookExecutionEvent }
+
 interface IAutomationHooksPreferencesState {
   readonly hooks: ReadonlyArray<AutomationHook>
   readonly editing: EditingHook | null
@@ -43,6 +52,7 @@ interface IAutomationHooksPreferencesState {
   readonly scriptError: string | null
   readonly syncStatus: SyncStatus
   readonly validating: boolean
+  readonly execution: ExecutionState
 }
 
 const DEFAULT_SCRIPT = `#!/bin/bash
@@ -62,6 +72,7 @@ export class AutomationHooksPreferences extends React.Component<
       scriptError: null,
       syncStatus: { kind: 'idle' },
       validating: false,
+      execution: { kind: 'idle' },
     }
   }
 
@@ -166,7 +177,15 @@ export class AutomationHooksPreferences extends React.Component<
     }
   }
 
-  private onSave = () => {
+  private checkShebang(script: string): string | null {
+    const firstLine = script.split('\n')[0]?.trim()
+    if (!firstLine || !firstLine.startsWith('#!')) {
+      return 'Missing shebang line (e.g. #!/bin/bash). Script may not execute correctly.'
+    }
+    return null
+  }
+
+  private onSave = async () => {
     const { editing } = this.state
     if (!editing) {
       return
@@ -185,6 +204,24 @@ export class AutomationHooksPreferences extends React.Component<
       return
     }
 
+    // Validate syntax on save
+    this.setState({ validating: true })
+    try {
+      const result = await validateScript(editing.script)
+      if (!result.isValid) {
+        this.setState({
+          scriptError: result.error ?? 'Invalid syntax',
+          validating: false,
+        })
+        return
+      }
+    } finally {
+      this.setState({ validating: false })
+    }
+
+    // Check for shebang (warning only — doesn't block save)
+    const shebangWarning = this.checkShebang(editing.script)
+
     saveAutomationHook({
       id: editing.id,
       name: editing.name.trim(),
@@ -192,7 +229,14 @@ export class AutomationHooksPreferences extends React.Component<
       script: editing.script,
       enabled: editing.enabled,
     })
-    this.setState({ editing: null, nameError: null, scriptError: null })
+    this.setState({
+      editing: null,
+      nameError: null,
+      scriptError: null,
+      syncStatus: shebangWarning
+        ? { kind: 'success', message: `Saved. Note: ${shebangWarning}` }
+        : { kind: 'idle' },
+    })
     this.reload()
   }
 
@@ -287,6 +331,57 @@ export class AutomationHooksPreferences extends React.Component<
     }
   }
 
+  private onRunHook = async (hook: AutomationHook) => {
+    this.setState({ execution: { kind: 'running', hookId: hook.id } })
+    try {
+      const event = await executeHookById(hook.id)
+      if (event) {
+        this.setState({ execution: { kind: 'done', hookId: hook.id, event } })
+      } else {
+        this.setState({ execution: { kind: 'idle' } })
+      }
+    } catch {
+      this.setState({ execution: { kind: 'idle' } })
+    }
+  }
+
+  private renderExecutionResult(hookId: string) {
+    const { execution } = this.state
+    if (execution.kind === 'running' && execution.hookId === hookId) {
+      return (
+        <div className="automation-hook-run-result automation-hook-run-running">
+          Running…
+        </div>
+      )
+    }
+    if (execution.kind === 'done' && execution.hookId === hookId) {
+      const { result } = execution.event
+      const output = (result.stdout + result.stderr).trim()
+      return (
+        <div
+          className={`automation-hook-run-result ${
+            result.success
+              ? 'automation-hook-run-success'
+              : 'automation-hook-run-failed'
+          }`}
+        >
+          <span className="automation-hook-run-status">
+            {result.success ? 'Completed' : `Failed (exit ${result.exitCode})`}
+            {' — '}
+            {(result.duration / 1000).toFixed(2)}s
+          </span>
+          {result.error && (
+            <span className="automation-hook-run-error">{result.error}</span>
+          )}
+          {output && (
+            <pre className="automation-hook-run-output">{output}</pre>
+          )}
+        </div>
+      )
+    }
+    return null
+  }
+
   private renderSyncStatus() {
     const { syncStatus } = this.state
     if (syncStatus.kind === 'idle') {
@@ -329,6 +424,11 @@ export class AutomationHooksPreferences extends React.Component<
       )
     }
 
+    const running =
+      this.state.execution.kind === 'running'
+        ? this.state.execution.hookId
+        : null
+
     return (
       <ul className="automation-hooks-list">
         {hooks.map(hook => (
@@ -344,6 +444,15 @@ export class AutomationHooksPreferences extends React.Component<
               )}
             </div>
             <div className="automation-hook-actions">
+              <button
+                className="automation-hook-btn automation-hook-btn-run"
+                onClick={() => this.onRunHook(hook)}
+                disabled={running === hook.id}
+                aria-label="Run hook"
+                title="Run this hook now"
+              >
+                {running === hook.id ? 'Running…' : '▶ Run'}
+              </button>
               <button
                 className="automation-hook-btn"
                 onClick={() => this.openEdit(hook)}
@@ -376,6 +485,7 @@ export class AutomationHooksPreferences extends React.Component<
                 Delete
               </button>
             </div>
+            {this.renderExecutionResult(hook.id)}
           </li>
         ))}
       </ul>
@@ -432,6 +542,11 @@ export class AutomationHooksPreferences extends React.Component<
             rows={10}
             spellCheck={false}
           />
+          {this.checkShebang(editing.script) && (
+            <p className="automation-hook-warning">
+              {this.checkShebang(editing.script)}
+            </p>
+          )}
           {scriptError && (
             <p className="automation-hook-error">{scriptError}</p>
           )}

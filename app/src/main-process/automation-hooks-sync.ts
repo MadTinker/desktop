@@ -33,6 +33,15 @@ export interface HookValidateResult {
   readonly error?: string
 }
 
+export interface HookExecuteResult {
+  readonly success: boolean
+  readonly exitCode: number
+  readonly stdout: string
+  readonly stderr: string
+  readonly duration: number
+  readonly error?: string
+}
+
 function authHeaders(apiKey: string): Record<string, string> {
   return {
     'Content-Type': 'application/json',
@@ -118,6 +127,65 @@ export async function deleteRemoteHook(
       error: err instanceof Error ? err.message : String(err),
     }
   }
+}
+
+const EXECUTE_TIMEOUT_MS = 30_000
+
+export function executeHookScript(
+  script: string,
+  env?: Record<string, string>
+): Promise<HookExecuteResult> {
+  const start = Date.now()
+  return new Promise(resolve => {
+    try {
+      const child = spawn('bash', ['-e'], {
+        stdio: ['pipe', 'pipe', 'pipe'],
+        env: { ...process.env, ...env },
+        timeout: EXECUTE_TIMEOUT_MS,
+      })
+
+      const stdoutChunks: Buffer[] = []
+      const stderrChunks: Buffer[] = []
+
+      child.stdout.on('data', (chunk: Buffer) => stdoutChunks.push(chunk))
+      child.stderr.on('data', (chunk: Buffer) => stderrChunks.push(chunk))
+
+      child.on('close', (code: number | null) => {
+        const duration = Date.now() - start
+        const exitCode = code ?? 1
+        resolve({
+          success: exitCode === 0,
+          exitCode,
+          stdout: Buffer.concat(stdoutChunks).toString('utf8'),
+          stderr: Buffer.concat(stderrChunks).toString('utf8'),
+          duration,
+        })
+      })
+
+      child.on('error', (err: Error) => {
+        resolve({
+          success: false,
+          exitCode: 1,
+          stdout: '',
+          stderr: '',
+          duration: Date.now() - start,
+          error: err.message,
+        })
+      })
+
+      child.stdin.write(script)
+      child.stdin.end()
+    } catch (err) {
+      resolve({
+        success: false,
+        exitCode: 1,
+        stdout: '',
+        stderr: '',
+        duration: Date.now() - start,
+        error: err instanceof Error ? err.message : String(err),
+      })
+    }
+  })
 }
 
 export function validateHookScript(script: string): Promise<HookValidateResult> {

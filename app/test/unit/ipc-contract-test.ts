@@ -106,6 +106,7 @@ describe('IPC channel contract', () => {
     'automation-hooks-push',
     'automation-hooks-delete',
     'automation-hooks-validate',
+    'automation-hooks-execute',
   ] as const
 
   describe('RequestChannels', () => {
