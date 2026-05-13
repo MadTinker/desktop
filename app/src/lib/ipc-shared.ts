@@ -105,7 +105,12 @@ export type RequestChannels = {
     status: OmnispindleConnectionStatus
   ) => void
   'omnispindle-configure': (apiKey: string) => void
-  'omnispindle-refresh': () => void
+  'omnispindle-refresh': (project?: string) => void
+  'omnispindle-fire-event': (
+    trigger: string,
+    data: Record<string, unknown>,
+    meta: Record<string, unknown>
+  ) => void
 }
 
 /**

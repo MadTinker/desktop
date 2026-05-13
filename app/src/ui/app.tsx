@@ -2836,8 +2836,8 @@ export class App extends React.Component<IAppProps, IAppState> {
     this.props.dispatcher.refreshApiRepositories(account)
   }
 
-  private onRefreshOmnispindleTodos = () => {
-    this.props.dispatcher.refreshOmnispindleTodos()
+  private onRefreshOmnispindleTodos = (project?: string) => {
+    this.props.dispatcher.refreshOmnispindleTodos(project)
   }
 
   private onShowIntegrationsPreferences = () => {

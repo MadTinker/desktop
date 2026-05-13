@@ -49,15 +49,51 @@ export class OmnispindleClient {
     }
   }
 
-  public async refresh() {
-    const { todos, status } = await this.fetchTodos()
+  /**
+   * Fire an event into Inventorium's automation bus.
+   * Non-blocking — failures are logged but never thrown.
+   */
+  public async fireEvent(
+    trigger: string,
+    data: Record<string, unknown> = {},
+    meta: Record<string, unknown> = {}
+  ): Promise<void> {
+    if (!this.apiKey) {
+      return
+    }
+    try {
+      const response = await fetch(
+        `${OMNISPINDLE_API_URL}/automation/events`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${this.apiKey}`,
+          },
+          body: JSON.stringify({
+            trigger,
+            data,
+            meta: { ...meta, source: 'madness-desktop' },
+          }),
+        }
+      )
+      if (!response.ok) {
+        log.warn(`[omnispindle] event fire failed: HTTP ${response.status}`)
+      }
+    } catch (err) {
+      log.warn('[omnispindle] event fire error:', err)
+    }
+  }
+
+  public async refresh(project?: string) {
+    const { todos, status } = await this.fetchTodos(project)
     const wc = this.getWebContents()
     if (wc !== null) {
       send(wc, 'omnispindle-todos-updated', todos, status)
     }
   }
 
-  private async fetchTodos(): Promise<{
+  private async fetchTodos(project?: string): Promise<{
     todos: ReadonlyArray<IOmnispindleTodo>
     status: OmnispindleConnectionStatus
   }> {
@@ -66,8 +102,12 @@ export class OmnispindleClient {
     }
 
     try {
+      const params = new URLSearchParams({ status: 'pending', limit: '50' })
+      if (project) {
+        params.set('project', project)
+      }
       const response = await fetch(
-        `${OMNISPINDLE_API_URL}/todos?status=pending&limit=50`,
+        `${OMNISPINDLE_API_URL}/todos?${params}`,
         {
           headers: { Authorization: `Bearer ${this.apiKey}` },
         }

@@ -72,6 +72,7 @@ describe('IPC channel contract', () => {
     'omnispindle-todos-updated',
     'omnispindle-configure',
     'omnispindle-refresh',
+    'omnispindle-fire-event',
   ] as const
 
   const expectedResponseChannels = [

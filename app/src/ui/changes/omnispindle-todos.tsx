@@ -1,21 +1,25 @@
 import * as React from 'react'
+import { shell } from 'electron'
 import { IOmnispindleTodo, OmnispindleConnectionStatus } from '../../models/omnispindle'
 import { Octicon } from '../octicons'
 import * as octicons from '../octicons/octicons.generated'
 
 const API_BASE = 'https://madnessinteractive.cc/api'
+const INVENTORIUM_URL = 'https://madnessinteractive.cc'
 
 interface IOmnispindleTodosProps {
   readonly todos: ReadonlyArray<IOmnispindleTodo>
   readonly status: OmnispindleConnectionStatus
   readonly apiKey: string
-  readonly onRefresh: () => void
+  readonly repositoryName: string
+  readonly onRefresh: (project?: string) => void
 }
 
 interface IOmnispindleTodosState {
   readonly expanded: boolean
   readonly loading: boolean
   readonly adding: boolean
+  readonly filterByProject: boolean
   readonly newDescription: string
   readonly newProject: string
   readonly newPriority: string
@@ -70,6 +74,7 @@ export class OmnispindleTodos extends React.Component<
       expanded: true,
       loading: false,
       adding: false,
+      filterByProject: true,
       newDescription: '',
       newProject: '',
       newPriority: 'Medium',
@@ -96,7 +101,28 @@ export class OmnispindleTodos extends React.Component<
   private onRefresh = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault()
     this.setState({ loading: true })
-    this.props.onRefresh()
+    const project = this.state.filterByProject
+      ? this.props.repositoryName.toLowerCase()
+      : undefined
+    this.props.onRefresh(project)
+  }
+
+  private onOpenInventorium = () => {
+    const project = this.props.repositoryName.toLowerCase()
+    shell.openExternal(`${INVENTORIUM_URL}?project=${encodeURIComponent(project)}`)
+  }
+
+  private onToggleFilter = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault()
+    this.setState(
+      prev => ({ filterByProject: !prev.filterByProject, loading: true }),
+      () => {
+        const project = this.state.filterByProject
+          ? this.props.repositoryName.toLowerCase()
+          : undefined
+        this.props.onRefresh(project)
+      }
+    )
   }
 
   private onAddClick = (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -104,7 +130,7 @@ export class OmnispindleTodos extends React.Component<
     this.setState(prev => ({
       adding: !prev.adding,
       newDescription: '',
-      newProject: '',
+      newProject: prev.adding ? '' : this.props.repositoryName.toLowerCase(),
       newPriority: 'Medium',
       submitError: null,
       expanded: true,
@@ -236,6 +262,28 @@ export class OmnispindleTodos extends React.Component<
               title={adding ? 'Cancel' : 'Add todo'}
             >
               <Octicon symbol={adding ? octicons.x : octicons.plus} />
+            </button>
+          )}
+          {status === 'connected' && (
+            <button
+              className={`omnispindle-filter-btn${this.state.filterByProject ? ' active' : ''}`}
+              onClick={this.onToggleFilter}
+              title={
+                this.state.filterByProject
+                  ? `Showing ${this.props.repositoryName} — click for all`
+                  : 'Show all — click to filter by repo'
+              }
+            >
+              <Octicon symbol={octicons.filter} />
+            </button>
+          )}
+          {status === 'connected' && (
+            <button
+              className="omnispindle-inventorium-btn"
+              onClick={this.onOpenInventorium}
+              title="Open in Inventorium"
+            >
+              <Octicon symbol={octicons.linkExternal} />
             </button>
           )}
           <button

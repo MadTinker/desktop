@@ -2788,8 +2788,8 @@ export class Dispatcher {
     this.appStore._setOmnispindleApiKey(apiKey)
   }
 
-  public refreshOmnispindleTodos() {
-    this.appStore._refreshOmnispindleTodos()
+  public refreshOmnispindleTodos(project?: string) {
+    this.appStore._refreshOmnispindleTodos(project)
   }
 
   public setCommitSpellcheckEnabled(commitSpellcheckEnabled: boolean) {

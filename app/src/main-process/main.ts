@@ -571,9 +571,21 @@ app.on('ready', () => {
     omnispindleClient.setApiKey(apiKey)
   })
 
-  ipcMain.on('omnispindle-refresh', () => {
-    omnispindleClient.refresh()
+  ipcMain.on('omnispindle-refresh', (_, project?: string) => {
+    omnispindleClient.refresh(project)
   })
+
+  ipcMain.on(
+    'omnispindle-fire-event',
+    (
+      _,
+      trigger: string,
+      data: Record<string, unknown>,
+      meta: Record<string, unknown>
+    ) => {
+      omnispindleClient.fireEvent(trigger, data, meta)
+    }
+  )
 
   ipcMain.handle('omnispindle-test', (_, apiKey: string) =>
     omnispindleClient.testConnection(apiKey)

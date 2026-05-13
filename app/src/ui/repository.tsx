@@ -128,7 +128,7 @@ interface IRepositoryViewProps {
   readonly omnispindleTodos: ReadonlyArray<IOmnispindleTodo>
   readonly omnispindleStatus: OmnispindleConnectionStatus
   readonly omnispindleApiKey: string
-  readonly onRefreshOmnispindleTodos: () => void
+  readonly onRefreshOmnispindleTodos: (project?: string) => void
 
   /**
    * Whether there are any hooks in the repository that could be

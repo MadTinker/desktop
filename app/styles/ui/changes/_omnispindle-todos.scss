@@ -299,7 +299,9 @@
     &.badge-completed   { background: rgba(46, 125, 50, 0.2);   color: #a5d6a7; }
   }
 
-  .omnispindle-add-btn {
+  .omnispindle-add-btn,
+  .omnispindle-filter-btn,
+  .omnispindle-inventorium-btn {
     flex-shrink: 0;
     background: transparent;
     border: none;
@@ -312,8 +314,10 @@
     justify-content: center;
 
     &:hover { color: var(--text-color); background: var(--list-item-hover-background-color); }
-    &.active { color: var(--status-error-color); }
+    &.active { color: var(--focus-color, #0366d6); }
   }
+
+  .omnispindle-add-btn.active { color: var(--status-error-color); }
 
   .omnispindle-add-form {
     padding: var(--spacing-half) var(--spacing);

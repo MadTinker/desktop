@@ -3190,8 +3190,8 @@ export class AppStore extends TypedBaseStore<IAppState> {
     this.emitUpdate()
   }
 
-  public _refreshOmnispindleTodos(): void {
-    ipcRenderer.send('omnispindle-refresh')
+  public _refreshOmnispindleTodos(project?: string): void {
+    ipcRenderer.send('omnispindle-refresh', project)
   }
 
   /**
@@ -3542,6 +3542,16 @@ export class AppStore extends TypedBaseStore<IAppState> {
         }).catch(err =>
           log.error('automation hooks (post-commit) failed:', err)
         )
+
+        // Notify Inventorium automation bus (non-blocking)
+        const tip = this.repositoryStateCache.get(repository).branchesState.tip
+        ipcRenderer.send('omnispindle-fire-event', 'git-commit', {
+          repository: repository.name,
+          path: repository.path,
+          commitSha: result,
+          summary: context.summary,
+          branch: tip.kind === TipState.Valid ? tip.branch.name : undefined,
+        }, {})
 
         await this._recordCommitStats(
           gitStore,
@@ -4459,6 +4469,13 @@ export class AppStore extends TypedBaseStore<IAppState> {
     }
 
     this.hasUserViewedStash = false
+
+    // Notify Inventorium automation bus
+    ipcRenderer.send('omnispindle-fire-event', 'git-branch-switch', {
+      repository: repository.name,
+      path: repository.path,
+      branch: branch.name,
+    }, {})
   }
 
   /**
@@ -5061,6 +5078,15 @@ export class AppStore extends TypedBaseStore<IAppState> {
         getAccountForRepository(this.accounts, repository),
         options
       )
+
+      // Notify Inventorium automation bus
+      const pushBranch = this.getBranchToPush(repository, options)
+      ipcRenderer.send('omnispindle-fire-event', 'git-push', {
+        repository: repository.name,
+        path: repository.path,
+        branch: pushBranch?.name,
+        remote: remote.name,
+      }, {})
     })
   }
 
@@ -5326,6 +5352,14 @@ export class AppStore extends TypedBaseStore<IAppState> {
           await this.refreshBranchProtectionState(repository)
 
           await this._refreshRepository(repository)
+
+          // Notify Inventorium automation bus
+          ipcRenderer.send('omnispindle-fire-event', 'git-pull', {
+            repository: repository.name,
+            path: repository.path,
+            branch: tip.branch.name,
+            remote: remote.name,
+          }, {})
         } finally {
           this.updatePushPullFetchProgress(repository, null)
         }
