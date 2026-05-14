@@ -19,12 +19,12 @@ export function ensureSmokeTestRepository() {
   fs.mkdirSync(smokeRepoPath, { recursive: true })
 
   runGit(['init'], smokeRepoPath)
-  runGit(['config', 'user.name', 'GitHub Desktop E2E'], smokeRepoPath)
+  runGit(['config', 'user.name', 'Madness Desktop E2E'], smokeRepoPath)
   runGit(['config', 'user.email', 'desktop-e2e@example.com'], smokeRepoPath)
 
   fs.writeFileSync(
     path.join(smokeRepoPath, 'README.md'),
-    '# GitHub Desktop Smoke Repo\n'
+    '# Madness Desktop Smoke Repo\n'
   )
 
   runGit(['add', 'README.md'], smokeRepoPath)

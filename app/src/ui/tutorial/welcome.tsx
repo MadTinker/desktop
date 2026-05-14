@@ -19,7 +19,7 @@ export class TutorialWelcome extends React.Component {
         <div className="header">
           <h1>Welcome to Madness Desktop</h1>
           <p>
-            Use this tutorial to get comfortable with Git, GitHub, and GitHub
+            Use this tutorial to get comfortable with Git, GitHub, and Madness
             Desktop.
           </p>
         </div>

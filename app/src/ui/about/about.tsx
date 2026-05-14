@@ -240,8 +240,8 @@ export class About extends React.Component<IAboutProps> {
         <p className="no-padding">Looking for the latest features?</p>
         <p className="no-padding">
           Check out the{' '}
-          <LinkButton uri="https://desktop.github.com/beta">
-            Beta Channel
+          <LinkButton uri="https://github.com/MadnessEngineering/madnessDesktop/releases">
+            Latest Releases
           </LinkButton>
         </p>
       </div>

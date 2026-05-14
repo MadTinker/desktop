@@ -313,10 +313,11 @@ export class SubmoduleDiff extends React.Component<
   }
 
   private renderOpenSubmoduleAction() {
-    // If no url is found for the submodule, it means it can't be opened
-    // This happens if the user is looking at an old commit which references
-    // a submodule that got later deleted.
-    if (this.props.diff.url === null) {
+    const { diff } = this.props
+
+    // Show the Open button if we have a URL *or* the submodule directory
+    // exists on disk (covers uninitialized / deleted-from-config cases).
+    if (diff.url === null && diff.entryStatus === 'uninitialized') {
       return null
     }
 
