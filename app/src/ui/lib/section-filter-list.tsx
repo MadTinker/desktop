@@ -711,7 +711,7 @@ function createStateUpdate<T extends IFilterListItem, GroupIdentifier>(
           item,
         }))
 
-    if (!items.length) {
+    if (!items.length && !props.renderGroupHeader) {
       continue
     }
 
@@ -719,6 +719,12 @@ function createStateUpdate<T extends IFilterListItem, GroupIdentifier>(
 
     if (props.renderGroupHeader) {
       groupRows.push({ kind: 'group', identifier: group.identifier })
+    }
+
+    if (!items.length) {
+      rows.push(groupRows)
+      section++
+      continue
     }
 
     for (const { item, matches } of items) {

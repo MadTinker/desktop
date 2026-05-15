@@ -79,6 +79,24 @@
     text-overflow: ellipsis;
     overflow-x: hidden;
     white-space: nowrap;
+
+    &.collapsible-group-header {
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      user-select: none;
+
+      .collapse-chevron {
+        flex-shrink: 0;
+        width: 12px;
+        margin-right: 4px;
+        opacity: 0.6;
+      }
+
+      &:hover .collapse-chevron {
+        opacity: 1;
+      }
+    }
   }
 
   .new-repository-button {

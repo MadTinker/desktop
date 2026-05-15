@@ -26,7 +26,11 @@ import { generateRepositoryListContextMenu } from '../repositories-list/reposito
 import { SectionFilterList } from '../lib/section-filter-list'
 import { assertNever } from '../../lib/fatal-error'
 import { IAheadBehind } from '../../models/branch'
-import { ICustomRepositoryGroup } from './repository-group-types'
+import {
+  ICustomRepositoryGroup,
+  CollapsedRepositoryGroupsKey,
+} from './repository-group-types'
+import { getStringArray, setStringArray } from '../../lib/local-storage'
 
 const BlankSlateImage = encodePathAsUrl(__dirname, 'static/empty-no-repo.svg')
 
@@ -82,6 +86,7 @@ interface IRepositoriesListProps {
 interface IRepositoriesListState {
   readonly newRepositoryMenuExpanded: boolean
   readonly selectedItem: IRepositoryListItem | null
+  readonly collapsedGroups: ReadonlySet<string>
 }
 
 const RowHeight = 29
@@ -156,6 +161,7 @@ export class RepositoriesList extends React.Component<
     this.state = {
       newRepositoryMenuExpanded: false,
       selectedItem: null,
+      collapsedGroups: new Set(getStringArray(CollapsedRepositoryGroupsKey)),
     }
   }
 
@@ -268,18 +274,41 @@ export class RepositoriesList extends React.Component<
 
   private renderGroupHeader = (group: RepositoryListGroup) => {
     const label = this.getGroupLabel(group)
+    const key = getGroupKey(group)
+    const collapsed = this.state.collapsedGroups.has(key)
 
     return (
-      <TooltippedContent
-        key={getGroupKey(group)}
-        className="filter-list-group-header"
-        tooltip={label}
-        onlyWhenOverflowed={true}
-        tagName="div"
+      <div
+        key={key}
+        className="filter-list-group-header collapsible-group-header"
+        onClick={() => this.toggleGroupCollapsed(key)}
       >
-        {label}
-      </TooltippedContent>
+        <Octicon
+          className="collapse-chevron"
+          symbol={collapsed ? octicons.chevronRight : octicons.chevronDown}
+        />
+        <TooltippedContent
+          tooltip={label}
+          onlyWhenOverflowed={true}
+          tagName="span"
+        >
+          {label}
+        </TooltippedContent>
+      </div>
     )
+  }
+
+  private toggleGroupCollapsed(groupKey: string) {
+    this.setState(prev => {
+      const next = new Set(prev.collapsedGroups)
+      if (next.has(groupKey)) {
+        next.delete(groupKey)
+      } else {
+        next.add(groupKey)
+      }
+      setStringArray(CollapsedRepositoryGroupsKey, [...next])
+      return { collapsedGroups: next }
+    })
   }
 
   private onItemClick = (item: IRepositoryListItem) => {
@@ -333,7 +362,7 @@ export class RepositoriesList extends React.Component<
       this.getGroupLabel(groups[group].identifier)
 
   public render() {
-    const groups = this.getRepositoryGroups(
+    const allGroups = this.getRepositoryGroups(
       this.props.repositories,
       this.props.localRepositoryStateLookup,
       this.props.recentRepositories,
@@ -341,14 +370,21 @@ export class RepositoriesList extends React.Component<
       this.props.customRepositoryGroups
     )
 
-    // So there's two types of selection at play here. There's the repository
-    // selection for the whole app and then there's the keyboard selection in
-    // the list itself. If the user has selected a repository using keyboard
-    // navigation we want to honor that selection. If the user hasn't selected a
-    // repository yet we'll select the repository currently selected in the app.
+    // Hide items in collapsed groups — header-only groups are supported
+    // by the SectionFilterList when renderGroupHeader is provided.
+    const { collapsedGroups } = this.state
+    const groups =
+      collapsedGroups.size === 0
+        ? allGroups
+        : allGroups.map(g =>
+            collapsedGroups.has(getGroupKey(g.identifier))
+              ? { ...g, items: [] as IRepositoryListItem[] }
+              : g
+          )
+
     const selectedItem =
       this.state.selectedItem ??
-      this.getSelectedListItem(groups, this.props.selectedRepository)
+      this.getSelectedListItem(allGroups, this.props.selectedRepository)
 
     return (
       <div className="repository-list">
@@ -367,6 +403,7 @@ export class RepositoriesList extends React.Component<
           invalidationProps={{
             repositories: this.props.repositories,
             filterText: this.props.filterText,
+            collapsedGroups: this.state.collapsedGroups,
           }}
           onItemContextMenu={this.onItemContextMenu}
           getGroupAriaLabel={this.getGroupAriaLabelGetter(groups)}
