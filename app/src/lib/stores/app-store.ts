@@ -75,6 +75,11 @@ import {
   isForkedRepositoryContributingToParent,
 } from '../../models/repository'
 import {
+  ICustomRepositoryGroup,
+  FavoriteRepositoriesKey,
+  CustomRepositoryGroupsKey,
+} from '../../ui/repositories-list/repository-group-types'
+import {
   CommittedFileChange,
   WorkingDirectoryFileChange,
   WorkingDirectoryStatus,
@@ -528,6 +533,8 @@ export class AppStore extends TypedBaseStore<IAppState> {
   private accounts: ReadonlyArray<Account> = new Array<Account>()
   private repositories: ReadonlyArray<Repository> = new Array<Repository>()
   private recentRepositories: ReadonlyArray<number> = new Array<number>()
+  private favoriteRepositories: ReadonlyArray<number> = []
+  private customRepositoryGroups: ReadonlyArray<ICustomRepositoryGroup> = []
 
   private selectedRepository: Repository | CloningRepository | null = null
 
@@ -1159,6 +1166,8 @@ export class AppStore extends TypedBaseStore<IAppState> {
       accounts: this.accounts,
       repositories,
       recentRepositories: this.recentRepositories,
+      favoriteRepositories: this.favoriteRepositories,
+      customRepositoryGroups: this.customRepositoryGroups,
       localRepositoryStateLookup: this.localRepositoryStateLookup,
       windowState: this.windowState,
       windowZoomFactor: this.windowZoomFactor,
@@ -2108,6 +2117,86 @@ export class AppStore extends TypedBaseStore<IAppState> {
     this.emitUpdate()
   }
 
+  // ── Favorites & custom groups ──────────────────────────────────────
+
+  public _toggleFavoriteRepository(repositoryId: number) {
+    const current = [...this.favoriteRepositories]
+    const idx = current.indexOf(repositoryId)
+    if (idx === -1) {
+      current.push(repositoryId)
+    } else {
+      current.splice(idx, 1)
+    }
+    this.favoriteRepositories = current
+    setObject(FavoriteRepositoriesKey, current)
+    this.emitUpdate()
+  }
+
+  public _createCustomGroup(name: string): string {
+    const id = `g-${Date.now()}`
+    const group: ICustomRepositoryGroup = { id, name, repositoryIds: [] }
+    this.customRepositoryGroups = [...this.customRepositoryGroups, group]
+    setObject(CustomRepositoryGroupsKey, this.customRepositoryGroups)
+    this.emitUpdate()
+    return id
+  }
+
+  public _renameCustomGroup(groupId: string, name: string) {
+    this.customRepositoryGroups = this.customRepositoryGroups.map(g =>
+      g.id === groupId ? { ...g, name } : g
+    )
+    setObject(CustomRepositoryGroupsKey, this.customRepositoryGroups)
+    this.emitUpdate()
+  }
+
+  public _deleteCustomGroup(groupId: string) {
+    this.customRepositoryGroups = this.customRepositoryGroups.filter(
+      g => g.id !== groupId
+    )
+    setObject(CustomRepositoryGroupsKey, this.customRepositoryGroups)
+    this.emitUpdate()
+  }
+
+  public _addRepositoryToGroup(repositoryId: number, groupId: string) {
+    this.customRepositoryGroups = this.customRepositoryGroups.map(g =>
+      g.id === groupId && !g.repositoryIds.includes(repositoryId)
+        ? { ...g, repositoryIds: [...g.repositoryIds, repositoryId] }
+        : g
+    )
+    setObject(CustomRepositoryGroupsKey, this.customRepositoryGroups)
+    this.emitUpdate()
+  }
+
+  public _removeRepositoryFromGroup(repositoryId: number, groupId: string) {
+    this.customRepositoryGroups = this.customRepositoryGroups.map(g =>
+      g.id === groupId
+        ? { ...g, repositoryIds: g.repositoryIds.filter(id => id !== repositoryId) }
+        : g
+    )
+    setObject(CustomRepositoryGroupsKey, this.customRepositoryGroups)
+    this.emitUpdate()
+  }
+
+  /** Strip a removed repo ID from favorites and all custom groups. */
+  private cleanupRemovedRepositoryFromGroups(repositoryId: number) {
+    if (this.favoriteRepositories.includes(repositoryId)) {
+      this.favoriteRepositories = this.favoriteRepositories.filter(
+        id => id !== repositoryId
+      )
+      setObject(FavoriteRepositoriesKey, this.favoriteRepositories)
+    }
+    const hadGroupMembership = this.customRepositoryGroups.some(g =>
+      g.repositoryIds.includes(repositoryId)
+    )
+    if (hadGroupMembership) {
+      this.customRepositoryGroups = this.customRepositoryGroups.map(g => ({
+        ...g,
+        repositoryIds: g.repositoryIds.filter(id => id !== repositoryId),
+      }))
+      setObject(CustomRepositoryGroupsKey, this.customRepositoryGroups)
+    }
+  }
+
   // finish `_selectRepository`s refresh tasks
   private async _selectRepositoryRefreshTasks(
     repository: Repository,
@@ -2322,6 +2411,10 @@ export class AppStore extends TypedBaseStore<IAppState> {
 
     this.accounts = accounts
     this.repositories = repositories
+    this.favoriteRepositories =
+      getObject<number[]>(FavoriteRepositoriesKey) ?? []
+    this.customRepositoryGroups =
+      getObject<ICustomRepositoryGroup[]>(CustomRepositoryGroupsKey) ?? []
 
     this.updateRepositorySelectionAfterRepositoriesChanged()
 
@@ -6910,6 +7003,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
         this._removeCloningRepository(repository)
       } else {
         await this.repositoriesStore.removeRepository(repository)
+        this.cleanupRemovedRepositoryFromGroups(repository.id)
       }
     } catch (err) {
       this.emitError(err)

@@ -144,6 +144,7 @@ import { CommitDragElement } from './drag-elements/commit-drag-element'
 import classNames from 'classnames'
 import { MoveToApplicationsFolder } from './move-to-applications-folder'
 import { ChangeRepositoryAlias } from './change-repository-alias/change-repository-alias-dialog'
+import { CreateRepositoryGroupDialog } from './repository-group/create-repository-group-dialog'
 import { ThankYou } from './thank-you'
 import {
   getUserContributions,
@@ -2162,6 +2163,15 @@ export class App extends React.Component<IAppProps, IAppState> {
           />
         )
       }
+      case PopupType.CreateRepositoryGroup: {
+        return (
+          <CreateRepositoryGroupDialog
+            dispatcher={this.props.dispatcher}
+            repository={popup.repository}
+            onDismissed={onPopupDismissedFn}
+          />
+        )
+      }
       case PopupType.ThankYou:
         return (
           <ThankYou
@@ -3006,6 +3016,8 @@ export class App extends React.Component<IAppProps, IAppState> {
         onSelectionChanged={this.onSelectionChanged}
         repositories={this.state.repositories}
         recentRepositories={this.state.recentRepositories}
+        favoriteRepositories={this.state.favoriteRepositories}
+        customRepositoryGroups={this.state.customRepositoryGroups}
         localRepositoryStateLookup={this.state.localRepositoryStateLookup}
         askForConfirmationOnRemoveRepository={
           this.state.askForConfirmationOnRepositoryRemoval
@@ -3207,6 +3219,22 @@ export class App extends React.Component<IAppProps, IAppState> {
       shellLabel: this.state.useCustomShell
         ? undefined
         : this.state.selectedShell,
+      isFavorite: this.state.favoriteRepositories.includes(repository.id),
+      customRepositoryGroups: this.state.customRepositoryGroups,
+      onToggleFavorite: r =>
+        this.props.dispatcher.toggleFavoriteRepository(r.id),
+      onAddToGroup: (r, gid) =>
+        this.props.dispatcher.addRepositoryToGroup(r.id, gid),
+      onRemoveFromGroup: (r, gid) =>
+        this.props.dispatcher.removeRepositoryFromGroup(r.id, gid),
+      onCreateGroup: r => {
+        if (r instanceof Repository) {
+          this.props.dispatcher.showPopup({
+            type: PopupType.CreateRepositoryGroup,
+            repository: r,
+          })
+        }
+      },
     })
 
     showContextualMenu(items)

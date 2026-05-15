@@ -45,6 +45,13 @@
       width: 16px;
     }
 
+    .favorite-indicator {
+      flex-shrink: 0;
+      width: 12px;
+      margin-right: var(--spacing-half);
+      color: var(--tab-bar-active-color);
+    }
+
     .name {
       // Long repository names truncate and ellipse
       @include ellipsis;

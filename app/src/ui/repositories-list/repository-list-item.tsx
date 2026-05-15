@@ -19,6 +19,9 @@ interface IRepositoryListItemProps {
   /** Does the repository need to be disambiguated in the list? */
   readonly needsDisambiguation: boolean
 
+  /** Whether the repository is marked as a favorite. */
+  readonly isFavorite: boolean
+
   /** The characters in the repository name to highlight */
   readonly matches: IMatches
 
@@ -68,6 +71,10 @@ export class RepositoryListItem extends React.Component<
           symbol={iconForRepository(repository)}
         />
 
+        {this.props.isFavorite && (
+          <Octicon className="favorite-indicator" symbol={octicons.starFill} />
+        )}
+
         <div className={classNames(classNameList)}>
           {prefix ? <span className="prefix">{prefix}</span> : null}
           <HighlightText
@@ -109,7 +116,8 @@ export class RepositoryListItem extends React.Component<
     ) {
       return (
         nextProps.repository.id !== this.props.repository.id ||
-        nextProps.matches !== this.props.matches
+        nextProps.matches !== this.props.matches ||
+        nextProps.isFavorite !== this.props.isFavorite
       )
     } else {
       return true

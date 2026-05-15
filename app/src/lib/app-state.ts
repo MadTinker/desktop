@@ -10,6 +10,7 @@ import { Tip } from '../models/tip'
 import { Commit } from '../models/commit'
 import { CommittedFileChange, WorkingDirectoryStatus } from '../models/status'
 import { CloningRepository } from '../models/cloning-repository'
+import { ICustomRepositoryGroup } from '../ui/repositories-list/repository-group-types'
 import { IMenu } from '../models/app-menu'
 import { IRemote } from '../models/remote'
 import { CloneRepositoryTab } from '../models/clone-repository-tab'
@@ -103,6 +104,12 @@ export interface IAppState {
    * List of IDs of the most recently opened repositories (most recent first)
    */
   readonly recentRepositories: ReadonlyArray<number>
+
+  /** IDs of repositories the user has marked as favorites. */
+  readonly favoriteRepositories: ReadonlyArray<number>
+
+  /** User-defined repository groups for the repo switcher. */
+  readonly customRepositoryGroups: ReadonlyArray<ICustomRepositoryGroup>
 
   /**
    * A cache of the latest repository state values, keyed by the repository id

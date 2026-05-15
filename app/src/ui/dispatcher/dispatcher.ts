@@ -857,6 +857,32 @@ export class Dispatcher {
     return this.appStore._changeRepositoryAlias(repository, newAlias)
   }
 
+  // ── Favorites & custom groups ──────────────────────────────────────
+
+  public toggleFavoriteRepository(repositoryId: number) {
+    this.appStore._toggleFavoriteRepository(repositoryId)
+  }
+
+  public createCustomGroup(name: string): string {
+    return this.appStore._createCustomGroup(name)
+  }
+
+  public renameCustomGroup(groupId: string, name: string) {
+    this.appStore._renameCustomGroup(groupId, name)
+  }
+
+  public deleteCustomGroup(groupId: string) {
+    this.appStore._deleteCustomGroup(groupId)
+  }
+
+  public addRepositoryToGroup(repositoryId: number, groupId: string) {
+    this.appStore._addRepositoryToGroup(repositoryId, groupId)
+  }
+
+  public removeRepositoryFromGroup(repositoryId: number, groupId: string) {
+    this.appStore._removeRepositoryFromGroup(repositoryId, groupId)
+  }
+
   /** Rename the branch to a new name. */
   public renameBranch(
     repository: Repository,

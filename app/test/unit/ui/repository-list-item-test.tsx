@@ -45,6 +45,7 @@ describe('RepositoryListItem', () => {
       <RepositoryListItem
         repository={repository}
         needsDisambiguation={false}
+        isFavorite={false}
         matches={noMatches}
         aheadBehind={{ ahead: 2, behind: 1 }}
         changedFilesCount={3}
@@ -69,6 +70,7 @@ describe('RepositoryListItem', () => {
       <RepositoryListItem
         repository={repository}
         needsDisambiguation={true}
+        isFavorite={false}
         matches={noMatches}
         aheadBehind={null}
         changedFilesCount={0}
@@ -88,6 +90,7 @@ describe('RepositoryListItem', () => {
       <RepositoryListItem
         repository={repository}
         needsDisambiguation={true}
+        isFavorite={false}
         matches={noMatches}
         aheadBehind={null}
         changedFilesCount={0}

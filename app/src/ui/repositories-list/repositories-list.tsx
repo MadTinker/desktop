@@ -26,6 +26,7 @@ import { generateRepositoryListContextMenu } from '../repositories-list/reposito
 import { SectionFilterList } from '../lib/section-filter-list'
 import { assertNever } from '../../lib/fatal-error'
 import { IAheadBehind } from '../../models/branch'
+import { ICustomRepositoryGroup } from './repository-group-types'
 
 const BlankSlateImage = encodePathAsUrl(__dirname, 'static/empty-no-repo.svg')
 
@@ -33,6 +34,8 @@ interface IRepositoriesListProps {
   readonly selectedRepository: Repositoryish | null
   readonly repositories: ReadonlyArray<Repositoryish>
   readonly recentRepositories: ReadonlyArray<number>
+  readonly favoriteRepositories: ReadonlyArray<number>
+  readonly customRepositoryGroups: ReadonlyArray<ICustomRepositoryGroup>
 
   /** A cache of the latest repository state values, keyed by the repository id */
   readonly localRepositoryStateLookup: ReadonlyMap<
@@ -121,14 +124,18 @@ export class RepositoriesList extends React.Component<
     (
       repositories: ReadonlyArray<Repositoryish> | null,
       localRepositoryStateLookup: ReadonlyMap<number, ILocalRepositoryState>,
-      recentRepositories: ReadonlyArray<number>
+      recentRepositories: ReadonlyArray<number>,
+      favoriteRepositories: ReadonlyArray<number>,
+      customRepositoryGroups: ReadonlyArray<ICustomRepositoryGroup>
     ) =>
       repositories === null
         ? []
         : groupRepositories(
             repositories,
             localRepositoryStateLookup,
-            recentRepositories
+            recentRepositories,
+            favoriteRepositories,
+            customRepositoryGroups
           )
   )
 
@@ -159,6 +166,7 @@ export class RepositoriesList extends React.Component<
         key={repository.id}
         repository={repository}
         needsDisambiguation={item.needsDisambiguation}
+        isFavorite={item.isFavorite}
         matches={matches}
         aheadBehind={item.aheadBehind}
         changedFilesCount={item.changedFilesCount}
@@ -241,7 +249,11 @@ export class RepositoriesList extends React.Component<
 
   private getGroupLabel(group: RepositoryListGroup) {
     const { kind } = group
-    if (kind === 'enterprise') {
+    if (kind === 'favorites') {
+      return 'Favorites'
+    } else if (kind === 'custom-group') {
+      return group.groupName
+    } else if (kind === 'enterprise') {
       return group.host
     } else if (kind === 'other') {
       return 'Other'
@@ -299,6 +311,12 @@ export class RepositoriesList extends React.Component<
       onViewOnGitHub: this.props.onViewOnGitHub,
       repository: item.repository,
       shellLabel: this.props.shellLabel,
+      isFavorite: item.isFavorite,
+      customRepositoryGroups: this.props.customRepositoryGroups,
+      onToggleFavorite: this.onToggleFavorite,
+      onAddToGroup: this.onAddToGroup,
+      onRemoveFromGroup: this.onRemoveFromGroup,
+      onCreateGroup: this.onCreateGroup,
     })
 
     showContextualMenu(items)
@@ -318,7 +336,9 @@ export class RepositoriesList extends React.Component<
     const groups = this.getRepositoryGroups(
       this.props.repositories,
       this.props.localRepositoryStateLookup,
-      this.props.recentRepositories
+      this.props.recentRepositories,
+      this.props.favoriteRepositories,
+      this.props.customRepositoryGroups
     )
 
     // So there's two types of selection at play here. There's the repository
@@ -455,5 +475,25 @@ export class RepositoriesList extends React.Component<
 
   private onRemoveRepositoryAlias = (repository: Repository) => {
     this.props.dispatcher.changeRepositoryAlias(repository, null)
+  }
+
+  private onToggleFavorite = (repository: Repositoryish) => {
+    this.props.dispatcher.toggleFavoriteRepository(repository.id)
+  }
+
+  private onAddToGroup = (repository: Repositoryish, groupId: string) => {
+    this.props.dispatcher.addRepositoryToGroup(repository.id, groupId)
+  }
+
+  private onRemoveFromGroup = (repository: Repositoryish, groupId: string) => {
+    this.props.dispatcher.removeRepositoryFromGroup(repository.id, groupId)
+  }
+
+  private onCreateGroup = (repository: Repositoryish) => {
+    this.props.dispatcher.showPopup({
+      type: PopupType.CreateRepositoryGroup,
+      repository:
+        repository instanceof Repository ? repository : undefined,
+    })
   }
 }

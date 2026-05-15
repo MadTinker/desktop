@@ -13,10 +13,16 @@ import { IAheadBehind } from '../../models/branch'
 import { assertNever } from '../../lib/fatal-error'
 import { isDotCom } from '../../lib/endpoint-capabilities'
 import { Owner } from '../../models/owner'
+import { ICustomRepositoryGroup } from './repository-group-types'
 
 export type RepositoryListGroup =
   | {
-      kind: 'recent' | 'other'
+      kind: 'favorites' | 'recent' | 'other'
+    }
+  | {
+      kind: 'custom-group'
+      groupId: string
+      groupName: string
     }
   | {
       kind: 'dotcom'
@@ -35,14 +41,18 @@ export type RepositoryListGroup =
 export const getGroupKey = (group: RepositoryListGroup) => {
   const { kind } = group
   switch (kind) {
+    case 'favorites':
+      return `0:favorites`
+    case 'custom-group':
+      return `1:custom-group:${group.groupId}`
     case 'recent':
-      return `0:recent`
+      return `2:recent`
     case 'dotcom':
-      return `1:dotcom:${group.owner.login}`
+      return `3:dotcom:${group.owner.login}`
     case 'enterprise':
-      return `2:enterprise:${group.host}`
+      return `4:enterprise:${group.host}`
     case 'other':
-      return `3:other`
+      return `5:other`
     default:
       assertNever(group, `Unknown repository group kind ${kind}`)
   }
@@ -54,6 +64,7 @@ export interface IRepositoryListItem extends IFilterListItem {
   readonly id: string
   readonly repository: Repositoryish
   readonly needsDisambiguation: boolean
+  readonly isFavorite: boolean
   readonly aheadBehind: IAheadBehind | null
   readonly changedFilesCount: number
 }
@@ -77,10 +88,24 @@ type RepoGroupItem = { group: RepositoryListGroup; repos: Repositoryish[] }
 export function groupRepositories(
   repositories: ReadonlyArray<Repositoryish>,
   localRepositoryStateLookup: ReadonlyMap<number, ILocalRepositoryState>,
-  recentRepositories: ReadonlyArray<number>
+  recentRepositories: ReadonlyArray<number>,
+  favoriteRepositories: ReadonlyArray<number> = [],
+  customGroups: ReadonlyArray<ICustomRepositoryGroup> = []
 ): ReadonlyArray<IFilterListGroup<IRepositoryListItem, RepositoryListGroup>> {
   const includeRecentGroup = repositories.length > recentRepositoriesThreshold
   const recentSet = includeRecentGroup ? new Set(recentRepositories) : undefined
+  const favoriteSet = new Set(favoriteRepositories)
+
+  // Build reverse lookup: repoId → custom groups it belongs to
+  const repoToCustomGroups = new Map<number, ICustomRepositoryGroup[]>()
+  for (const cg of customGroups) {
+    for (const repoId of cg.repositoryIds) {
+      const existing = repoToCustomGroups.get(repoId) ?? []
+      existing.push(cg)
+      repoToCustomGroups.set(repoId, existing)
+    }
+  }
+
   const groups = new Map<string, RepoGroupItem>()
 
   const addToGroup = (group: RepositoryListGroup, repo: Repositoryish) => {
@@ -95,6 +120,20 @@ export function groupRepositories(
   }
 
   for (const repo of repositories) {
+    if (favoriteSet.has(repo.id) && repo instanceof Repository) {
+      addToGroup({ kind: 'favorites' }, repo)
+    }
+
+    const memberGroups = repoToCustomGroups.get(repo.id)
+    if (memberGroups !== undefined && repo instanceof Repository) {
+      for (const cg of memberGroups) {
+        addToGroup(
+          { kind: 'custom-group', groupId: cg.id, groupName: cg.name },
+          repo
+        )
+      }
+    }
+
     if (recentSet?.has(repo.id) && repo instanceof Repository) {
       addToGroup({ kind: 'recent' }, repo)
     }
@@ -110,7 +149,8 @@ export function groupRepositories(
         group,
         repos,
         localRepositoryStateLookup,
-        groups
+        groups,
+        favoriteSet
       ),
     }))
 }
@@ -120,19 +160,24 @@ export function groupRepositories(
 const getDisplayTitle = (r: Repositoryish) =>
   r instanceof Repository && r.alias != null ? r.alias : r.name
 
+/** Groups whose items are always duplicated in another group (dedup skip). */
+const isVirtualGroup = (kind: RepositoryListGroup['kind']) =>
+  kind === 'recent' || kind === 'favorites' || kind === 'custom-group'
+
 const toSortedListItems = (
   group: RepositoryListGroup,
   repositories: ReadonlyArray<Repositoryish>,
   localRepositoryStateLookup: ReadonlyMap<number, ILocalRepositoryState>,
-  groups: Map<string, RepoGroupItem>
+  groups: Map<string, RepoGroupItem>,
+  favoriteSet: ReadonlySet<number>
 ): IRepositoryListItem[] => {
   const groupNames = new Map<string, number>()
   const allNames = new Map<string, number>()
 
   for (const groupItem of groups.values()) {
-    // All items in the recent group are by definition present in another
-    // group and therefore we don't want to count them.
-    if (groupItem.group.kind === 'recent') {
+    // Items in virtual groups are by definition present in another
+    // group and therefore we don't want to count them for disambiguation.
+    if (isVirtualGroup(groupItem.group.kind)) {
       continue
     }
 
@@ -153,15 +198,10 @@ const toSortedListItems = (
         text: r instanceof Repository ? [title, nameOf(r)] : [title],
         id: r.id.toString(),
         repository: r,
+        isFavorite: favoriteSet.has(r.id),
         needsDisambiguation:
-          // If the repository is in the enterprise group and has a duplicate
-          // name in the group, we need to disambiguate it. We don't have to
-          // disambiguate repositories in the 'dotcom' group because they are
-          // already grouped by owner. If the repository is in the 'recent'
-          // group and has a duplicate name in any group, we need to
-          // disambiguate it.
           ((groupNames.get(title) ?? 0) > 1 && group.kind === 'enterprise') ||
-          ((allNames.get(title) ?? 0) > 1 && group.kind === 'recent'),
+          ((allNames.get(title) ?? 0) > 1 && isVirtualGroup(group.kind)),
         aheadBehind: repoState?.aheadBehind ?? null,
         changedFilesCount: repoState?.changedFilesCount ?? 0,
       }
