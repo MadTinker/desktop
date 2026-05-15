@@ -1079,12 +1079,18 @@ export class FilterChangesList extends React.Component<
   }
 
   private onGenerateLocalAICommitMessage = (
-    filesSelected: ReadonlyArray<WorkingDirectoryFileChange>
+    filesSelected: ReadonlyArray<WorkingDirectoryFileChange>,
+    mustOverrideExistingMessage: boolean
   ) => {
-    return this.props.dispatcher.generateLocalAICommitMessage(
-      this.props.repository,
-      filesSelected
-    )
+    return mustOverrideExistingMessage
+      ? this.props.dispatcher.promptOverrideWithLocalAICommitMessage(
+          this.props.repository,
+          filesSelected
+        )
+      : this.props.dispatcher.generateLocalAICommitMessage(
+          this.props.repository,
+          filesSelected
+        )
   }
 
   private onShowPopup = (p: Popup) => this.props.dispatcher.showPopup(p)

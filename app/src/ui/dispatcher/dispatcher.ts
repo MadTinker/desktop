@@ -1143,6 +1143,16 @@ export class Dispatcher {
     return this.appStore._generateLocalAICommitMessage(repository, filesSelected)
   }
 
+  public promptOverrideWithLocalAICommitMessage(
+    repository: Repository,
+    filesSelected: ReadonlyArray<WorkingDirectoryFileChange>
+  ) {
+    return this.appStore._promptOverrideWithLocalAICommitMessage(
+      repository,
+      filesSelected
+    )
+  }
+
   public setLocalAIConfig(
     config: import('../../models/local-ai').ILocalAIConfig
   ) {

@@ -485,6 +485,7 @@ export type PopupDetail =
       type: PopupType.GenerateCommitMessageOverrideWarning
       repository: Repository
       filesSelected: ReadonlyArray<WorkingDirectoryFileChange>
+      useLocalAI?: boolean
     }
   | {
       type: PopupType.GenerateCommitMessageDisclaimer

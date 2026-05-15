@@ -181,7 +181,8 @@ interface ICommitMessageProps {
 
   /** Called when the user clicks "Generate with local AI" */
   readonly onGenerateLocalAICommitMessage?: (
-    filesSelected: ReadonlyArray<WorkingDirectoryFileChange>
+    filesSelected: ReadonlyArray<WorkingDirectoryFileChange>,
+    mustOverrideExistingMessage: boolean
   ) => void
 
   /**
@@ -1079,9 +1080,13 @@ export class CommitMessage extends React.Component<
         )}
         <Button
           className="local-ai-button"
-          onClick={() =>
-            onGenerateLocalAICommitMessage(filesSelected)
-          }
+          onClick={() => {
+            const { commitMessage } = this.state
+            onGenerateLocalAICommitMessage(
+              filesSelected,
+              !!commitMessage.summary || !!commitMessage.description
+            )
+          }}
           ariaLabel={ariaLabel}
           tooltip={ariaLabel}
           disabled={

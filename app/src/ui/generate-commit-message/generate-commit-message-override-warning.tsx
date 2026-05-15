@@ -17,6 +17,8 @@ interface IGenerateCommitMessageOverrideWarningProps {
   readonly repository: Repository
   readonly filesSelected: ReadonlyArray<WorkingDirectoryFileChange>
   readonly showCopilotInstructionsTip: boolean
+  /** When true, confirms then calls generateLocalAICommitMessage instead of Copilot */
+  readonly useLocalAI?: boolean
 
   /**
    * Callback to use when the dialog gets closed.
@@ -102,10 +104,17 @@ export class GenerateCommitMessageOverrideWarning extends React.Component<
       await this.props.dispatcher.setConfirmCommitMessageOverrideSetting(false)
     }
 
-    this.props.dispatcher.generateCommitMessage(
-      this.props.repository,
-      this.props.filesSelected
-    )
+    if (this.props.useLocalAI) {
+      this.props.dispatcher.generateLocalAICommitMessage(
+        this.props.repository,
+        this.props.filesSelected
+      )
+    } else {
+      this.props.dispatcher.generateCommitMessage(
+        this.props.repository,
+        this.props.filesSelected
+      )
+    }
     this.props.onDismissed()
   }
 }

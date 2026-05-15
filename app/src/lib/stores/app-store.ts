@@ -6068,6 +6068,23 @@ export class AppStore extends TypedBaseStore<IAppState> {
     })
   }
 
+  public async _promptOverrideWithLocalAICommitMessage(
+    repository: Repository,
+    filesSelected: ReadonlyArray<WorkingDirectoryFileChange>
+  ): Promise<void> {
+    if (!this.confirmCommitMessageOverride) {
+      await this._generateLocalAICommitMessage(repository, filesSelected)
+      return
+    }
+
+    return this._showPopup({
+      type: PopupType.GenerateCommitMessageOverrideWarning,
+      repository,
+      filesSelected,
+      useLocalAI: true,
+    })
+  }
+
   public async _generateLocalAICommitMessage(
     repository: Repository,
     filesSelected: ReadonlyArray<WorkingDirectoryFileChange>

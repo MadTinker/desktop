@@ -2633,9 +2633,11 @@ export class App extends React.Component<IAppProps, IAppState> {
             repository={popup.repository}
             filesSelected={popup.filesSelected}
             showCopilotInstructionsTip={
+              !popup.useLocalAI &&
               account !== undefined &&
               enableCopilotSdkCommitMessageGeneration(account)
             }
+            useLocalAI={popup.useLocalAI}
             onDismissed={onPopupDismissedFn}
           />
         )
