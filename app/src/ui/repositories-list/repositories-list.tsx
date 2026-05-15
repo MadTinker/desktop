@@ -7,6 +7,9 @@ import {
   Repositoryish,
   RepositoryListGroup,
   getGroupKey,
+  isReorderableGroup,
+  getCustomOrderMap,
+  setCustomOrderMap,
 } from './group-repositories'
 import { IFilterListGroup } from '../lib/filter-list'
 import { IMatches } from '../../lib/fuzzy-find'
@@ -87,6 +90,14 @@ interface IRepositoriesListState {
   readonly newRepositoryMenuExpanded: boolean
   readonly selectedItem: IRepositoryListItem | null
   readonly collapsedGroups: ReadonlySet<string>
+  /** Repository ID currently being dragged */
+  readonly dragSourceId: number | null
+  /** Group key of the drag source */
+  readonly dragGroupKey: string | null
+  /** Repository ID currently under the drag cursor */
+  readonly dragTargetId: number | null
+  /** Counter to force re-render after reorder */
+  readonly reorderVersion: number
 }
 
 const RowHeight = 29
@@ -131,7 +142,8 @@ export class RepositoriesList extends React.Component<
       localRepositoryStateLookup: ReadonlyMap<number, ILocalRepositoryState>,
       recentRepositories: ReadonlyArray<number>,
       favoriteRepositories: ReadonlyArray<number>,
-      customRepositoryGroups: ReadonlyArray<ICustomRepositoryGroup>
+      customRepositoryGroups: ReadonlyArray<ICustomRepositoryGroup>,
+      _reorderVersion?: number
     ) =>
       repositories === null
         ? []
@@ -162,11 +174,23 @@ export class RepositoriesList extends React.Component<
       newRepositoryMenuExpanded: false,
       selectedItem: null,
       collapsedGroups: new Set(getStringArray(CollapsedRepositoryGroupsKey)),
+      dragSourceId: null,
+      dragGroupKey: null,
+      dragTargetId: null,
+      reorderVersion: 0,
     }
   }
 
   private renderItem = (item: IRepositoryListItem, matches: IMatches) => {
     const repository = item.repository
+    const draggable = isReorderableGroup(
+      item.groupKey.startsWith('0:')
+        ? 'favorites'
+        : item.groupKey.startsWith('1:')
+          ? 'custom-group'
+          : 'other'
+    )
+
     return (
       <RepositoryListItem
         key={repository.id}
@@ -176,6 +200,21 @@ export class RepositoriesList extends React.Component<
         matches={matches}
         aheadBehind={item.aheadBehind}
         changedFilesCount={item.changedFilesCount}
+        isDraggable={draggable}
+        isDragSource={this.state.dragSourceId === repository.id}
+        isDragTarget={this.state.dragTargetId === repository.id}
+        onDragStart={
+          draggable
+            ? e => this.onRepoDragStart(e, repository.id, item.groupKey)
+            : undefined
+        }
+        onDragOver={
+          draggable ? e => this.onRepoDragOver(e, repository.id) : undefined
+        }
+        onDrop={
+          draggable ? e => this.onRepoDrop(e, repository.id) : undefined
+        }
+        onDragEnd={this.onRepoDragEnd}
       />
     )
   }
@@ -367,7 +406,8 @@ export class RepositoriesList extends React.Component<
       this.props.localRepositoryStateLookup,
       this.props.recentRepositories,
       this.props.favoriteRepositories,
-      this.props.customRepositoryGroups
+      this.props.customRepositoryGroups,
+      this.state.reorderVersion
     )
 
     // Hide items in collapsed groups — header-only groups are supported
@@ -404,6 +444,7 @@ export class RepositoriesList extends React.Component<
             repositories: this.props.repositories,
             filterText: this.props.filterText,
             collapsedGroups: this.state.collapsedGroups,
+            reorderVersion: this.state.reorderVersion,
           }}
           onItemContextMenu={this.onItemContextMenu}
           getGroupAriaLabel={this.getGroupAriaLabelGetter(groups)}
@@ -524,6 +565,100 @@ export class RepositoriesList extends React.Component<
 
   private onRemoveFromGroup = (repository: Repositoryish, groupId: string) => {
     this.props.dispatcher.removeRepositoryFromGroup(repository.id, groupId)
+  }
+
+  private onRepoDragStart = (
+    e: React.DragEvent<HTMLDivElement>,
+    repoId: number,
+    groupKey: string
+  ) => {
+    e.dataTransfer.effectAllowed = 'move'
+    e.dataTransfer.setData('text/plain', String(repoId))
+    this.setState({ dragSourceId: repoId, dragGroupKey: groupKey })
+  }
+
+  private onRepoDragOver = (
+    e: React.DragEvent<HTMLDivElement>,
+    repoId: number
+  ) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    if (this.state.dragTargetId !== repoId) {
+      this.setState({ dragTargetId: repoId })
+    }
+  }
+
+  private onRepoDrop = (
+    e: React.DragEvent<HTMLDivElement>,
+    targetRepoId: number
+  ) => {
+    e.preventDefault()
+    const { dragSourceId, dragGroupKey } = this.state
+
+    if (
+      dragSourceId === null ||
+      dragGroupKey === null ||
+      dragSourceId === targetRepoId
+    ) {
+      this.resetDragState()
+      return
+    }
+
+    // Find the group items to determine current order
+    const allGroups = this.getRepositoryGroups(
+      this.props.repositories,
+      this.props.localRepositoryStateLookup,
+      this.props.recentRepositories,
+      this.props.favoriteRepositories,
+      this.props.customRepositoryGroups,
+      this.state.reorderVersion
+    )
+
+    const group = allGroups.find(
+      g => getGroupKey(g.identifier) === dragGroupKey
+    )
+    if (!group) {
+      this.resetDragState()
+      return
+    }
+
+    // Build new order: current item IDs in display order
+    const ids = group.items.map(i => i.repository.id)
+    const fromIdx = ids.indexOf(dragSourceId)
+    const toIdx = ids.indexOf(targetRepoId)
+
+    if (fromIdx === -1 || toIdx === -1) {
+      this.resetDragState()
+      return
+    }
+
+    // Move source to target position
+    ids.splice(fromIdx, 1)
+    ids.splice(toIdx, 0, dragSourceId)
+
+    // Persist
+    const orderMap = getCustomOrderMap()
+    orderMap[dragGroupKey] = ids
+    setCustomOrderMap(orderMap)
+
+    this.setState(prev => ({
+      dragSourceId: null,
+      dragGroupKey: null,
+      dragTargetId: null,
+      reorderVersion: prev.reorderVersion + 1,
+    }))
+  }
+
+  private onRepoDragEnd = () => {
+    this.resetDragState()
+  }
+
+  private resetDragState() {
+    this.setState({
+      dragSourceId: null,
+      dragGroupKey: null,
+      dragTargetId: null,
+    })
   }
 
   private onCreateGroup = (repository: Repositoryish) => {

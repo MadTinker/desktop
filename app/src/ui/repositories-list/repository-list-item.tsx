@@ -30,6 +30,20 @@ interface IRepositoryListItemProps {
 
   /** Number of uncommitted changes */
   readonly changedFilesCount: number
+
+  /** Whether this item supports drag-to-reorder */
+  readonly isDraggable?: boolean
+
+  /** Whether this item is currently being dragged */
+  readonly isDragSource?: boolean
+
+  /** Whether this item is the current drop target */
+  readonly isDragTarget?: boolean
+
+  readonly onDragStart?: (e: React.DragEvent<HTMLDivElement>) => void
+  readonly onDragOver?: (e: React.DragEvent<HTMLDivElement>) => void
+  readonly onDragEnd?: (e: React.DragEvent<HTMLDivElement>) => void
+  readonly onDrop?: (e: React.DragEvent<HTMLDivElement>) => void
 }
 
 /** A repository item. */
@@ -57,8 +71,21 @@ export class RepositoryListItem extends React.Component<
       alias: alias !== null,
     })
 
+    const itemClass = classNames('repository-list-item', {
+      'drag-source': this.props.isDragSource,
+      'drag-target': this.props.isDragTarget,
+    })
+
     return (
-      <div className="repository-list-item" ref={this.listItemRef}>
+      <div
+        className={itemClass}
+        ref={this.listItemRef}
+        draggable={this.props.isDraggable}
+        onDragStart={this.props.onDragStart}
+        onDragOver={this.props.onDragOver}
+        onDragEnd={this.props.onDragEnd}
+        onDrop={this.props.onDrop}
+      >
         <Tooltip
           target={this.listItemRef}
           disabled={enableAccessibleListToolTips()}
@@ -117,7 +144,9 @@ export class RepositoryListItem extends React.Component<
       return (
         nextProps.repository.id !== this.props.repository.id ||
         nextProps.matches !== this.props.matches ||
-        nextProps.isFavorite !== this.props.isFavorite
+        nextProps.isFavorite !== this.props.isFavorite ||
+        nextProps.isDragSource !== this.props.isDragSource ||
+        nextProps.isDragTarget !== this.props.isDragTarget
       )
     } else {
       return true

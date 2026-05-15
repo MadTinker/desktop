@@ -13,7 +13,10 @@ import { IAheadBehind } from '../../models/branch'
 import { assertNever } from '../../lib/fatal-error'
 import { isDotCom } from '../../lib/endpoint-capabilities'
 import { Owner } from '../../models/owner'
-import { ICustomRepositoryGroup } from './repository-group-types'
+import {
+  ICustomRepositoryGroup,
+  RepositoryCustomOrderKey,
+} from './repository-group-types'
 
 export type RepositoryListGroup =
   | {
@@ -67,6 +70,8 @@ export interface IRepositoryListItem extends IFilterListItem {
   readonly isFavorite: boolean
   readonly aheadBehind: IAheadBehind | null
   readonly changedFilesCount: number
+  /** The group key this item belongs to (for drag-reorder scoping) */
+  readonly groupKey: string
 }
 
 const recentRepositoriesThreshold = 7
@@ -164,6 +169,27 @@ const getDisplayTitle = (r: Repositoryish) =>
 const isVirtualGroup = (kind: RepositoryListGroup['kind']) =>
   kind === 'recent' || kind === 'favorites' || kind === 'custom-group'
 
+/** Whether a group supports user-defined ordering via drag-to-reorder. */
+export const isReorderableGroup = (kind: RepositoryListGroup['kind']) =>
+  kind === 'favorites' || kind === 'custom-group'
+
+/** Read the per-group custom order map from localStorage. */
+export function getCustomOrderMap(): Record<string, ReadonlyArray<number>> {
+  try {
+    const raw = localStorage.getItem(RepositoryCustomOrderKey)
+    return raw ? JSON.parse(raw) : {}
+  } catch {
+    return {}
+  }
+}
+
+/** Write the per-group custom order map to localStorage. */
+export function setCustomOrderMap(
+  orderMap: Record<string, ReadonlyArray<number>>
+) {
+  localStorage.setItem(RepositoryCustomOrderKey, JSON.stringify(orderMap))
+}
+
 const toSortedListItems = (
   group: RepositoryListGroup,
   repositories: ReadonlyArray<Repositoryish>,
@@ -171,6 +197,7 @@ const toSortedListItems = (
   groups: Map<string, RepoGroupItem>,
   favoriteSet: ReadonlySet<number>
 ): IRepositoryListItem[] => {
+  const key = getGroupKey(group)
   const groupNames = new Map<string, number>()
   const allNames = new Map<string, number>()
 
@@ -189,24 +216,52 @@ const toSortedListItems = (
     }
   }
 
-  return repositories
-    .map(r => {
-      const repoState = localRepositoryStateLookup.get(r.id)
-      const title = getDisplayTitle(r)
+  const items = repositories.map(r => {
+    const repoState = localRepositoryStateLookup.get(r.id)
+    const title = getDisplayTitle(r)
 
-      return {
-        text: r instanceof Repository ? [title, nameOf(r)] : [title],
-        id: r.id.toString(),
-        repository: r,
-        isFavorite: favoriteSet.has(r.id),
-        needsDisambiguation:
-          ((groupNames.get(title) ?? 0) > 1 && group.kind === 'enterprise') ||
-          ((allNames.get(title) ?? 0) > 1 && isVirtualGroup(group.kind)),
-        aheadBehind: repoState?.aheadBehind ?? null,
-        changedFilesCount: repoState?.changedFilesCount ?? 0,
-      }
-    })
-    .sort(({ repository: x }, { repository: y }) =>
-      caseInsensitiveCompare(getDisplayTitle(x), getDisplayTitle(y))
-    )
+    return {
+      text: r instanceof Repository ? [title, nameOf(r)] : [title],
+      id: r.id.toString(),
+      repository: r,
+      isFavorite: favoriteSet.has(r.id),
+      needsDisambiguation:
+        ((groupNames.get(title) ?? 0) > 1 && group.kind === 'enterprise') ||
+        ((allNames.get(title) ?? 0) > 1 && isVirtualGroup(group.kind)),
+      aheadBehind: repoState?.aheadBehind ?? null,
+      changedFilesCount: repoState?.changedFilesCount ?? 0,
+      groupKey: key,
+    }
+  })
+
+  // For reorderable groups, apply user-defined order if available
+  if (isReorderableGroup(group.kind)) {
+    const orderMap = getCustomOrderMap()
+    const customOrder = orderMap[key]
+    if (customOrder && customOrder.length > 0) {
+      const orderIndex = new Map(customOrder.map((id, idx) => [id, idx]))
+      return items.sort((a, b) => {
+        const ai = orderIndex.get(a.repository.id)
+        const bi = orderIndex.get(b.repository.id)
+        // Items with custom order come first, in order; rest alphabetical after
+        if (ai !== undefined && bi !== undefined) {
+          return ai - bi
+        }
+        if (ai !== undefined) {
+          return -1
+        }
+        if (bi !== undefined) {
+          return 1
+        }
+        return caseInsensitiveCompare(
+          getDisplayTitle(a.repository),
+          getDisplayTitle(b.repository)
+        )
+      })
+    }
+  }
+
+  return items.sort(({ repository: x }, { repository: y }) =>
+    caseInsensitiveCompare(getDisplayTitle(x), getDisplayTitle(y))
+  )
 }

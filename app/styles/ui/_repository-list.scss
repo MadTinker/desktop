@@ -72,6 +72,19 @@
     .alias {
       font-style: italic;
     }
+
+    &[draggable='true'] {
+      cursor: grab;
+    }
+
+    &.drag-source {
+      opacity: 0.4;
+    }
+
+    &.drag-target {
+      border-top: 2px solid var(--tab-bar-active-color);
+      margin-top: -2px;
+    }
   }
 
   .filter-list-group-header {
