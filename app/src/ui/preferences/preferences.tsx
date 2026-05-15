@@ -45,6 +45,8 @@ import { Notifications } from './notifications'
 import { Accessibility } from './accessibility'
 import { OmnispindlePreferences } from './omnispindle'
 import { AutomationHooksPreferences } from './automation-hooks'
+import { LocalAIPreferences } from './local-ai'
+import { ILocalAIConfig, DefaultLocalAIConfig } from '../../models/local-ai'
 import type { ModelInfo } from '@github/copilot-sdk'
 import { CopilotPreferences } from './copilot'
 import type {
@@ -118,6 +120,7 @@ interface IPreferencesProps {
   readonly autoSwitchOnChangesEnabled: boolean
   readonly showReflogTab: boolean
   readonly omnispindleApiKey: string
+  readonly localAIConfig: ILocalAIConfig
   readonly onEditGlobalGitConfig: () => void
   readonly underlineLinks: boolean
   readonly showDiffCheckMarks: boolean
@@ -172,6 +175,7 @@ interface IPreferencesState {
   readonly autoSwitchOnChangesEnabled: boolean
   readonly showReflogTab: boolean
   readonly omnispindleApiKey: string
+  readonly localAIConfig: ILocalAIConfig
 
   readonly initiallySelectedTheme: ApplicationTheme
   readonly initiallySelectedTabSize: number
@@ -250,6 +254,7 @@ export class Preferences extends React.Component<
       autoSwitchOnChangesEnabled: this.props.autoSwitchOnChangesEnabled,
       showReflogTab: this.props.showReflogTab,
       omnispindleApiKey: this.props.omnispindleApiKey,
+      localAIConfig: this.props.localAIConfig ?? DefaultLocalAIConfig,
       initiallySelectedTheme: this.props.selectedTheme,
       initiallySelectedTabSize: this.props.selectedTabSize,
       isLoadingGitConfig: true,
@@ -404,6 +409,10 @@ export class Preferences extends React.Component<
               <Octicon className="icon" symbol={octicons.terminal} />
               Automation
             </span>
+            <span id={this.getTabId(PreferencesTab.LocalAI)}>
+              <Octicon className="icon" symbol={octicons.hubot} />
+              Local AI
+            </span>
             <span id={this.getTabId(PreferencesTab.Advanced)}>
               <Octicon className="icon" symbol={octicons.gear} />
               Advanced
@@ -450,6 +459,9 @@ export class Preferences extends React.Component<
         break
       case PreferencesTab.AutomationHooks:
         suffix = 'automation-hooks'
+        break
+      case PreferencesTab.LocalAI:
+        suffix = 'local-ai'
         break
       case PreferencesTab.Advanced:
         suffix = 'advanced'
@@ -699,6 +711,14 @@ export class Preferences extends React.Component<
           />
         )
         break
+      case PreferencesTab.LocalAI:
+        View = (
+          <LocalAIPreferences
+            config={this.state.localAIConfig}
+            onConfigChanged={this.onLocalAIConfigChanged}
+          />
+        )
+        break
       case PreferencesTab.Advanced: {
         View = (
           <Advanced
@@ -767,6 +787,10 @@ export class Preferences extends React.Component<
 
   private onOmnispindleApiKeyChanged = (omnispindleApiKey: string) => {
     this.setState({ omnispindleApiKey })
+  }
+
+  private onLocalAIConfigChanged = (localAIConfig: ILocalAIConfig) => {
+    this.setState({ localAIConfig })
   }
 
   private onLockFileDeleted = () => {
@@ -1036,6 +1060,10 @@ export class Preferences extends React.Component<
 
       if (this.props.omnispindleApiKey !== this.state.omnispindleApiKey) {
         dispatcher.setOmnispindleApiKey(this.state.omnispindleApiKey)
+      }
+
+      if (this.props.localAIConfig !== this.state.localAIConfig) {
+        dispatcher.setLocalAIConfig(this.state.localAIConfig)
       }
 
       if (this.state.hooksPreferencesDirty) {

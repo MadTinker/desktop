@@ -163,6 +163,7 @@ interface IFilterChangesListProps {
   readonly onShowCommitProgress?: (() => void) | undefined
   readonly isGeneratingCommitMessage: boolean
   readonly shouldShowGenerateCommitMessageCallOut: boolean
+  readonly localAIConfig?: import('../../models/local-ai').ILocalAIConfig | null
   readonly commitToAmend: Commit | null
   readonly currentBranchProtected: boolean
   readonly currentRepoRulesInfo: RepoRulesInfo
@@ -1006,6 +1007,8 @@ export class FilterChangesList extends React.Component<
         }
         onPersistCommitMessage={this.onPersistCommitMessage}
         onGenerateCommitMessage={this.onGenerateCommitMessage}
+        localAIConfig={this.props.localAIConfig}
+        onGenerateLocalAICommitMessage={this.onGenerateLocalAICommitMessage}
         onCommitMessageFocusSet={this.onCommitMessageFocusSet}
         onRefreshAuthor={this.onRefreshAuthor}
         onShowPopup={this.onShowPopup}
@@ -1073,6 +1076,15 @@ export class FilterChangesList extends React.Component<
           this.props.repository,
           filesSelected
         )
+  }
+
+  private onGenerateLocalAICommitMessage = (
+    filesSelected: ReadonlyArray<WorkingDirectoryFileChange>
+  ) => {
+    return this.props.dispatcher.generateLocalAICommitMessage(
+      this.props.repository,
+      filesSelected
+    )
   }
 
   private onShowPopup = (p: Popup) => this.props.dispatcher.showPopup(p)

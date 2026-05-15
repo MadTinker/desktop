@@ -1610,6 +1610,7 @@ export class App extends React.Component<IAppProps, IAppState> {
             autoSwitchOnChangesEnabled={this.state.autoSwitchOnChangesEnabled}
             showReflogTab={this.state.showReflogTab}
             omnispindleApiKey={this.state.omnispindleApiKey}
+            localAIConfig={this.state.localAIConfig}
             onEditGlobalGitConfig={this.editGlobalGitConfig}
             underlineLinks={this.state.underlineLinks}
             showDiffCheckMarks={this.state.showDiffCheckMarks}
@@ -3711,6 +3712,7 @@ export class App extends React.Component<IAppProps, IAppState> {
           shouldShowGenerateCommitMessageCallOut={
             !this.state.commitMessageGenerationButtonClicked
           }
+          localAIConfig={this.state.localAIConfig}
           hasCommitHooks={selectedState.state.hasCommitHooks}
           skipCommitHooks={selectedState.state.skipCommitHooks}
           signOffCommits={selectedState.state.signOffCommits}

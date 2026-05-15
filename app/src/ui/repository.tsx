@@ -68,6 +68,7 @@ interface IRepositoryViewProps {
   readonly showCommitLengthWarning: boolean
   readonly accounts: ReadonlyArray<Account>
   readonly shouldShowGenerateCommitMessageCallOut: boolean
+  readonly localAIConfig?: import('../models/local-ai').ILocalAIConfig | null
 
   /**
    * A value indicating whether or not the application is currently presenting
@@ -328,6 +329,7 @@ export class RepositoryView extends React.Component<
         shouldShowGenerateCommitMessageCallOut={
           this.props.shouldShowGenerateCommitMessageCallOut
         }
+        localAIConfig={this.props.localAIConfig}
         commitToAmend={this.props.state.commitToAmend}
         isPushPullFetchInProgress={this.props.state.isPushPullFetchInProgress}
         focusCommitMessage={this.props.focusCommitMessage}

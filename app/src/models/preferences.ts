@@ -8,6 +8,7 @@ export enum PreferencesTab {
   Prompts,
   Omnispindle,
   AutomationHooks,
+  LocalAI,
   Advanced,
   Accessibility,
 }

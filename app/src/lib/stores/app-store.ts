@@ -22,6 +22,15 @@ import {
   getBYOKSecret,
   parseModelKey,
 } from '../copilot/byok'
+import {
+  ILocalAIConfig,
+  DefaultLocalAIConfig,
+} from '../../models/local-ai'
+import {
+  loadLocalAIConfig,
+  saveLocalAIConfig,
+  generateLocalAICommitMessage,
+} from '../local-ai-commit-message'
 import type {
   CopilotModelRequest,
   CopilotProviderConfig,
@@ -697,6 +706,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
   private omnispindleTodos: ReadonlyArray<import('../../models/omnispindle').IOmnispindleTodo> = []
   private omnispindleStatus: import('../../models/omnispindle').OmnispindleConnectionStatus = 'unconfigured'
   private omnispindleApiKey: string = ''
+  private localAIConfig: ILocalAIConfig = DefaultLocalAIConfig
 
   private selectedCopilotModels: CopilotModelSelections = {}
   private copilotModels: ReadonlyArray<ModelInfo> | null = null
@@ -783,6 +793,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
     this.showReflogTab = getBoolean(showReflogTabKey, false)
 
     this.omnispindleApiKey = localStorage.getItem(omnispindleApiKeyKey) ?? ''
+    this.localAIConfig = loadLocalAIConfig()
 
     this.autoSwitchMonitor = new AutoSwitchMonitor(
       this.getRepositoriesForIndicatorRefresh,
@@ -1257,6 +1268,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
       omnispindleTodos: this.omnispindleTodos,
       omnispindleStatus: this.omnispindleStatus,
       omnispindleApiKey: this.omnispindleApiKey,
+      localAIConfig: this.localAIConfig,
       selectedCopilotModels: this.selectedCopilotModels,
       copilotModels: this.copilotModels,
       copilotAvailable: this.copilotStore.isAvailable,
@@ -6054,6 +6066,52 @@ export class AppStore extends TypedBaseStore<IAppState> {
 
       return true
     })
+  }
+
+  public async _generateLocalAICommitMessage(
+    repository: Repository,
+    filesSelected: ReadonlyArray<WorkingDirectoryFileChange>
+  ): Promise<boolean> {
+    if (!this.localAIConfig.enabled) {
+      return false
+    }
+
+    return this.withIsGeneratingCommitMessage(repository, async () => {
+      const commitToAmend =
+        this.repositoryStateCache.get(repository)?.commitToAmend?.sha ??
+        undefined
+      const diff = await getFilesDiffText(
+        repository,
+        filesSelected,
+        commitToAmend ? `${commitToAmend}^` : undefined
+      )
+      if (!diff) {
+        return false
+      }
+
+      try {
+        const response = await generateLocalAICommitMessage(
+          diff,
+          this.localAIConfig
+        )
+        this._setCommitMessage(repository, {
+          summary: response.title,
+          description: response.description,
+          timestamp: Date.now(),
+          generatedByCopilot: false,
+        })
+        return true
+      } catch (e) {
+        this.emitError(new ErrorWithMetadata(e, { repository }))
+        return false
+      }
+    })
+  }
+
+  public _setLocalAIConfig(config: ILocalAIConfig): void {
+    this.localAIConfig = config
+    saveLocalAIConfig(config)
+    this.emitUpdate()
   }
 
   /**

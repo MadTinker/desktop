@@ -436,6 +436,9 @@ export interface IAppState {
   /** Bearer token for the Omnispindle HTTP MCP endpoint */
   readonly omnispindleApiKey: string
 
+  /** Configuration for local AI commit message generation (Ollama / LM Studio) */
+  readonly localAIConfig: import('../models/local-ai').ILocalAIConfig
+
   /**
    * Per-feature Copilot model selections. An absent key means the default
    * model will be used for that feature.

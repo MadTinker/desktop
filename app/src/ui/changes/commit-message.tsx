@@ -176,6 +176,14 @@ interface ICommitMessageProps {
     mustOverrideExistingMessage: boolean
   ) => void
 
+  /** Config for local AI (Ollama/LM Studio) commit message generation */
+  readonly localAIConfig?: import('../../models/local-ai').ILocalAIConfig | null
+
+  /** Called when the user clicks "Generate with local AI" */
+  readonly onGenerateLocalAICommitMessage?: (
+    filesSelected: ReadonlyArray<WorkingDirectoryFileChange>
+  ) => void
+
   /**
    * Called when the component has given the commit message focus due to
    * `focusCommitMessage` being set. Used to reset the `focusCommitMessage`
@@ -1035,12 +1043,68 @@ export class CommitMessage extends React.Component<
     )
   }
 
+  private renderLocalAIButton() {
+    const {
+      localAIConfig,
+      onGenerateLocalAICommitMessage,
+      filesSelected,
+      isCommitting,
+      isGeneratingCommitMessage,
+      commitToAmend,
+    } = this.props
+
+    if (!localAIConfig?.enabled || !onGenerateLocalAICommitMessage) {
+      return null
+    }
+
+    const noChangesAvailable = !commitToAmend && filesSelected.length === 0
+    const providerLabel =
+      localAIConfig.provider === 'lmstudio'
+        ? 'LM Studio'
+        : localAIConfig.provider === 'ollama'
+          ? 'Ollama'
+          : 'Local AI'
+    const ariaLabel =
+      isGeneratingCommitMessage
+        ? 'Generating commit details…'
+        : `Generate commit message with ${providerLabel}` +
+          (noChangesAvailable
+            ? '. Files must be selected to generate a commit message.'
+            : '')
+
+    return (
+      <>
+        {(this.isCoAuthorInputEnabled || this.isCopilotButtonEnabled) && (
+          <div className="separator" />
+        )}
+        <Button
+          className="local-ai-button"
+          onClick={() =>
+            onGenerateLocalAICommitMessage(filesSelected)
+          }
+          ariaLabel={ariaLabel}
+          tooltip={ariaLabel}
+          disabled={
+            isCommitting === true ||
+            isGeneratingCommitMessage ||
+            noChangesAvailable
+          }
+        >
+          <Octicon symbol={octicons.hubot} />
+        </Button>
+      </>
+    )
+  }
+
   private renderCommitOptionsButton() {
     const ariaLabel = 'Configure commit options'
 
     return (
       <>
-        {(this.isCoAuthorInputEnabled || this.isCopilotButtonEnabled) && (
+        {(this.isCoAuthorInputEnabled ||
+          this.isCopilotButtonEnabled ||
+          (this.props.localAIConfig?.enabled &&
+            this.props.onGenerateLocalAICommitMessage !== undefined)) && (
           <div className="separator" />
         )}
         <Button
@@ -1208,6 +1272,7 @@ export class CommitMessage extends React.Component<
       <div className={className}>
         {this.renderCoAuthorToggleButton()}
         {this.renderCopilotButton()}
+        {this.renderLocalAIButton()}
         {this.renderCommitOptionsButton()}
       </div>
     )

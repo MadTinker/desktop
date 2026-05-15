@@ -1136,6 +1136,19 @@ export class Dispatcher {
     return this.appStore._generateCommitMessage(repository, filesSelected)
   }
 
+  public generateLocalAICommitMessage(
+    repository: Repository,
+    filesSelected: ReadonlyArray<WorkingDirectoryFileChange>
+  ) {
+    return this.appStore._generateLocalAICommitMessage(repository, filesSelected)
+  }
+
+  public setLocalAIConfig(
+    config: import('../../models/local-ai').ILocalAIConfig
+  ) {
+    return this.appStore._setLocalAIConfig(config)
+  }
+
   /** Remove the given account from the app. */
   public removeAccount(account: Account): Promise<void> {
     return this.appStore._removeAccount(account)
