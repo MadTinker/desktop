@@ -62,13 +62,28 @@ export class LocalAIPreferences extends React.Component<
     this.props.onConfigChanged({ ...this.props.config, modelId: value })
   }
 
+  private onModelSelectChanged = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    this.props.onConfigChanged({
+      ...this.props.config,
+      modelId: e.currentTarget.value,
+    })
+  }
+
   private onTestConnection = async () => {
     this.setState({ testStatus: { kind: 'testing' } })
     try {
       const models = await testLocalAIConnection(this.props.config.baseUrl)
-      this.setState({
-        testStatus: { kind: 'success', models },
-      })
+      // Auto-select first model if current modelId isn't in the list
+      if (
+        models.length > 0 &&
+        !models.includes(this.props.config.modelId)
+      ) {
+        this.props.onConfigChanged({
+          ...this.props.config,
+          modelId: models[0],
+        })
+      }
+      this.setState({ testStatus: { kind: 'success', models } })
     } catch (e) {
       this.setState({
         testStatus: {
@@ -79,33 +94,61 @@ export class LocalAIPreferences extends React.Component<
     }
   }
 
-  private renderTestStatus() {
+  private renderModelField() {
+    const { config } = this.props
     const { testStatus } = this.state
-    if (testStatus.kind === 'idle') {
-      return null
-    }
-    if (testStatus.kind === 'testing') {
+    const disabled = !config.enabled
+
+    // If we have a model list from a successful test, show dropdown
+    if (testStatus.kind === 'success' && testStatus.models.length > 0) {
       return (
-        <p className="local-ai-test-status local-ai-test-working">
-          Testing connection…
-        </p>
+        <div className="local-ai-field-row">
+          <label htmlFor="local-ai-model">Model</label>
+          <select
+            id="local-ai-model"
+            value={config.modelId}
+            onChange={this.onModelSelectChanged}
+            disabled={disabled}
+          >
+            {testStatus.models.map(m => (
+              <option key={m} value={m}>
+                {m}
+              </option>
+            ))}
+          </select>
+        </div>
       )
     }
+
+    // Fallback: manual text input
+    return (
+      <TextBox
+        label="Model ID"
+        value={config.modelId}
+        onValueChanged={this.onModelIdChanged}
+        placeholder="local-model"
+        disabled={disabled}
+      />
+    )
+  }
+
+  private renderTestStatus() {
+    const { testStatus } = this.state
+    if (testStatus.kind === 'idle' || testStatus.kind === 'testing') {
+      return null
+    }
     if (testStatus.kind === 'success') {
-      const modelList =
-        testStatus.models.length > 0
-          ? testStatus.models.join(', ')
-          : 'none loaded'
       return (
-        <p className="local-ai-test-status local-ai-test-ok">
-          ✓ Connected — models: {modelList}
-        </p>
+        <span className="local-ai-test-status local-ai-test-ok">
+          ✓ {testStatus.models.length} model
+          {testStatus.models.length !== 1 ? 's' : ''} available
+        </span>
       )
     }
     return (
-      <p className="local-ai-test-status local-ai-test-error">
+      <span className="local-ai-test-status local-ai-test-error">
         ✗ {testStatus.message}
-      </p>
+      </span>
     )
   }
 
@@ -113,6 +156,7 @@ export class LocalAIPreferences extends React.Component<
     const { config } = this.props
     const { testStatus } = this.state
     const testing = testStatus.kind === 'testing'
+    const disabled = !config.enabled
 
     return (
       <DialogContent>
@@ -130,14 +174,13 @@ export class LocalAIPreferences extends React.Component<
             onChange={this.onEnabledChanged}
           />
 
-
           <div className="local-ai-field-row">
             <label htmlFor="local-ai-provider">Provider</label>
             <select
               id="local-ai-provider"
               value={config.provider}
               onChange={this.onProviderChanged}
-              disabled={!config.enabled}
+              disabled={disabled}
             >
               <option value="lmstudio">LM Studio</option>
               <option value="ollama">Ollama</option>
@@ -150,21 +193,15 @@ export class LocalAIPreferences extends React.Component<
             value={config.baseUrl}
             onValueChanged={this.onBaseUrlChanged}
             placeholder="http://localhost:1234"
-            disabled={!config.enabled}
+            disabled={disabled}
           />
 
-          <TextBox
-            label="Model ID"
-            value={config.modelId}
-            onValueChanged={this.onModelIdChanged}
-            placeholder="local-model"
-            disabled={!config.enabled}
-          />
+          {this.renderModelField()}
 
           <div className="local-ai-test-row">
             <Button
               onClick={this.onTestConnection}
-              disabled={testing || !config.enabled || !config.baseUrl.trim()}
+              disabled={testing || disabled || !config.baseUrl.trim()}
             >
               {testing ? 'Testing…' : 'Test Connection'}
             </Button>
