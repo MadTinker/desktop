@@ -13,6 +13,7 @@ import { Checkbox, CheckboxValue } from '../lib/checkbox'
 interface ILocalAIPreferencesProps {
   readonly config: ILocalAIConfig
   readonly onConfigChanged: (config: ILocalAIConfig) => void
+  readonly showSecuritySettings?: boolean
 }
 
 type TestStatus =
@@ -38,6 +39,24 @@ export class LocalAIPreferences extends React.Component<
     this.props.onConfigChanged({
       ...this.props.config,
       enabled: (e.currentTarget as HTMLInputElement).checked,
+    })
+  }
+
+  private onAllowNonLocalHttpChanged = (
+    e: React.FormEvent<HTMLInputElement>
+  ) => {
+    this.props.onConfigChanged({
+      ...this.props.config,
+      allowNonLocalHttp: (e.currentTarget as HTMLInputElement).checked,
+    })
+  }
+
+  private onSanitizeGitContextChanged = (
+    e: React.FormEvent<HTMLInputElement>
+  ) => {
+    this.props.onConfigChanged({
+      ...this.props.config,
+      sanitizeGitContext: (e.currentTarget as HTMLInputElement).checked,
     })
   }
 
@@ -72,12 +91,12 @@ export class LocalAIPreferences extends React.Component<
   private onTestConnection = async () => {
     this.setState({ testStatus: { kind: 'testing' } })
     try {
-      const models = await testLocalAIConnection(this.props.config.baseUrl)
+      const models = await testLocalAIConnection(
+        this.props.config.baseUrl,
+        this.props.config.allowNonLocalHttp
+      )
       // Auto-select first model if current modelId isn't in the list
-      if (
-        models.length > 0 &&
-        !models.includes(this.props.config.modelId)
-      ) {
+      if (models.length > 0 && !models.includes(this.props.config.modelId)) {
         this.props.onConfigChanged({
           ...this.props.config,
           modelId: models[0],
@@ -153,7 +172,7 @@ export class LocalAIPreferences extends React.Component<
   }
 
   public render() {
-    const { config } = this.props
+    const { config, showSecuritySettings } = this.props
     const { testStatus } = this.state
     const testing = testStatus.kind === 'testing'
     const disabled = !config.enabled
@@ -207,6 +226,29 @@ export class LocalAIPreferences extends React.Component<
             </Button>
             {this.renderTestStatus()}
           </div>
+
+          {showSecuritySettings && (
+            <React.Fragment>
+              <Checkbox
+                label="Allow non-local HTTP endpoints"
+                value={
+                  config.allowNonLocalHttp ? CheckboxValue.On : CheckboxValue.Off
+                }
+                onChange={this.onAllowNonLocalHttpChanged}
+                disabled={disabled}
+              />
+              <Checkbox
+                label="Sanitize git context in prompts"
+                value={
+                  config.sanitizeGitContext
+                    ? CheckboxValue.On
+                    : CheckboxValue.Off
+                }
+                onChange={this.onSanitizeGitContextChanged}
+                disabled={disabled}
+              />
+            </React.Fragment>
+          )}
 
           <p className="git-settings-description">
             Uses the OpenAI-compatible <code>/v1/chat/completions</code>{' '}

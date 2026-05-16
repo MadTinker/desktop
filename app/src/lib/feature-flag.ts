@@ -127,3 +127,8 @@ export const enableFormattingPreferences = enableBetaFeatures
 export function enableAutoSwitchOnChanges(): boolean {
   return enableDevelopmentFeatures()
 }
+
+/** Should the Local AI preferences show advanced security settings? */
+export function enableLocalAISecuritySettings(): boolean {
+  return enableBetaFeatures()
+}

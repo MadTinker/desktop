@@ -70,7 +70,10 @@ import {
   setGitHookEnvShell,
   setHooksEnvEnabled,
 } from '../../lib/hooks/config'
-import { enableCopilotSdkCommitMessageGeneration } from '../../lib/feature-flag'
+import {
+  enableCopilotSdkCommitMessageGeneration,
+  enableLocalAISecuritySettings,
+} from '../../lib/feature-flag'
 import {
   DateFormat,
   TimeFormat,
@@ -716,6 +719,7 @@ export class Preferences extends React.Component<
           <LocalAIPreferences
             config={this.state.localAIConfig}
             onConfigChanged={this.onLocalAIConfigChanged}
+            showSecuritySettings={enableLocalAISecuritySettings()}
           />
         )
         break

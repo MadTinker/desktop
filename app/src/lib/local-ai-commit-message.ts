@@ -9,6 +9,7 @@ import {
   LocalAIConfigKey,
   DefaultLocalAIConfig,
 } from '../models/local-ai'
+import { isLocalBaseUrl } from './copilot/byok'
 
 export type { ILocalAIConfig }
 
@@ -26,6 +27,49 @@ export function saveLocalAIConfig(config: ILocalAIConfig): void {
   localStorage.setItem(LocalAIConfigKey, JSON.stringify(config))
 }
 
+export interface ILocalAICommitContext {
+  /** Current branch name, e.g. "feat/my-feature" */
+  readonly branchName?: string
+  /** Last N commit subjects, most recent first */
+  readonly recentCommits?: ReadonlyArray<string>
+}
+
+/** Strip newlines and truncate a git string (branch name or commit subject). */
+function sanitizeGitString(s: string, maxLen = 200): string {
+  return s.replace(/[\r\n]/g, ' ').slice(0, maxLen)
+}
+
+/**
+ * Builds additional context to prepend to the user prompt when branch name
+ * or recent commit history is available. Helps the model match team conventions.
+ */
+function buildContextPrefix(
+  context: ILocalAICommitContext,
+  sanitize: boolean
+): string {
+  const parts: string[] = []
+
+  if (context.branchName) {
+    const name = sanitize
+      ? sanitizeGitString(context.branchName, 100)
+      : context.branchName
+    parts.push(`Current branch: ${name}`)
+  }
+
+  if (context.recentCommits && context.recentCommits.length > 0) {
+    const subjects = sanitize
+      ? context.recentCommits.map(s => sanitizeGitString(s))
+      : context.recentCommits
+    parts.push(
+      `Recent commits (for style reference):\n${subjects
+        .map(s => `  - ${s}`)
+        .join('\n')}`
+    )
+  }
+
+  return parts.length > 0 ? parts.join('\n') + '\n\n' : ''
+}
+
 /**
  * Call a local OpenAI-compatible API (Ollama or LM Studio) to generate
  * a commit message from a git diff.
@@ -34,15 +78,32 @@ export function saveLocalAIConfig(config: ILocalAIConfig): void {
  */
 export async function generateLocalAICommitMessage(
   diff: string,
-  config: ILocalAIConfig
+  config: ILocalAIConfig,
+  context: ILocalAICommitContext = {}
 ): Promise<{ title: string; description: string }> {
   const tags = generateCommitMessagePromptTags()
   const systemPrompt = buildCommitMessageSystemPrompt(false, tags)
-  const userPrompt = buildCommitMessageUserPrompt(diff, tags)
+  const contextPrefix = buildContextPrefix(context, config.sanitizeGitContext)
+  const userPrompt = contextPrefix + buildCommitMessageUserPrompt(diff, tags)
 
   // Both Ollama (/v1/chat/completions) and LM Studio (/v1/chat/completions)
   // follow the OpenAI Chat Completions spec.
   const baseUrl = config.baseUrl.replace(/\/$/, '')
+
+  if (!config.allowNonLocalHttp) {
+    let parsedUrl: URL
+    try {
+      parsedUrl = new URL(baseUrl)
+    } catch {
+      throw new Error(`Invalid local AI base URL: ${config.baseUrl}`)
+    }
+    if (parsedUrl.protocol === 'http:' && !isLocalBaseUrl(baseUrl)) {
+      throw new Error(
+        `Non-local HTTP endpoints are disabled. Use HTTPS or enable "Allow non-local HTTP" in Local AI preferences.`
+      )
+    }
+  }
+
   const endpoint = `${baseUrl}/v1/chat/completions`
 
   const controller = new AbortController()
@@ -112,9 +173,26 @@ export async function generateLocalAICommitMessage(
  * Returns a list of model IDs or throws on failure.
  */
 export async function testLocalAIConnection(
-  baseUrl: string
+  baseUrl: string,
+  allowNonLocalHttp = true
 ): Promise<ReadonlyArray<string>> {
-  const url = `${baseUrl.replace(/\/$/, '')}/v1/models`
+  const cleanBase = baseUrl.replace(/\/$/, '')
+
+  if (!allowNonLocalHttp) {
+    let parsedUrl: URL
+    try {
+      parsedUrl = new URL(cleanBase)
+    } catch {
+      throw new Error(`Invalid local AI base URL: ${baseUrl}`)
+    }
+    if (parsedUrl.protocol === 'http:' && !isLocalBaseUrl(cleanBase)) {
+      throw new Error(
+        `Non-local HTTP endpoints are disabled. Use HTTPS or enable "Allow non-local HTTP" in Local AI preferences.`
+      )
+    }
+  }
+
+  const url = `${cleanBase}/v1/models`
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), 5000)
   try {

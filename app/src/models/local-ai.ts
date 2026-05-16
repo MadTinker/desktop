@@ -11,6 +11,17 @@ export interface ILocalAIConfig {
   readonly baseUrl: string
   readonly modelId: string
   readonly timeoutMs: number
+  /**
+   * When false, only localhost/loopback HTTP endpoints are allowed; HTTPS is
+   * always permitted. Defaults to true to preserve existing behaviour.
+   */
+  readonly allowNonLocalHttp: boolean
+  /**
+   * Strip newlines and truncate branch names / commit subjects before injecting
+   * them into the AI prompt. Defaults to true (lossless — git forbids newlines
+   * in these fields anyway).
+   */
+  readonly sanitizeGitContext: boolean
 }
 
 export const LocalAIConfigKey = 'local-ai-config'
@@ -30,4 +41,6 @@ export const DefaultLocalAIConfig: ILocalAIConfig = {
   baseUrl: 'http://localhost:1234',
   modelId: 'local-model',
   timeoutMs: 60000,
+  allowNonLocalHttp: true,
+  sanitizeGitContext: true,
 }
