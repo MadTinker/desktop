@@ -353,6 +353,7 @@ import { WorkflowPreferences } from '../../models/workflow-preferences'
 import { RepositoryIndicatorUpdater } from './helpers/repository-indicator-updater'
 import { AutoSwitchMonitor } from './helpers/auto-switch-monitor'
 import { ChatHistoryWatcher } from './helpers/chat-history-watcher'
+import { logActivity } from '../activity-log'
 import {
   IChatHistoryArchiveConfig,
   ChatHistoryArchiveConfigKey,
@@ -6178,8 +6179,18 @@ export class AppStore extends TypedBaseStore<IAppState> {
           timestamp: Date.now(),
           generatedByCopilot: false,
         })
+        logActivity(
+          'ai-generate',
+          `Generated commit message via ${this.localAIConfig.provider}`,
+          `model: ${this.localAIConfig.modelId}, mode: ${this.localAIConfig.promptMode}`
+        )
         return true
       } catch (e) {
+        logActivity(
+          'ai-generate',
+          `AI generation failed: ${e instanceof Error ? e.message : 'unknown'}`,
+          `provider: ${this.localAIConfig.provider}`
+        )
         this.emitError(new ErrorWithMetadata(e, { repository }))
         return false
       }

@@ -25,6 +25,7 @@ import { startTimer } from '../lib/timing'
 import { CommitWarning, CommitWarningIcon } from './commit-warning'
 import { LinkButton } from '../lib/link-button'
 import { CommitOptions, Foldout, FoldoutType } from '../../lib/app-state'
+import { logActivity } from '../../lib/activity-log'
 import { IAvatarUser, getAvatarUserFromAuthor } from '../../models/avatar'
 import { showContextualMenu } from '../../lib/menu-item'
 import { Account, isEnterpriseAccount } from '../../models/account'
@@ -613,6 +614,11 @@ export class CommitMessage extends React.Component<
       this.props.onGenerateLocalAICommitMessage &&
       this.props.filesSelected.length > 0
     ) {
+      logActivity(
+        'ai-generate-empty',
+        'Empty commit triggered AI generation',
+        `${this.props.filesSelected.length} file(s) selected`
+      )
       this.props.onGenerateLocalAICommitMessage(this.props.filesSelected, false)
       return
     }
