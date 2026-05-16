@@ -11,7 +11,21 @@ import {
 } from '../models/local-ai'
 import { isLocalBaseUrl } from './copilot/byok'
 
-export type { ILocalAIConfig }
+export type { ILocalAIConfig, LocalAIPromptMode } from '../models/local-ai'
+
+const ConventionalCommitsSystemPrompt = `
+You're an AI assistant that generates commit messages in Conventional Commits format.
+
+Format: <type>[optional scope]: <description>
+
+Types: feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert
+
+The subject line must be no longer than 50 characters.
+The optional body should explain WHY the change was made, not what changed.
+
+Your response must be a JSON object with the attributes "title" and "description"
+where "title" is the subject line and "description" is the optional body.
+`
 
 export function loadLocalAIConfig(): ILocalAIConfig {
   try {
@@ -82,7 +96,18 @@ export async function generateLocalAICommitMessage(
   context: ILocalAICommitContext = {}
 ): Promise<{ title: string; description: string }> {
   const tags = generateCommitMessagePromptTags()
-  const systemPrompt = buildCommitMessageSystemPrompt(false, tags)
+  let systemPrompt: string
+  switch (config.promptMode) {
+    case 'conventional':
+      systemPrompt = ConventionalCommitsSystemPrompt
+      break
+    case 'custom':
+      systemPrompt = config.customSystemPrompt || buildCommitMessageSystemPrompt(false, tags)
+      break
+    default:
+      systemPrompt = buildCommitMessageSystemPrompt(false, tags)
+      break
+  }
   const contextPrefix = buildContextPrefix(context, config.sanitizeGitContext)
   const userPrompt = contextPrefix + buildCommitMessageUserPrompt(diff, tags)
 

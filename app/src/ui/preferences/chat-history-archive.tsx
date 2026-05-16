@@ -2,14 +2,38 @@ import * as React from 'react'
 import { DialogContent } from '../dialog'
 import { TextBox } from '../lib/text-box'
 import { Checkbox, CheckboxValue } from '../lib/checkbox'
-import { IChatHistoryArchiveConfig } from '../../models/chat-history-archive'
+import {
+  IChatHistoryArchiveConfig,
+  IChatHistoryArchiveLogEntry,
+} from '../../models/chat-history-archive'
+import {
+  loadArchiveLog,
+  clearArchiveLog,
+} from '../../lib/chat-history-archive'
+import { Button } from '../lib/button'
 
 interface IChatHistoryArchivePreferencesProps {
   readonly config: IChatHistoryArchiveConfig
   readonly onConfigChanged: (config: IChatHistoryArchiveConfig) => void
 }
 
-export class ChatHistoryArchivePreferences extends React.Component<IChatHistoryArchivePreferencesProps> {
+interface IChatHistoryArchivePreferencesState {
+  readonly log: ReadonlyArray<IChatHistoryArchiveLogEntry>
+}
+
+export class ChatHistoryArchivePreferences extends React.Component<
+  IChatHistoryArchivePreferencesProps,
+  IChatHistoryArchivePreferencesState
+> {
+  public constructor(props: IChatHistoryArchivePreferencesProps) {
+    super(props)
+    this.state = { log: [] }
+  }
+
+  public componentDidMount() {
+    this.setState({ log: loadArchiveLog() })
+  }
+
   private onEnabledChanged = (e: React.FormEvent<HTMLInputElement>) => {
     this.props.onConfigChanged({
       ...this.props.config,
@@ -49,6 +73,11 @@ export class ChatHistoryArchivePreferences extends React.Component<IChatHistoryA
       ...this.props.config,
       autoPush: (e.currentTarget as HTMLInputElement).checked,
     })
+  }
+
+  private onClearLog = () => {
+    clearArchiveLog()
+    this.setState({ log: loadArchiveLog() })
   }
 
   public render() {
@@ -99,6 +128,30 @@ export class ChatHistoryArchivePreferences extends React.Component<IChatHistoryA
             onChange={this.onAutoPushChanged}
             disabled={disabled || !config.autoCommit}
           />
+
+          <div className="chat-history-archive-history">
+            <h3>Archive History</h3>
+            <div
+              className="chat-history-log-list"
+              style={{ maxHeight: '200px', overflow: 'auto' }}
+            >
+              {this.state.log.map((entry, index) => (
+                <div key={index} className="chat-history-log-entry">
+                  <div>{new Date(entry.timestamp).toLocaleString()}</div>
+                  <div>{entry.repos.join(', ')}</div>
+                  <div>
+                    {entry.archived} archived,{' '}
+                    <span
+                      style={entry.failed > 0 ? { color: 'red' } : undefined}
+                    >
+                      {entry.failed} failed
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <Button onClick={this.onClearLog}>Clear Log</Button>
+          </div>
         </div>
       </DialogContent>
     )

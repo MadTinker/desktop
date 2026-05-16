@@ -6,6 +6,7 @@ import {
   ILocalAIConfig,
   LocalAIProvider,
   DefaultLocalAIConfigs,
+  LocalAIPromptMode,
 } from '../../models/local-ai'
 import { testLocalAIConnection } from '../../lib/local-ai-commit-message'
 import { Checkbox, CheckboxValue } from '../lib/checkbox'
@@ -85,6 +86,22 @@ export class LocalAIPreferences extends React.Component<
     this.props.onConfigChanged({
       ...this.props.config,
       modelId: e.currentTarget.value,
+    })
+  }
+
+  private onPromptModeChanged = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    this.props.onConfigChanged({
+      ...this.props.config,
+      promptMode: e.currentTarget.value as LocalAIPromptMode,
+    })
+  }
+
+  private onCustomSystemPromptChanged = (
+    e: React.ChangeEvent<HTMLTextAreaElement>
+  ) => {
+    this.props.onConfigChanged({
+      ...this.props.config,
+      customSystemPrompt: e.currentTarget.value,
     })
   }
 
@@ -227,12 +244,45 @@ export class LocalAIPreferences extends React.Component<
             {this.renderTestStatus()}
           </div>
 
+          <div className="local-ai-field-row">
+            <label htmlFor="local-ai-prompt-mode">Prompt Mode</label>
+            <select
+              id="local-ai-prompt-mode"
+              value={config.promptMode}
+              onChange={this.onPromptModeChanged}
+              disabled={disabled}
+            >
+              <option value="default">Default</option>
+              <option value="conventional">Conventional Commits</option>
+              <option value="custom">Custom</option>
+            </select>
+          </div>
+
+          {config.promptMode === 'custom' && (
+            <div className="local-ai-field-row">
+              <label htmlFor="local-ai-custom-prompt">
+                Custom System Prompt
+              </label>
+              <textarea
+                id="local-ai-custom-prompt"
+                className="local-ai-custom-prompt"
+                value={config.customSystemPrompt}
+                onChange={this.onCustomSystemPromptChanged}
+                placeholder="Enter your system prompt..."
+                rows={6}
+                disabled={disabled}
+              />
+            </div>
+          )}
+
           {showSecuritySettings && (
             <React.Fragment>
               <Checkbox
                 label="Allow non-local HTTP endpoints"
                 value={
-                  config.allowNonLocalHttp ? CheckboxValue.On : CheckboxValue.Off
+                  config.allowNonLocalHttp
+                    ? CheckboxValue.On
+                    : CheckboxValue.Off
                 }
                 onChange={this.onAllowNonLocalHttpChanged}
                 disabled={disabled}

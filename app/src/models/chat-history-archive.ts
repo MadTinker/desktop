@@ -22,6 +22,20 @@ export interface IChatHistoryArchiveConfig {
 
 export const ChatHistoryArchiveConfigKey = 'chat-history-archive-config'
 
+/**
+ * A single archive operation log entry, persisted to localStorage.
+ */
+export interface IChatHistoryArchiveLogEntry {
+  readonly timestamp: number
+  readonly repos: ReadonlyArray<string>
+  readonly archived: number
+  readonly failed: number
+  readonly error?: string
+}
+
+export const ChatHistoryArchiveLogKey = 'chat-history-archive-log'
+export const MaxArchiveLogEntries = 50
+
 export const DefaultChatHistoryArchiveConfig: IChatHistoryArchiveConfig = {
   enabled: false,
   archivePath: '/Users/d.edens/lab/madness_interactive/docs/cursor_chathistory',

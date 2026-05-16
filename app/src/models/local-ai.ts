@@ -5,6 +5,14 @@
 
 export type LocalAIProvider = 'ollama' | 'lmstudio' | 'custom'
 
+/**
+ * Controls which system prompt is sent to the local AI model.
+ * - default: uses the built-in Copilot commit message prompt
+ * - conventional: enforces Conventional Commits format
+ * - custom: uses the user-supplied customSystemPrompt
+ */
+export type LocalAIPromptMode = 'default' | 'conventional' | 'custom'
+
 export interface ILocalAIConfig {
   readonly enabled: boolean
   readonly provider: LocalAIProvider
@@ -22,6 +30,10 @@ export interface ILocalAIConfig {
    * in these fields anyway).
    */
   readonly sanitizeGitContext: boolean
+  /** Which system prompt mode to use for commit message generation. */
+  readonly promptMode: LocalAIPromptMode
+  /** User-supplied system prompt (used when promptMode is 'custom'). */
+  readonly customSystemPrompt: string
 }
 
 export const LocalAIConfigKey = 'local-ai-config'
@@ -43,4 +55,6 @@ export const DefaultLocalAIConfig: ILocalAIConfig = {
   timeoutMs: 60000,
   allowNonLocalHttp: true,
   sanitizeGitContext: true,
+  promptMode: 'default',
+  customSystemPrompt: '',
 }

@@ -1,7 +1,12 @@
 import * as Path from 'path'
 import * as Fs from 'fs'
 import { exec as git } from 'dugite'
-import { IChatHistoryArchiveConfig } from '../models/chat-history-archive'
+import {
+  IChatHistoryArchiveConfig,
+  IChatHistoryArchiveLogEntry,
+  ChatHistoryArchiveLogKey,
+  MaxArchiveLogEntries,
+} from '../models/chat-history-archive'
 import { Repository } from '../models/repository'
 
 export interface IArchiveCandidate {
@@ -153,4 +158,32 @@ export async function commitArchiveRepo(
     const error = e instanceof Error ? e.message : 'Unknown error'
     return { success: false, error }
   }
+}
+
+/** Read the archive log from localStorage. */
+export function loadArchiveLog(): ReadonlyArray<IChatHistoryArchiveLogEntry> {
+  try {
+    const raw = localStorage.getItem(ChatHistoryArchiveLogKey)
+    if (!raw) {
+      return []
+    }
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed) ? parsed : []
+  } catch {
+    return []
+  }
+}
+
+/** Append an entry to the archive log, capping at MaxArchiveLogEntries. */
+export function appendArchiveLog(entry: IChatHistoryArchiveLogEntry): void {
+  const existing = [...loadArchiveLog()]
+  existing.push(entry)
+  // Keep only the most recent entries
+  const trimmed = existing.slice(-MaxArchiveLogEntries)
+  localStorage.setItem(ChatHistoryArchiveLogKey, JSON.stringify(trimmed))
+}
+
+/** Clear the archive log. */
+export function clearArchiveLog(): void {
+  localStorage.removeItem(ChatHistoryArchiveLogKey)
 }

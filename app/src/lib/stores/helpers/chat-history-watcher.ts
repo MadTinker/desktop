@@ -6,6 +6,7 @@ import {
   findArchiveCandidates,
   archiveCandidate,
   commitArchiveRepo,
+  appendArchiveLog,
   IArchiveCandidate,
 } from '../../chat-history-archive'
 
@@ -128,6 +129,16 @@ export class ChatHistoryWatcher {
           `[ChatHistoryWatcher] Commit failed: ${commitResult.error}`
         )
       }
+    }
+
+    // Log the operation
+    if (archived > 0 || failed > 0) {
+      appendArchiveLog({
+        timestamp: Date.now(),
+        repos: projectNames,
+        archived,
+        failed,
+      })
     }
 
     return { archived, failed }
