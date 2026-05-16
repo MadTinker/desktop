@@ -439,6 +439,9 @@ export interface IAppState {
   /** Configuration for local AI commit message generation (Ollama / LM Studio) */
   readonly localAIConfig: import('../models/local-ai').ILocalAIConfig
 
+  /** Configuration for chat history background archiver */
+  readonly chatHistoryArchiveConfig: import('../models/chat-history-archive').IChatHistoryArchiveConfig
+
   /**
    * Per-feature Copilot model selections. An absent key means the default
    * model will be used for that feature.

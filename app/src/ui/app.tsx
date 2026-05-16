@@ -1612,6 +1612,7 @@ export class App extends React.Component<IAppProps, IAppState> {
             showReflogTab={this.state.showReflogTab}
             omnispindleApiKey={this.state.omnispindleApiKey}
             localAIConfig={this.state.localAIConfig}
+            chatHistoryArchiveConfig={this.state.chatHistoryArchiveConfig}
             onEditGlobalGitConfig={this.editGlobalGitConfig}
             underlineLinks={this.state.underlineLinks}
             showDiffCheckMarks={this.state.showDiffCheckMarks}

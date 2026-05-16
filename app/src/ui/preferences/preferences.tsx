@@ -46,7 +46,12 @@ import { Accessibility } from './accessibility'
 import { OmnispindlePreferences } from './omnispindle'
 import { AutomationHooksPreferences } from './automation-hooks'
 import { LocalAIPreferences } from './local-ai'
+import { ChatHistoryArchivePreferences } from './chat-history-archive'
 import { ILocalAIConfig, DefaultLocalAIConfig } from '../../models/local-ai'
+import {
+  IChatHistoryArchiveConfig,
+  DefaultChatHistoryArchiveConfig,
+} from '../../models/chat-history-archive'
 import type { ModelInfo } from '@github/copilot-sdk'
 import { CopilotPreferences } from './copilot'
 import type {
@@ -124,6 +129,7 @@ interface IPreferencesProps {
   readonly showReflogTab: boolean
   readonly omnispindleApiKey: string
   readonly localAIConfig: ILocalAIConfig
+  readonly chatHistoryArchiveConfig: IChatHistoryArchiveConfig
   readonly onEditGlobalGitConfig: () => void
   readonly underlineLinks: boolean
   readonly showDiffCheckMarks: boolean
@@ -179,6 +185,7 @@ interface IPreferencesState {
   readonly showReflogTab: boolean
   readonly omnispindleApiKey: string
   readonly localAIConfig: ILocalAIConfig
+  readonly chatHistoryArchiveConfig: IChatHistoryArchiveConfig
 
   readonly initiallySelectedTheme: ApplicationTheme
   readonly initiallySelectedTabSize: number
@@ -258,6 +265,8 @@ export class Preferences extends React.Component<
       showReflogTab: this.props.showReflogTab,
       omnispindleApiKey: this.props.omnispindleApiKey,
       localAIConfig: this.props.localAIConfig ?? DefaultLocalAIConfig,
+      chatHistoryArchiveConfig:
+        this.props.chatHistoryArchiveConfig ?? DefaultChatHistoryArchiveConfig,
       initiallySelectedTheme: this.props.selectedTheme,
       initiallySelectedTabSize: this.props.selectedTabSize,
       isLoadingGitConfig: true,
@@ -416,6 +425,10 @@ export class Preferences extends React.Component<
               <Octicon className="icon" symbol={octicons.hubot} />
               Local AI
             </span>
+            <span id={this.getTabId(PreferencesTab.ChatHistoryArchive)}>
+              <Octicon className="icon" symbol={octicons.archive} />
+              Chat Archive
+            </span>
             <span id={this.getTabId(PreferencesTab.Advanced)}>
               <Octicon className="icon" symbol={octicons.gear} />
               Advanced
@@ -465,6 +478,9 @@ export class Preferences extends React.Component<
         break
       case PreferencesTab.LocalAI:
         suffix = 'local-ai'
+        break
+      case PreferencesTab.ChatHistoryArchive:
+        suffix = 'chat-history-archive'
         break
       case PreferencesTab.Advanced:
         suffix = 'advanced'
@@ -723,6 +739,14 @@ export class Preferences extends React.Component<
           />
         )
         break
+      case PreferencesTab.ChatHistoryArchive:
+        View = (
+          <ChatHistoryArchivePreferences
+            config={this.state.chatHistoryArchiveConfig}
+            onConfigChanged={this.onChatHistoryArchiveConfigChanged}
+          />
+        )
+        break
       case PreferencesTab.Advanced: {
         View = (
           <Advanced
@@ -795,6 +819,12 @@ export class Preferences extends React.Component<
 
   private onLocalAIConfigChanged = (localAIConfig: ILocalAIConfig) => {
     this.setState({ localAIConfig })
+  }
+
+  private onChatHistoryArchiveConfigChanged = (
+    chatHistoryArchiveConfig: IChatHistoryArchiveConfig
+  ) => {
+    this.setState({ chatHistoryArchiveConfig })
   }
 
   private onLockFileDeleted = () => {
@@ -1068,6 +1098,15 @@ export class Preferences extends React.Component<
 
       if (this.props.localAIConfig !== this.state.localAIConfig) {
         dispatcher.setLocalAIConfig(this.state.localAIConfig)
+      }
+
+      if (
+        this.props.chatHistoryArchiveConfig !==
+        this.state.chatHistoryArchiveConfig
+      ) {
+        dispatcher.setChatHistoryArchiveConfig(
+          this.state.chatHistoryArchiveConfig
+        )
       }
 
       if (this.state.hooksPreferencesDirty) {

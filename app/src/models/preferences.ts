@@ -9,6 +9,7 @@ export enum PreferencesTab {
   Omnispindle,
   AutomationHooks,
   LocalAI,
+  ChatHistoryArchive,
   Advanced,
   Accessibility,
 }

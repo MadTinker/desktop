@@ -1313,6 +1313,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
       omnispindleStatus: this.omnispindleStatus,
       omnispindleApiKey: this.omnispindleApiKey,
       localAIConfig: this.localAIConfig,
+      chatHistoryArchiveConfig: this.chatHistoryArchiveConfig,
       selectedCopilotModels: this.selectedCopilotModels,
       copilotModels: this.copilotModels,
       copilotAvailable: this.copilotStore.isAvailable,
