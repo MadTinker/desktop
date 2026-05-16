@@ -605,6 +605,18 @@ export class CommitMessage extends React.Component<
   private async createCommit(options?: ICreateCommitOptions) {
     const { description } = this.state.commitMessage
 
+    // If summary is empty and local AI is enabled, generate instead of blocking
+    if (
+      !this.state.commitMessage.summary &&
+      !this.props.prepopulateCommitSummary &&
+      this.props.localAIConfig?.enabled &&
+      this.props.onGenerateLocalAICommitMessage &&
+      this.props.filesSelected.length > 0
+    ) {
+      this.props.onGenerateLocalAICommitMessage(this.props.filesSelected, false)
+      return
+    }
+
     if (!this.canCommit() && !this.canAmend()) {
       return
     }
@@ -725,10 +737,15 @@ export class CommitMessage extends React.Component<
     }
 
     const isShortcutKey = __DARWIN__ ? event.metaKey : event.ctrlKey
+    const canLocalAIFill =
+      !this.state.commitMessage.summary &&
+      !!this.props.localAIConfig?.enabled &&
+      !!this.props.onGenerateLocalAICommitMessage &&
+      this.props.filesSelected.length > 0
     if (
       isShortcutKey &&
       event.key === 'Enter' &&
-      (this.canCommit() || this.canAmend()) &&
+      (this.canCommit() || this.canAmend() || canLocalAIFill) &&
       this.canExcecuteCommitShortcut(event)
     ) {
       this.createCommit()
@@ -1635,11 +1652,17 @@ export class CommitMessage extends React.Component<
   private renderSubmitButton() {
     const { isCommitting, isGeneratingCommitMessage } = this.props
     const isSummaryBlank = isEmptyOrWhitespace(this.summaryOrPlaceholder)
+    const canLocalAIGenerate =
+      isSummaryBlank &&
+      !!this.props.localAIConfig?.enabled &&
+      !!this.props.onGenerateLocalAICommitMessage &&
+      this.props.filesSelected.length > 0
     const buttonEnabled =
-      (this.canCommit() || this.canAmend()) &&
-      !isCommitting &&
-      !isSummaryBlank &&
-      !isGeneratingCommitMessage
+      ((this.canCommit() || this.canAmend()) &&
+        !isCommitting &&
+        !isSummaryBlank &&
+        !isGeneratingCommitMessage) ||
+      (canLocalAIGenerate && !isCommitting && !isGeneratingCommitMessage)
     const loading =
       isCommitting || isGeneratingCommitMessage ? <Loading /> : undefined
     const generatingCommitDetailsMessage = isGeneratingCommitMessage
