@@ -1,6 +1,8 @@
 import React from 'react'
 import { parseRepositoryIdentifier } from '../../lib/remote-parsing'
 import { ISubmoduleDiff } from '../../models/diff'
+import { ITextDiff, DiffType } from '../../models/diff'
+import { DiffLineType } from '../../models/diff/diff-line'
 import { LinkButton } from '../lib/link-button'
 import { Octicon } from '../octicons'
 import * as octicons from '../octicons/octicons.generated'
@@ -10,6 +12,14 @@ import { CopyButton } from '../copy-button'
 import { shortenSHA, CommitOneLine } from '../../models/commit'
 import { getSubmoduleCommitsBetween } from '../../lib/git/submodule'
 import { Button } from '../lib/button'
+import { Repository } from '../../models/repository'
+import { getStatus } from '../../lib/git/status'
+import { getWorkingDirectoryDiff } from '../../lib/git/diff'
+import { createCommit } from '../../lib/git/commit'
+import {
+  WorkingDirectoryFileChange,
+  AppFileStatusKind,
+} from '../../models/status'
 
 type SubmoduleItemIcon =
   | {
@@ -50,6 +60,14 @@ interface ISubmoduleDiffProps {
 
 interface ISubmoduleDiffState {
   readonly commits: ReadonlyArray<CommitOneLine>
+  /** Files changed inside the submodule working directory */
+  readonly submoduleFiles: ReadonlyArray<WorkingDirectoryFileChange>
+  readonly selectedFile: WorkingDirectoryFileChange | null
+  readonly fileDiff: ITextDiff | null
+  readonly commitSummary: string
+  readonly isCommitting: boolean
+  readonly loadingStatus: boolean
+  readonly lastCommitSha: string | null
 }
 
 export class SubmoduleDiff extends React.Component<
@@ -58,7 +76,16 @@ export class SubmoduleDiff extends React.Component<
 > {
   public constructor(props: ISubmoduleDiffProps) {
     super(props)
-    this.state = { commits: [] }
+    this.state = {
+      commits: [],
+      submoduleFiles: [],
+      selectedFile: null,
+      fileDiff: null,
+      commitSummary: '',
+      isCommitting: false,
+      loadingStatus: false,
+      lastCommitSha: null,
+    }
   }
 
   public async componentDidMount() {
@@ -75,6 +102,7 @@ export class SubmoduleDiff extends React.Component<
         // submodule may not be initialized; silently skip
       }
     }
+    await this.loadSubmoduleStatus()
   }
 
   public async componentDidUpdate(prevProps: ISubmoduleDiffProps) {
@@ -96,6 +124,91 @@ export class SubmoduleDiff extends React.Component<
         this.setState({ commits: [] })
       }
     }
+    if (
+      diff.fullPath !== prev.fullPath ||
+      diff.status.modifiedChanges !== prev.status.modifiedChanges ||
+      diff.status.untrackedChanges !== prev.status.untrackedChanges
+    ) {
+      await this.loadSubmoduleStatus()
+    }
+  }
+
+  private getSubmoduleRepo(): Repository {
+    return new Repository(this.props.diff.fullPath, -1, null, false)
+  }
+
+  private async loadSubmoduleStatus() {
+    const { diff } = this.props
+    if (
+      diff.entryStatus === 'uninitialized' ||
+      (!diff.status.modifiedChanges && !diff.status.untrackedChanges)
+    ) {
+      this.setState({ submoduleFiles: [], selectedFile: null, fileDiff: null })
+      return
+    }
+
+    this.setState({ loadingStatus: true })
+    try {
+      const status = await getStatus(this.getSubmoduleRepo())
+      if (status !== null) {
+        const files = status.workingDirectory.files
+        this.setState({ submoduleFiles: files, loadingStatus: false })
+      } else {
+        this.setState({ submoduleFiles: [], loadingStatus: false })
+      }
+    } catch {
+      this.setState({ submoduleFiles: [], loadingStatus: false })
+    }
+  }
+
+  private onFileClick = async (file: WorkingDirectoryFileChange) => {
+    if (
+      this.state.selectedFile?.path === file.path &&
+      this.state.fileDiff !== null
+    ) {
+      this.setState({ selectedFile: null, fileDiff: null })
+      return
+    }
+
+    this.setState({ selectedFile: file, fileDiff: null })
+    try {
+      const diff = await getWorkingDirectoryDiff(
+        this.getSubmoduleRepo(),
+        file,
+        false
+      )
+      if (diff.kind === DiffType.Text) {
+        this.setState({ fileDiff: diff })
+      }
+    } catch {
+      // binary or unreadable diff — show nothing
+    }
+  }
+
+  private onCommit = async () => {
+    const { submoduleFiles, commitSummary } = this.state
+    if (submoduleFiles.length === 0 || commitSummary.trim() === '') {
+      return
+    }
+
+    this.setState({ isCommitting: true })
+    try {
+      const sha = await createCommit(
+        this.getSubmoduleRepo(),
+        commitSummary.trim(),
+        submoduleFiles
+      )
+      this.setState({
+        isCommitting: false,
+        lastCommitSha: sha,
+        commitSummary: '',
+        submoduleFiles: [],
+        selectedFile: null,
+        fileDiff: null,
+      })
+    } catch (e) {
+      this.setState({ isCommitting: false })
+    }
   }
 
   public render() {
@@ -111,6 +224,7 @@ export class SubmoduleDiff extends React.Component<
           {this.renderCommitChangeInfo()}
           {this.renderCommitHistory()}
           {this.renderSubmodulesChangesInfo()}
+          {this.renderInlineChanges()}
           {this.renderQuickActions()}
           {this.renderOpenSubmoduleAction()}
         </div>
@@ -241,11 +355,185 @@ export class SubmoduleDiff extends React.Component<
     return this.renderSubmoduleDiffItem(
       { octicon: octicons.fileDiff, className: 'untracked-icon' },
       <>
-        This submodule has {changes} changes. Those changes must be committed
-        inside of the submodule before they can be part of the parent
-        repository.
+        This submodule has {changes} changes. Commit them below before updating
+        the parent repository.
       </>
     )
+  }
+
+  private renderInlineChanges() {
+    const {
+      submoduleFiles,
+      selectedFile,
+      fileDiff,
+      commitSummary,
+      isCommitting,
+      loadingStatus,
+      lastCommitSha,
+    } = this.state
+    const { diff, readOnly } = this.props
+
+    if (readOnly || diff.entryStatus === 'uninitialized') {
+      return null
+    }
+
+    if (lastCommitSha !== null && submoduleFiles.length === 0) {
+      return (
+        <div className="item submodule-inline-changes">
+          <Octicon symbol={octicons.check} className="added-icon" />
+          <div className="content">
+            <p>
+              Committed to submodule: <Ref>{shortenSHA(lastCommitSha)}</Ref>
+            </p>
+          </div>
+        </div>
+      )
+    }
+
+    if (loadingStatus) {
+      return (
+        <div className="item submodule-inline-changes">
+          <Octicon symbol={octicons.sync} className="info-icon" />
+          <div className="content">
+            <p>Loading submodule changes…</p>
+          </div>
+        </div>
+      )
+    }
+
+    if (submoduleFiles.length === 0) {
+      return null
+    }
+
+    return (
+      <div className="submodule-inline-changes">
+        <div className="submodule-inline-header">
+          <Octicon symbol={octicons.listUnordered} className="info-icon" />
+          <span>
+            {submoduleFiles.length} file
+            {submoduleFiles.length !== 1 ? 's' : ''} changed in submodule
+          </span>
+        </div>
+
+        <div className="submodule-file-list">
+          {submoduleFiles.map(f => this.renderFileListItem(f))}
+        </div>
+
+        {selectedFile !== null && fileDiff !== null && (
+          <div className="submodule-file-diff">
+            <div className="submodule-file-diff-header">{selectedFile.path}</div>
+            <div className="submodule-diff-lines">
+              {fileDiff.hunks.map((hunk, hi) => (
+                <React.Fragment key={hi}>
+                  <div className="submodule-diff-line hunk-header">
+                    {hunk.header.toDiffLineRepresentation()}
+                  </div>
+                  {hunk.lines.map((line, li) => {
+                    const lineClass =
+                      line.type === DiffLineType.Add
+                        ? 'add'
+                        : line.type === DiffLineType.Delete
+                        ? 'delete'
+                        : line.type === DiffLineType.Hunk
+                        ? 'hunk-header'
+                        : 'context'
+                    return (
+                      <div
+                        key={li}
+                        className={`submodule-diff-line ${lineClass}`}
+                      >
+                        {line.text}
+                      </div>
+                    )
+                  })}
+                </React.Fragment>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="submodule-commit-form">
+          <input
+            className="submodule-commit-summary"
+            type="text"
+            placeholder="Summary (required)"
+            value={commitSummary}
+            onChange={e => this.setState({ commitSummary: e.target.value })}
+            onKeyDown={e => {
+              if (e.key === 'Enter' && !isCommitting) {
+                this.onCommit()
+              }
+            }}
+          />
+          <Button
+            onClick={this.onCommit}
+            disabled={commitSummary.trim() === '' || isCommitting}
+            type="button"
+          >
+            {isCommitting ? 'Committing…' : `Commit ${submoduleFiles.length} file${submoduleFiles.length !== 1 ? 's' : ''} to submodule`}
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  private renderFileListItem(file: WorkingDirectoryFileChange) {
+    const { selectedFile } = this.state
+    const isSelected = selectedFile?.path === file.path
+    const statusClass = this.fileStatusClass(file)
+
+    return (
+      <div
+        key={file.path}
+        className={`submodule-file-item ${statusClass}${isSelected ? ' selected' : ''}`}
+        onClick={() => this.onFileClick(file)}
+        role="button"
+        tabIndex={0}
+        onKeyDown={e => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            this.onFileClick(file)
+          }
+        }}
+      >
+        <span className="submodule-file-status">{this.fileStatusLabel(file)}</span>
+        <span className="submodule-file-path">{file.path}</span>
+      </div>
+    )
+  }
+
+  private fileStatusClass(file: WorkingDirectoryFileChange): string {
+    switch (file.status.kind) {
+      case AppFileStatusKind.New:
+      case AppFileStatusKind.Untracked:
+        return 'added'
+      case AppFileStatusKind.Deleted:
+        return 'deleted'
+      case AppFileStatusKind.Modified:
+        return 'modified'
+      case AppFileStatusKind.Renamed:
+      case AppFileStatusKind.Copied:
+        return 'renamed'
+      default:
+        return 'modified'
+    }
+  }
+
+  private fileStatusLabel(file: WorkingDirectoryFileChange): string {
+    switch (file.status.kind) {
+      case AppFileStatusKind.New:
+      case AppFileStatusKind.Untracked:
+        return 'A'
+      case AppFileStatusKind.Deleted:
+        return 'D'
+      case AppFileStatusKind.Renamed:
+        return 'R'
+      case AppFileStatusKind.Copied:
+        return 'C'
+      case AppFileStatusKind.Conflicted:
+        return '!'
+      default:
+        return 'M'
+    }
   }
 
   private renderQuickActions() {
