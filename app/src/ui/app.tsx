@@ -77,6 +77,7 @@ import { EditCopilotBYOKProviderDialog } from './copilot/edit-byok-provider-dial
 import { EditCopilotBYOKModelDialog } from './copilot/edit-byok-model-dialog'
 import { ConfirmDeleteCopilotBYOKProviderDialog } from './copilot/confirm-delete-byok-provider-dialog'
 import { SubmoduleManagementDialog } from './submodule-management/submodule-management-dialog'
+import { ConfirmArchiveChatHistoryDialog } from './chat-history/confirm-archive-chat-history-dialog'
 import type { IBYOKProvider } from '../lib/copilot/byok'
 import { OpenWithExternalEditor } from './open-with-external-editor/open-with-external-editor'
 import { RepositorySettings } from './repository-settings'
@@ -2678,6 +2679,16 @@ export class App extends React.Component<IAppProps, IAppState> {
           <SubmoduleManagementDialog
             key="submodule-management-dialog"
             repository={popup.repository}
+            dispatcher={this.props.dispatcher}
+            onDismissed={onPopupDismissedFn}
+          />
+        )
+      }
+      case PopupType.ConfirmArchiveChatHistory: {
+        return (
+          <ConfirmArchiveChatHistoryDialog
+            key="confirm-archive-chat-history"
+            candidates={popup.candidates}
             dispatcher={this.props.dispatcher}
             onDismissed={onPopupDismissedFn}
           />

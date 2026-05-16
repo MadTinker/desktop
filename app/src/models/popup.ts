@@ -113,6 +113,7 @@ export enum PopupType {
   EditCopilotBYOKModel = 'EditCopilotBYOKModel',
   ConfirmDeleteCopilotBYOKProvider = 'ConfirmDeleteCopilotBYOKProvider',
   SubmoduleManagement = 'SubmoduleManagement',
+  ConfirmArchiveChatHistory = 'ConfirmArchiveChatHistory',
 }
 
 interface IBasePopup {
@@ -505,4 +506,12 @@ export type PopupDetail =
       subscribeToCommitOutput: TerminalOutputListener
     }
   | { type: PopupType.SubmoduleManagement; repository: Repository }
+  | {
+      type: PopupType.ConfirmArchiveChatHistory
+      candidates: ReadonlyArray<{
+        repositoryName: string
+        watchDir: string
+        sourcePath: string
+      }>
+    }
 export type Popup = IBasePopup & PopupDetail

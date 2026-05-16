@@ -1159,6 +1159,16 @@ export class Dispatcher {
     return this.appStore._setLocalAIConfig(config)
   }
 
+  public setChatHistoryArchiveConfig(
+    config: import('../../models/chat-history-archive').IChatHistoryArchiveConfig
+  ) {
+    return this.appStore._setChatHistoryArchiveConfig(config)
+  }
+
+  public archiveChatHistory() {
+    return this.appStore._archiveChatHistory()
+  }
+
   /** Remove the given account from the app. */
   public removeAccount(account: Account): Promise<void> {
     return this.appStore._removeAccount(account)

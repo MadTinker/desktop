@@ -30,6 +30,7 @@ import {
   loadLocalAIConfig,
   saveLocalAIConfig,
   generateLocalAICommitMessage,
+  ILocalAICommitContext,
 } from '../local-ai-commit-message'
 import type {
   CopilotModelRequest,
@@ -250,6 +251,7 @@ import {
   pushAllSubmodules,
   foreachSubmodule,
   getReflog,
+  getCommits,
 } from '../git'
 import {
   installGlobalLFSFilters,
@@ -350,6 +352,12 @@ import { getDefaultDir } from '../../ui/lib/default-dir'
 import { WorkflowPreferences } from '../../models/workflow-preferences'
 import { RepositoryIndicatorUpdater } from './helpers/repository-indicator-updater'
 import { AutoSwitchMonitor } from './helpers/auto-switch-monitor'
+import { ChatHistoryWatcher } from './helpers/chat-history-watcher'
+import {
+  IChatHistoryArchiveConfig,
+  ChatHistoryArchiveConfigKey,
+  DefaultChatHistoryArchiveConfig,
+} from '../../models/chat-history-archive'
 import { isAttributableEmailFor } from '../email'
 import { TrashNameLabel } from '../../ui/lib/context-menu'
 import { GitError as DugiteError } from 'dugite'
@@ -554,6 +562,9 @@ export class AppStore extends TypedBaseStore<IAppState> {
 
   private readonly repositoryIndicatorUpdater: RepositoryIndicatorUpdater
   private readonly autoSwitchMonitor: AutoSwitchMonitor
+  private readonly chatHistoryWatcher: ChatHistoryWatcher
+  private chatHistoryArchiveConfig: IChatHistoryArchiveConfig =
+    DefaultChatHistoryArchiveConfig
   private autoSwitchOnChangesEnabled = false
 
   private showWelcomeFlow = false
@@ -794,6 +805,39 @@ export class AppStore extends TypedBaseStore<IAppState> {
 
     this.omnispindleApiKey = localStorage.getItem(omnispindleApiKeyKey) ?? ''
     this.localAIConfig = loadLocalAIConfig()
+
+    // Chat history archive watcher
+    try {
+      const raw = localStorage.getItem(ChatHistoryArchiveConfigKey)
+      if (raw) {
+        this.chatHistoryArchiveConfig = {
+          ...DefaultChatHistoryArchiveConfig,
+          ...JSON.parse(raw),
+        }
+      }
+    } catch {
+      // keep defaults
+    }
+
+    this.chatHistoryWatcher = new ChatHistoryWatcher(
+      () => this.repositories,
+      () => this.chatHistoryArchiveConfig,
+      candidates => {
+        this._showPopup({
+          type: PopupType.ConfirmArchiveChatHistory,
+          candidates: candidates.map(c => ({
+            repositoryName:
+              c.repository.name ?? c.repository.path.split('/').pop() ?? '',
+            watchDir: c.watchDir,
+            sourcePath: c.sourcePath,
+          })),
+        })
+      }
+    )
+
+    if (this.chatHistoryArchiveConfig.enabled) {
+      this.chatHistoryWatcher.start()
+    }
 
     this.autoSwitchMonitor = new AutoSwitchMonitor(
       this.getRepositoriesForIndicatorRefresh,
@@ -6094,9 +6138,9 @@ export class AppStore extends TypedBaseStore<IAppState> {
     }
 
     return this.withIsGeneratingCommitMessage(repository, async () => {
-      const commitToAmend =
-        this.repositoryStateCache.get(repository)?.commitToAmend?.sha ??
-        undefined
+      const repoState = this.repositoryStateCache.get(repository)
+      const commitToAmend = repoState?.commitToAmend?.sha ?? undefined
+
       const diff = await getFilesDiffText(
         repository,
         filesSelected,
@@ -6106,10 +6150,26 @@ export class AppStore extends TypedBaseStore<IAppState> {
         return false
       }
 
+      // Gather branch + recent commit context to help the model match style
+      const tip = repoState?.branchesState?.tip
+      const branchName =
+        tip && 'branch' in tip ? tip.branch.name : undefined
+
+      let recentCommits: ReadonlyArray<string> = []
+      try {
+        const commits = await getCommits(repository, undefined, 5)
+        recentCommits = commits.map(c => c.summary)
+      } catch {
+        // non-fatal — context is best-effort
+      }
+
+      const context: ILocalAICommitContext = { branchName, recentCommits }
+
       try {
         const response = await generateLocalAICommitMessage(
           diff,
-          this.localAIConfig
+          this.localAIConfig,
+          context
         )
         this._setCommitMessage(repository, {
           summary: response.title,
@@ -6129,6 +6189,28 @@ export class AppStore extends TypedBaseStore<IAppState> {
     this.localAIConfig = config
     saveLocalAIConfig(config)
     this.emitUpdate()
+  }
+
+  public _setChatHistoryArchiveConfig(
+    config: IChatHistoryArchiveConfig
+  ): void {
+    this.chatHistoryArchiveConfig = config
+    localStorage.setItem(ChatHistoryArchiveConfigKey, JSON.stringify(config))
+
+    if (config.enabled) {
+      this.chatHistoryWatcher.start()
+    } else {
+      this.chatHistoryWatcher.stop()
+    }
+
+    this.emitUpdate()
+  }
+
+  public async _archiveChatHistory(): Promise<{
+    archived: number
+    failed: number
+  }> {
+    return this.chatHistoryWatcher.archiveAll()
   }
 
   /**
