@@ -28,6 +28,7 @@ import {
 } from '../lib/get-os'
 import { MenuEvent, isTestMenuEvent } from '../main-process/menu'
 import { HotkeyStore, HotkeyListener, ActionContext } from '../lib/hotkeys'
+import { dispatchHotkeyAction } from '../lib/hotkeys/action-dispatcher-map'
 import {
   Repository,
   getGitHubHtmlUrl,
@@ -1056,7 +1057,7 @@ export class App extends React.Component<IAppProps, IAppState> {
     // Initialize hotkey system
     this.hotkeyListener = new HotkeyListener({
       contextProvider: () => this.getCurrentHotkeyContext(),
-      actionHandler: id => this.onMenuEvent(id as MenuEvent),
+      actionHandler: id => this.handleHotkeyAction(id),
     })
     this.hotkeyListener.updateBindings(this.hotkeyStore.getNonMenuBindings())
     sendHotkeyBindings(this.hotkeyStore.getMenuAccelerators())
@@ -1067,6 +1068,21 @@ export class App extends React.Component<IAppProps, IAppState> {
       }
       sendHotkeyBindings(this.hotkeyStore.getMenuAccelerators())
     })
+  }
+
+  private handleHotkeyAction(id: string) {
+    // Try non-menu dispatcher actions first
+    const repo = this.getRepository()
+    const repoOrNull = repo instanceof CloningRepository ? null : repo
+    const handled = dispatchHotkeyAction(
+      id,
+      this.props.dispatcher,
+      () => repoOrNull
+    )
+    if (!handled) {
+      // Fall through to menu event handler for menu actions
+      this.onMenuEvent(id as MenuEvent)
+    }
   }
 
   private getCurrentHotkeyContext(): ActionContext {
