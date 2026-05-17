@@ -1,4 +1,5 @@
 export { HotkeyStore } from './hotkey-store'
+export { HotkeyListener } from './hotkey-listener'
 export { DefaultActionDefinitions, ActionDefinitionMap } from './default-bindings'
 export {
   keyEventToAccelerator,

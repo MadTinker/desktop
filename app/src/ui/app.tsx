@@ -27,6 +27,7 @@ import {
   isWindowsAndNoLongerSupportedByElectron,
 } from '../lib/get-os'
 import { MenuEvent, isTestMenuEvent } from '../main-process/menu'
+import { HotkeyStore, HotkeyListener, ActionContext } from '../lib/hotkeys'
 import {
   Repository,
   getGitHubHtmlUrl,
@@ -67,6 +68,7 @@ import {
   selectAllWindowContents,
   installWindowsCLI,
   uninstallWindowsCLI,
+  sendHotkeyBindings,
 } from './main-process-proxy'
 import { DiscardChanges } from './discard-changes'
 import { Welcome } from './welcome'
@@ -262,6 +264,10 @@ export class App extends React.Component<IAppProps, IAppState> {
 
   private updateIntervalHandle?: number
 
+  private hotkeyStore = new HotkeyStore()
+  private hotkeyListener: HotkeyListener | null = null
+  private hotkeyStoreDispose: (() => void) | null = null
+
   private repositoryViewRef = React.createRef<RepositoryView>()
 
   /**
@@ -364,6 +370,13 @@ export class App extends React.Component<IAppProps, IAppState> {
 
     if (__DARWIN__) {
       window.removeEventListener('keydown', this.onMacOSWindowKeyDown)
+    }
+
+    if (this.hotkeyListener) {
+      this.hotkeyListener.dispose()
+    }
+    if (this.hotkeyStoreDispose) {
+      this.hotkeyStoreDispose()
     }
   }
 
@@ -1034,6 +1047,41 @@ export class App extends React.Component<IAppProps, IAppState> {
     document.addEventListener('focus', this.onDocumentFocus, {
       capture: true,
     })
+
+    // Initialize hotkey system
+    this.hotkeyListener = new HotkeyListener({
+      contextProvider: () => this.getCurrentHotkeyContext(),
+      actionHandler: id => this.onMenuEvent(id as MenuEvent),
+    })
+    this.hotkeyListener.updateBindings(this.hotkeyStore.getNonMenuBindings())
+    sendHotkeyBindings(this.hotkeyStore.getMenuAccelerators())
+
+    this.hotkeyStoreDispose = this.hotkeyStore.onDidChange(() => {
+      if (this.hotkeyListener) {
+        this.hotkeyListener.updateBindings(this.hotkeyStore.getNonMenuBindings())
+      }
+      sendHotkeyBindings(this.hotkeyStore.getMenuAccelerators())
+    })
+  }
+
+  private getCurrentHotkeyContext(): ActionContext {
+    if (this.state.currentPopup !== null) {
+      return 'global'
+    }
+    if (this.state.selectedState === null) {
+      return 'global'
+    }
+    if (this.state.selectedState.type !== SelectionType.Repository) {
+      return 'global'
+    }
+    const { selectedSection } = this.state.selectedState.state
+    if (selectedSection === RepositorySectionTab.Changes) {
+      return 'changes-tab'
+    }
+    if (selectedSection === RepositorySectionTab.History) {
+      return 'history-tab'
+    }
+    return 'repository'
   }
 
   private onDocumentFocus = (event: FocusEvent) => {
