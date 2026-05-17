@@ -10,6 +10,7 @@ export enum PreferencesTab {
   AutomationHooks,
   LocalAI,
   ChatHistoryArchive,
+  Keybindings,
   Advanced,
   Accessibility,
 }

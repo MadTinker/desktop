@@ -47,6 +47,8 @@ import { OmnispindlePreferences } from './omnispindle'
 import { AutomationHooksPreferences } from './automation-hooks'
 import { LocalAIPreferences } from './local-ai'
 import { ChatHistoryArchivePreferences } from './chat-history-archive'
+import { Keybindings } from './keybindings'
+import { HotkeyStore } from '../../lib/hotkeys'
 import { ILocalAIConfig, DefaultLocalAIConfig } from '../../models/local-ai'
 import {
   IChatHistoryArchiveConfig,
@@ -137,6 +139,7 @@ interface IPreferencesProps {
   readonly copilotModels: ReadonlyArray<ModelInfo> | null
   readonly copilotAvailable: boolean
   readonly byokProviders: ReadonlyArray<IBYOKProvider>
+  readonly hotkeyStore: HotkeyStore
 }
 
 interface IPreferencesState {
@@ -429,6 +432,10 @@ export class Preferences extends React.Component<
               <Octicon className="icon" symbol={octicons.archive} />
               Chat Archive
             </span>
+            <span id={this.getTabId(PreferencesTab.Keybindings)}>
+              <Octicon className="icon" symbol={octicons.key} />
+              Keybindings
+            </span>
             <span id={this.getTabId(PreferencesTab.Advanced)}>
               <Octicon className="icon" symbol={octicons.gear} />
               Advanced
@@ -481,6 +488,9 @@ export class Preferences extends React.Component<
         break
       case PreferencesTab.ChatHistoryArchive:
         suffix = 'chat-history-archive'
+        break
+      case PreferencesTab.Keybindings:
+        suffix = 'keybindings'
         break
       case PreferencesTab.Advanced:
         suffix = 'advanced'
@@ -745,6 +755,11 @@ export class Preferences extends React.Component<
             config={this.state.chatHistoryArchiveConfig}
             onConfigChanged={this.onChatHistoryArchiveConfigChanged}
           />
+        )
+        break
+      case PreferencesTab.Keybindings:
+        View = (
+          <Keybindings hotkeyStore={this.props.hotkeyStore} />
         )
         break
       case PreferencesTab.Advanced: {

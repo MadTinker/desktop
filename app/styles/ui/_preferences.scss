@@ -561,4 +561,153 @@
       }
     }
   }
+
+  .keybindings-preferences {
+    h2 {
+      margin-top: 0;
+    }
+
+    .keybindings-toolbar {
+      display: flex;
+      gap: var(--spacing);
+      margin-bottom: var(--spacing-double);
+
+      .keybindings-filter {
+        flex: 1;
+        padding: var(--spacing-half) var(--spacing);
+        border: var(--base-border);
+        border-radius: var(--border-radius);
+        font-size: var(--font-size-sm);
+      }
+
+      .reset-all-button {
+        flex-shrink: 0;
+      }
+    }
+
+    .keybinding-category {
+      margin-bottom: var(--spacing);
+
+      .keybinding-category-header {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-half);
+        padding: var(--spacing-half) 0;
+        cursor: pointer;
+        font-weight: bold;
+        user-select: none;
+
+        .category-count {
+          color: var(--text-secondary-color);
+          font-weight: normal;
+          font-size: var(--font-size-sm);
+        }
+      }
+    }
+
+    .keybinding-row {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing);
+      padding: var(--spacing-half) var(--spacing);
+      border-bottom: 1px solid var(--box-border-color);
+
+      &.editing {
+        flex-direction: column;
+        align-items: stretch;
+        background: var(--box-selected-background-color);
+        border-radius: var(--border-radius);
+        padding: var(--spacing);
+      }
+
+      .keybinding-action-label {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .keybinding-context-badge {
+        font-size: var(--font-size-xs);
+        color: var(--text-secondary-color);
+        background: var(--box-background-color);
+        padding: 2px 6px;
+        border-radius: var(--border-radius);
+      }
+
+      .keybinding-value {
+        font-family: var(--font-family-monospace);
+        font-size: var(--font-size-sm);
+        padding: 2px 8px;
+        border: var(--base-border);
+        border-radius: var(--border-radius);
+        cursor: pointer;
+        min-width: 80px;
+        text-align: center;
+
+        &.modified {
+          border-color: var(--focus-color);
+          color: var(--focus-color);
+        }
+
+        &:hover {
+          background: var(--box-selected-background-color);
+        }
+      }
+
+      .keybinding-reset-button {
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-size: 16px;
+        padding: 2px 6px;
+        border-radius: var(--border-radius);
+
+        &:hover {
+          background: var(--box-selected-background-color);
+        }
+      }
+    }
+
+    .keybinding-editor {
+      .keybinding-capture {
+        padding: var(--spacing);
+        border: 2px dashed var(--box-border-color);
+        border-radius: var(--border-radius);
+        text-align: center;
+        margin-bottom: var(--spacing);
+        outline: none;
+
+        &.active {
+          border-color: var(--focus-color);
+        }
+
+        .capture-prompt {
+          color: var(--text-secondary-color);
+          font-style: italic;
+        }
+
+        .captured-keys {
+          font-family: var(--font-family-monospace);
+          font-size: var(--font-size-md);
+          font-weight: bold;
+        }
+      }
+
+      .keybinding-error {
+        color: var(--error-color, #d73a49);
+        font-size: var(--font-size-sm);
+        margin-bottom: var(--spacing-half);
+      }
+
+      .keybinding-conflict {
+        color: var(--warning-color, #e36209);
+        font-size: var(--font-size-sm);
+        margin-bottom: var(--spacing-half);
+      }
+
+      .keybinding-editor-actions {
+        display: flex;
+        gap: var(--spacing-half);
+      }
+    }
+  }
 }
