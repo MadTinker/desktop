@@ -10,7 +10,6 @@ interface IKeybindingEditorProps {
   readonly currentBinding: Keybinding | null
   readonly onBindingCaptured: (binding: Keybinding | null) => void
   readonly onCancel: () => void
-  readonly conflictLabel?: string
 }
 
 interface IKeybindingEditorState {
@@ -63,24 +62,27 @@ export class KeybindingEditor extends React.Component<
 
         {error && <div className="keybinding-error">{error}</div>}
 
-        {this.props.conflictLabel && capturedBinding && (
-          <div className="keybinding-conflict">
-            Conflicts with: <strong>{this.props.conflictLabel}</strong>
-          </div>
-        )}
-
         <div className="keybinding-editor-actions">
           <button
             className="button-component"
             onClick={this.onConfirm}
+            onMouseDown={this.onButtonMouseDown}
             disabled={!capturedBinding}
           >
             Save
           </button>
-          <button className="button-component" onClick={this.onClear}>
+          <button
+            className="button-component"
+            onClick={this.onClear}
+            onMouseDown={this.onButtonMouseDown}
+          >
             Unbind
           </button>
-          <button className="button-component" onClick={this.props.onCancel}>
+          <button
+            className="button-component"
+            onClick={this.props.onCancel}
+            onMouseDown={this.onButtonMouseDown}
+          >
             Cancel
           </button>
         </div>
@@ -91,6 +93,11 @@ export class KeybindingEditor extends React.Component<
   private onKeyDown = (event: React.KeyboardEvent) => {
     event.preventDefault()
     event.stopPropagation()
+
+    if (event.key === 'Escape') {
+      this.props.onCancel()
+      return
+    }
 
     const binding = keyEventToAccelerator(event.nativeEvent)
     if (!binding) {
@@ -111,8 +118,15 @@ export class KeybindingEditor extends React.Component<
     })
   }
 
+  private onButtonMouseDown = (event: React.MouseEvent) => {
+    // Prevent button clicks from stealing focus from capture div
+    event.preventDefault()
+  }
+
   private onBlur = () => {
-    // Keep focus when clicking editor buttons
+    // Cancel capture when focus leaves the editor entirely
+    // (onButtonMouseDown prevents blur from our own buttons)
+    this.props.onCancel()
   }
 
   private onConfirm = () => {

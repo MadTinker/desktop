@@ -585,6 +585,16 @@
       }
     }
 
+    .keybinding-conflict-banner {
+      background: var(--warning-color, #e36209);
+      color: #fff;
+      padding: var(--spacing-half) var(--spacing);
+      border-radius: var(--border-radius);
+      margin-bottom: var(--spacing);
+      font-size: var(--font-size-sm);
+      font-weight: 600;
+    }
+
     .keybinding-category {
       margin-bottom: var(--spacing);
 
@@ -646,6 +656,12 @@
         &.modified {
           border-color: var(--focus-color);
           color: var(--focus-color);
+        }
+
+        &.unbound {
+          color: var(--text-secondary-color);
+          font-style: italic;
+          border-style: dashed;
         }
 
         &:hover {

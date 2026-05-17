@@ -72,6 +72,9 @@ export class Keybindings extends React.Component<
     if (this.disposeListener) {
       this.disposeListener()
     }
+    if (this.conflictTimer) {
+      clearTimeout(this.conflictTimer)
+    }
   }
 
   public render() {
@@ -109,6 +112,12 @@ export class Keybindings extends React.Component<
               Reset All
             </button>
           </div>
+
+          {this.state.conflictLabel && (
+            <div className="keybinding-conflict-banner">
+              ⚠ {this.state.conflictLabel}
+            </div>
+          )}
 
           <div className="keybindings-list">
             {CategoryOrder.map(cat => this.renderCategory(cat))}
@@ -162,7 +171,6 @@ export class Keybindings extends React.Component<
             currentBinding={binding}
             onBindingCaptured={b => this.onBindingCaptured(def.id, b)}
             onCancel={this.onCancelEdit}
-            conflictLabel={this.state.conflictLabel ?? undefined}
           />
         </div>
       )
@@ -171,13 +179,18 @@ export class Keybindings extends React.Component<
     const displayBinding = binding
       ? acceleratorToDisplayString(binding, __DARWIN__)
       : 'None'
+    const valueClass = hasOverride
+      ? 'keybinding-value modified'
+      : binding
+        ? 'keybinding-value'
+        : 'keybinding-value unbound'
 
     return (
       <div key={def.id} className="keybinding-row">
         <div className="keybinding-action-label">{def.label}</div>
         <div className="keybinding-context-badge">{def.context}</div>
         <div
-          className={`keybinding-value ${hasOverride ? 'modified' : ''}`}
+          className={valueClass}
           onClick={() => this.startEditing(def.id)}
         >
           {displayBinding}
@@ -234,20 +247,32 @@ export class Keybindings extends React.Component<
   private onBindingCaptured(actionId: string, binding: Keybinding | null) {
     const conflicts = this.props.hotkeyStore.setBinding(actionId, binding)
     if (conflicts.length > 0) {
-      // Find the other conflicting action's label
       const otherActions = conflicts[0].actions.filter(id => id !== actionId)
       const otherDef = otherActions.length > 0
         ? ActionDefinitionMap.get(otherActions[0])
         : null
       if (otherDef) {
         this.setState({
-          conflictLabel: otherDef.label,
+          conflictLabel: `"${ActionDefinitionMap.get(actionId)?.label ?? actionId}" conflicts with "${otherDef.label}"`,
           editingActionId: null,
         })
+        this.clearConflictAfterDelay()
         return
       }
     }
     this.setState({ editingActionId: null, conflictLabel: null })
+  }
+
+  private conflictTimer: ReturnType<typeof setTimeout> | null = null
+
+  private clearConflictAfterDelay() {
+    if (this.conflictTimer) {
+      clearTimeout(this.conflictTimer)
+    }
+    this.conflictTimer = setTimeout(() => {
+      this.setState({ conflictLabel: null })
+      this.conflictTimer = null
+    }, 5000)
   }
 
   private onResetBinding(actionId: string) {
@@ -255,6 +280,9 @@ export class Keybindings extends React.Component<
   }
 
   private onResetAll = () => {
+    if (!window.confirm('Reset all keybindings to defaults? This cannot be undone.')) {
+      return
+    }
     this.props.hotkeyStore.resetAll()
   }
 
