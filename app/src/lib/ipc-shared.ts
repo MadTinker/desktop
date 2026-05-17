@@ -111,6 +111,9 @@ export type RequestChannels = {
     data: Record<string, unknown>,
     meta: Record<string, unknown>
   ) => void
+  'update-hotkey-bindings': (
+    bindings: Record<string, string | null>
+  ) => void
 }
 
 /**

@@ -444,6 +444,28 @@ app.on('ready', () => {
     }
   })
 
+  // Hotkey bindings: rebuild menu with user-customized accelerators
+  ipcMain.on('update-hotkey-bindings', (_, bindings) => {
+    const currentMenu = Menu.getApplicationMenu()
+    if (currentMenu === null) {
+      return
+    }
+
+    const newMenu = buildDefaultMenu({
+      selectedExternalEditor: null,
+      selectedShell: null,
+      askForConfirmationOnForcePush: false,
+      askForConfirmationOnRepositoryRemoval: false,
+      hotkeyBindings: bindings,
+    })
+
+    Menu.setApplicationMenu(newMenu)
+
+    if (mainWindow !== null) {
+      mainWindow.sendAppMenu()
+    }
+  })
+
   /**
    * An event sent by the renderer asking that the menu item with the given id
    * is executed (ie clicked).

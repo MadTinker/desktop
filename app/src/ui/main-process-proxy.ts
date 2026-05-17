@@ -80,6 +80,9 @@ export const executeMenuItem = (item: ExecutableMenuItem) =>
 /** Tell the main process to execute (i.e. simulate a click of) the menu item. */
 export const executeMenuItemById = sendProxy('execute-menu-item-by-id', 1)
 
+/** Tell the main process to rebuild the menu with updated hotkey bindings. */
+export const sendHotkeyBindings = sendProxy('update-hotkey-bindings', 1)
+
 /**
  * Tell the main process to obtain whether the window is focused.
  */
