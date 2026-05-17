@@ -17,7 +17,7 @@ import { PreferencesTab } from '../../models/preferences'
 import { Ref } from '../lib/ref'
 import { suggestedExternalEditor } from '../../lib/editors/shared'
 import { TutorialStepInstructions } from './tutorial-step-instruction'
-import { KeyboardShortcut } from '../keyboard-shortcut/keyboard-shortcut'
+import { DynamicKeyboardShortcut } from '../keyboard-shortcut/dynamic-keyboard-shortcut'
 
 const TutorialPanelImage = encodePathAsUrl(
   __dirname,
@@ -173,10 +173,7 @@ export class TutorialPanel extends React.Component<
               clicking "${__DARWIN__ ? 'New Branch' : 'New branch'}".`}
             </p>
             <div className="action">
-              <KeyboardShortcut
-                darwinKeys={['⌘', '⇧', 'N']}
-                keys={['Ctrl', 'Shift', 'N']}
-              />
+              <DynamicKeyboardShortcut actionId="create-branch" />
             </div>
           </TutorialStepInstructions>
           <TutorialStepInstructions
@@ -199,10 +196,7 @@ export class TutorialPanel extends React.Component<
                 <Button onClick={this.openTutorialFileInEditor}>
                   {__DARWIN__ ? 'Open Editor' : 'Open editor'}
                 </Button>
-                <KeyboardShortcut
-                  darwinKeys={['⌘', '⇧', 'A']}
-                  keys={['Ctrl', 'Shift', 'A']}
-                />
+                <DynamicKeyboardShortcut actionId="open-external-editor" />
               </div>
             )}
           </TutorialStepInstructions>
@@ -235,7 +229,7 @@ export class TutorialPanel extends React.Component<
               top bar.
             </p>
             <div className="action">
-              <KeyboardShortcut darwinKeys={['⌘', 'P']} keys={['Ctrl', 'P']} />
+              <DynamicKeyboardShortcut actionId="push" />
             </div>
           </TutorialStepInstructions>
           <TutorialStepInstructions
@@ -258,7 +252,7 @@ export class TutorialPanel extends React.Component<
                 {__DARWIN__ ? 'Open Pull Request' : 'Open pull request'}
                 <Octicon symbol={octicons.linkExternal} />
               </Button>
-              <KeyboardShortcut darwinKeys={['⌘', 'R']} keys={['Ctrl', 'R']} />
+              <DynamicKeyboardShortcut actionId="open-pull-request" />
             </div>
           </TutorialStepInstructions>
         </ol>

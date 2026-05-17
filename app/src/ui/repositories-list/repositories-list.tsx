@@ -24,7 +24,7 @@ import { PopupType } from '../../models/popup'
 import { encodePathAsUrl } from '../../lib/path'
 import { TooltippedContent } from '../lib/tooltipped-content'
 import memoizeOne from 'memoize-one'
-import { KeyboardShortcut } from '../keyboard-shortcut/keyboard-shortcut'
+import { DynamicKeyboardShortcut } from '../keyboard-shortcut/dynamic-keyboard-shortcut'
 import { generateRepositoryListContextMenu } from '../repositories-list/repository-list-item-context-menu'
 import { SectionFilterList } from '../lib/section-filter-list'
 import { assertNever } from '../../lib/fatal-error'
@@ -490,14 +490,11 @@ export class RepositoriesList extends React.Component<
         <div className="protip">
           ProTip! Press{' '}
           <div className="kbd-shortcut">
-            <KeyboardShortcut darwinKeys={['⌘', 'O']} keys={['Ctrl', 'O']} />
+            <DynamicKeyboardShortcut actionId="add-local-repository" />
           </div>{' '}
           to quickly add a local repository, and{' '}
           <div className="kbd-shortcut">
-            <KeyboardShortcut
-              darwinKeys={['⇧', '⌘', 'O']}
-              keys={['Ctrl', 'Shift', 'O']}
-            />
+            <DynamicKeyboardShortcut actionId="clone-repository" />
           </div>{' '}
           to clone from anywhere within the app
         </div>

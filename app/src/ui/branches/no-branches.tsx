@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { encodePathAsUrl } from '../../lib/path'
 import { Button } from '../lib/button'
-import { KeyboardShortcut } from '../keyboard-shortcut/keyboard-shortcut'
+import { DynamicKeyboardShortcut } from '../keyboard-shortcut/dynamic-keyboard-shortcut'
 
 const BlankSlateImage = encodePathAsUrl(
   __dirname,
@@ -40,10 +40,7 @@ export class NoBranches extends React.Component<INoBranchesProps> {
 
           <div className="protip">
             ProTip! Press{' '}
-            <KeyboardShortcut
-              darwinKeys={['⌘', '⇧', 'N']}
-              keys={['Ctrl', 'Shift', 'N']}
-            />{' '}
+            <DynamicKeyboardShortcut actionId="create-branch" />{' '}
             to quickly create a new branch from anywhere within the app
           </div>
         </div>
