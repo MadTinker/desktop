@@ -89,6 +89,20 @@ export class Keybindings extends React.Component<
               onChange={this.onFilterChanged}
             />
             <button
+              className="button-component"
+              onClick={this.onExport}
+              title="Export keybindings to JSON"
+            >
+              Export
+            </button>
+            <button
+              className="button-component"
+              onClick={this.onImport}
+              title="Import keybindings from JSON"
+            >
+              Import
+            </button>
+            <button
               className="button-component reset-all-button"
               onClick={this.onResetAll}
             >
@@ -246,5 +260,47 @@ export class Keybindings extends React.Component<
 
   private onFilterChanged = (event: React.ChangeEvent<HTMLInputElement>) => {
     this.setState({ filter: event.target.value })
+  }
+
+  private onExport = () => {
+    const data = JSON.stringify(
+      this.props.hotkeyStore.getMenuAccelerators(),
+      null,
+      2
+    )
+    const blob = new Blob([data], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'madness-keybindings.json'
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  private onImport = () => {
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.accept = '.json'
+    input.onchange = () => {
+      const file = input.files?.[0]
+      if (!file) return
+      const reader = new FileReader()
+      reader.onload = () => {
+        try {
+          const data = JSON.parse(reader.result as string)
+          if (typeof data === 'object' && data !== null) {
+            for (const [id, binding] of Object.entries(data)) {
+              if (binding === null || typeof binding === 'string') {
+                this.props.hotkeyStore.setBinding(id, binding as string | null)
+              }
+            }
+          }
+        } catch (e) {
+          // Invalid JSON — silently ignore
+        }
+      }
+      reader.readAsText(file)
+    }
+    input.click()
   }
 }

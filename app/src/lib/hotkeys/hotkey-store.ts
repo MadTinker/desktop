@@ -10,6 +10,24 @@ import { normalizeAccelerator, areAcceleratorsEqual } from './accelerator-utils'
 
 const StorageKey = 'hotkey-overrides'
 
+let globalHotkeyStore: HotkeyStore | null = null
+
+/** Set the app-wide HotkeyStore singleton (called once from App). */
+export function setGlobalHotkeyStore(store: HotkeyStore): void {
+  globalHotkeyStore = store
+}
+
+/** Get the app-wide HotkeyStore singleton. */
+export function getGlobalHotkeyStore(): HotkeyStore {
+  if (!globalHotkeyStore) {
+    throw new Error(
+      'getGlobalHotkeyStore called before setGlobalHotkeyStore — ' +
+        'ensure App initializes the store first'
+    )
+  }
+  return globalHotkeyStore
+}
+
 /**
  * Manages hotkey bindings: merges defaults with user overrides,
  * persists to localStorage, and detects conflicts.

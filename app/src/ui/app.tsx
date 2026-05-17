@@ -27,7 +27,12 @@ import {
   isWindowsAndNoLongerSupportedByElectron,
 } from '../lib/get-os'
 import { MenuEvent, isTestMenuEvent } from '../main-process/menu'
-import { HotkeyStore, HotkeyListener, ActionContext } from '../lib/hotkeys'
+import {
+  HotkeyStore,
+  HotkeyListener,
+  ActionContext,
+  setGlobalHotkeyStore,
+} from '../lib/hotkeys'
 import { dispatchHotkeyAction } from '../lib/hotkeys/action-dispatcher-map'
 import {
   Repository,
@@ -265,7 +270,11 @@ export class App extends React.Component<IAppProps, IAppState> {
 
   private updateIntervalHandle?: number
 
-  private hotkeyStore = new HotkeyStore()
+  private hotkeyStore = (() => {
+    const store = new HotkeyStore()
+    setGlobalHotkeyStore(store)
+    return store
+  })()
   private hotkeyListener: HotkeyListener | null = null
   private hotkeyStoreDispose: (() => void) | null = null
 

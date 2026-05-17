@@ -1,22 +1,34 @@
 import * as React from 'react'
-import { HotkeyStore, acceleratorToDisplayString } from '../../lib/hotkeys'
+import { getGlobalHotkeyStore, acceleratorToDisplayString } from '../../lib/hotkeys'
 import { ActionID } from '../../lib/hotkeys/hotkey-types'
 
 interface IDynamicKeyboardShortcutProps {
   /** The action ID to look up the current binding for */
   readonly actionId: ActionID
-  /** The hotkey store instance to read from */
-  readonly hotkeyStore: HotkeyStore
 }
 
 /**
- * Renders the current keybinding for an action from the HotkeyStore.
+ * Renders the current keybinding for an action from the global HotkeyStore.
  * Automatically reflects user customizations.
  * Falls back to rendering nothing if the action is unbound.
  */
 export class DynamicKeyboardShortcut extends React.Component<IDynamicKeyboardShortcutProps> {
+  private disposeListener: (() => void) | null = null
+
+  public componentDidMount() {
+    this.disposeListener = getGlobalHotkeyStore().onDidChange(() => {
+      this.forceUpdate()
+    })
+  }
+
+  public componentWillUnmount() {
+    if (this.disposeListener) {
+      this.disposeListener()
+    }
+  }
+
   public render() {
-    const binding = this.props.hotkeyStore.getEffectiveBinding(
+    const binding = getGlobalHotkeyStore().getEffectiveBinding(
       this.props.actionId
     )
 
