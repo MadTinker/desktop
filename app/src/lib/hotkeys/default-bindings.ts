@@ -359,67 +359,80 @@ export const DefaultActionDefinitions: ReadonlyArray<ActionDefinition> = [
 
   // ─── Non-Menu Dispatcher Actions (unbound by default) ────────────────────────
 
-  // Commit
-  {
-    id: 'commit',
-    label: 'Commit Changes',
-    category: 'commit',
-    context: 'changes-tab',
-    defaultBinding: null,
-    isMenuAction: false,
-  },
-  {
-    id: 'undo-commit',
-    label: 'Undo Last Commit',
-    category: 'commit',
-    context: 'changes-tab',
-    defaultBinding: null,
-    isMenuAction: false,
-  },
-  {
-    id: 'amend-last-commit',
-    label: 'Amend Last Commit',
-    category: 'commit',
-    context: 'changes-tab',
-    defaultBinding: null,
-    isMenuAction: false,
-  },
+  // ─── Commit & Changes ────────────────────────────────────────────────────────
 
-  // Navigation
-  {
-    id: 'toggle-sidebar',
-    label: 'Toggle Sidebar',
-    category: 'navigation',
-    context: 'global',
-    defaultBinding: null,
-    isMenuAction: false,
-  },
-  {
-    id: 'focus-commit-message',
-    label: 'Focus Commit Message',
-    category: 'navigation',
-    context: 'changes-tab',
-    defaultBinding: null,
-    isMenuAction: false,
-  },
+  { id: 'commit-included-changes', label: 'Commit Changes', category: 'commit', context: 'changes-tab', defaultBinding: null, isMenuAction: false },
+  { id: 'undo-commit', label: 'Undo Last Commit', category: 'commit', context: 'changes-tab', defaultBinding: null, isMenuAction: false },
+  { id: 'start-amending-repository', label: 'Amend Last Commit', category: 'commit', context: 'changes-tab', defaultBinding: null, isMenuAction: false },
+  { id: 'stop-amending-repository', label: 'Stop Amending', category: 'commit', context: 'changes-tab', defaultBinding: null, isMenuAction: false },
+  { id: 'discard-changes', label: 'Discard Selected Changes', category: 'commit', context: 'changes-tab', defaultBinding: null, isMenuAction: false },
+  { id: 'change-include-all-files', label: 'Toggle All Files', category: 'commit', context: 'changes-tab', defaultBinding: null, isMenuAction: false },
+  { id: 'generate-commit-message', label: 'Generate Commit Message (Copilot)', category: 'commit', context: 'changes-tab', defaultBinding: null, isMenuAction: false },
+  { id: 'generate-local-ai-commit-message', label: 'Generate Commit Message (Local AI)', category: 'commit', context: 'changes-tab', defaultBinding: null, isMenuAction: false },
+  { id: 'create-stash-for-current-branch', label: 'Stash Changes', category: 'commit', context: 'changes-tab', defaultBinding: null, isMenuAction: false },
+  { id: 'pop-stash', label: 'Pop Stash', category: 'repository', context: 'repository', defaultBinding: null, isMenuAction: false },
+  { id: 'drop-stash', label: 'Drop Stash', category: 'repository', context: 'repository', defaultBinding: null, isMenuAction: false },
 
-  // Misc
-  {
-    id: 'show-about',
-    label: 'About',
-    category: 'misc',
-    context: 'global',
-    defaultBinding: null,
-    isMenuAction: true,
-  },
-  {
-    id: 'install-darwin-cli',
-    label: 'Install CLI Tool',
-    category: 'misc',
-    context: 'global',
-    defaultBinding: null,
-    isMenuAction: true,
-  },
+  // ─── Branch Operations ───────────────────────────────────────────────────────
+
+  { id: 'checkout-branch', label: 'Checkout Branch', category: 'branch', context: 'repository', defaultBinding: null, isMenuAction: false },
+  { id: 'delete-local-branch', label: 'Delete Local Branch', category: 'branch', context: 'repository', defaultBinding: null, isMenuAction: false },
+  { id: 'delete-remote-branch', label: 'Delete Remote Branch', category: 'branch', context: 'repository', defaultBinding: null, isMenuAction: false },
+  { id: 'start-rebase', label: 'Start Rebase', category: 'branch', context: 'repository', defaultBinding: null, isMenuAction: false },
+  { id: 'abort-rebase', label: 'Abort Rebase', category: 'branch', context: 'repository', defaultBinding: null, isMenuAction: false },
+  { id: 'continue-rebase', label: 'Continue Rebase', category: 'branch', context: 'repository', defaultBinding: null, isMenuAction: false },
+  { id: 'cherry-pick', label: 'Cherry Pick', category: 'branch', context: 'repository', defaultBinding: null, isMenuAction: false },
+  { id: 'abort-cherry-pick', label: 'Abort Cherry Pick', category: 'branch', context: 'repository', defaultBinding: null, isMenuAction: false },
+  { id: 'continue-cherry-pick', label: 'Continue Cherry Pick', category: 'branch', context: 'repository', defaultBinding: null, isMenuAction: false },
+  { id: 'squash', label: 'Squash Commits', category: 'branch', context: 'history-tab', defaultBinding: null, isMenuAction: false },
+  { id: 'reorder-commits', label: 'Reorder Commits', category: 'branch', context: 'history-tab', defaultBinding: null, isMenuAction: false },
+  { id: 'show-rebase-dialog', label: 'Show Rebase Dialog', category: 'branch', context: 'repository', defaultBinding: null, isMenuAction: false },
+  { id: 'reset-to-commit', label: 'Reset to Commit', category: 'branch', context: 'history-tab', defaultBinding: null, isMenuAction: false },
+  { id: 'revert-commit', label: 'Revert Commit', category: 'branch', context: 'history-tab', defaultBinding: null, isMenuAction: false },
+
+  // ─── Repository Operations ───────────────────────────────────────────────────
+
+  { id: 'publish-repository', label: 'Publish Repository', category: 'repository', context: 'repository', defaultBinding: null, isMenuAction: false },
+  { id: 'refresh-repository', label: 'Refresh Repository', category: 'repository', context: 'repository', defaultBinding: null, isMenuAction: false },
+  { id: 'create-tag', label: 'Create Tag', category: 'repository', context: 'repository', defaultBinding: null, isMenuAction: false },
+  { id: 'delete-tag', label: 'Delete Tag', category: 'repository', context: 'repository', defaultBinding: null, isMenuAction: false },
+  { id: 'toggle-favorite-repository', label: 'Toggle Favorite', category: 'repository', context: 'repository', defaultBinding: null, isMenuAction: false },
+  { id: 'relocate-repository', label: 'Relocate Repository', category: 'repository', context: 'repository', defaultBinding: null, isMenuAction: false },
+  { id: 'show-create-tag-dialog', label: 'Show Create Tag Dialog', category: 'repository', context: 'repository', defaultBinding: null, isMenuAction: false },
+  { id: 'show-delete-tag-dialog', label: 'Show Delete Tag Dialog', category: 'repository', context: 'repository', defaultBinding: null, isMenuAction: false },
+  { id: 'open-shell-here', label: 'Open Shell Here', category: 'repository', context: 'repository', defaultBinding: null, isMenuAction: false },
+  { id: 'open-in-external-editor', label: 'Open in Editor', category: 'repository', context: 'repository', defaultBinding: null, isMenuAction: false },
+
+  // ─── Pull Requests ───────────────────────────────────────────────────────────
+
+  { id: 'create-pull-request', label: 'Create Pull Request', category: 'repository', context: 'repository', defaultBinding: null, isMenuAction: false },
+  { id: 'show-pull-request', label: 'View Pull Request', category: 'repository', context: 'repository', defaultBinding: null, isMenuAction: false },
+  { id: 'checkout-pull-request', label: 'Checkout Pull Request', category: 'repository', context: 'repository', defaultBinding: null, isMenuAction: false },
+  { id: 'start-pull-request', label: 'Start Pull Request', category: 'repository', context: 'repository', defaultBinding: null, isMenuAction: false },
+  { id: 'refresh-pull-requests', label: 'Refresh Pull Requests', category: 'repository', context: 'repository', defaultBinding: null, isMenuAction: false },
+
+  // ─── Submodules ──────────────────────────────────────────────────────────────
+
+  { id: 'init-all-submodules', label: 'Init All Submodules', category: 'repository', context: 'repository', defaultBinding: null, isMenuAction: false },
+  { id: 'sync-submodule', label: 'Sync Submodule', category: 'repository', context: 'repository', defaultBinding: null, isMenuAction: false },
+  { id: 'pull-all-submodules', label: 'Pull All Submodules', category: 'repository', context: 'repository', defaultBinding: null, isMenuAction: false },
+  { id: 'push-all-submodules', label: 'Push All Submodules', category: 'repository', context: 'repository', defaultBinding: null, isMenuAction: false },
+  { id: 'show-submodule-management', label: 'Show Submodule Manager', category: 'repository', context: 'repository', defaultBinding: null, isMenuAction: false },
+
+  // ─── Navigation & View ───────────────────────────────────────────────────────
+
+  { id: 'close-popup', label: 'Close Dialog', category: 'navigation', context: 'global', defaultBinding: null, isMenuAction: false },
+  { id: 'close-foldout', label: 'Close Panel', category: 'navigation', context: 'global', defaultBinding: null, isMenuAction: false },
+  { id: 'load-next-commit-batch', label: 'Load More Commits', category: 'navigation', context: 'history-tab', defaultBinding: null, isMenuAction: false },
+  { id: 'focus-commit-message', label: 'Focus Commit Message', category: 'navigation', context: 'changes-tab', defaultBinding: null, isMenuAction: false },
+  { id: 'toggle-sidebar', label: 'Toggle Sidebar', category: 'navigation', context: 'global', defaultBinding: null, isMenuAction: false },
+
+  // ─── Misc ────────────────────────────────────────────────────────────────────
+
+  { id: 'show-about', label: 'About', category: 'misc', context: 'global', defaultBinding: null, isMenuAction: true },
+  { id: 'show-keybindings', label: 'Keyboard Shortcuts', category: 'misc', context: 'global', defaultBinding: null, isMenuAction: true },
+  { id: 'install-darwin-cli', label: 'Install CLI Tool', category: 'misc', context: 'global', defaultBinding: null, isMenuAction: true },
+  { id: 'edit-global-git-config', label: 'Edit Git Config', category: 'misc', context: 'global', defaultBinding: null, isMenuAction: false },
 ]
 
 /**
