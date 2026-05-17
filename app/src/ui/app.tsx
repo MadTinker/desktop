@@ -550,6 +550,11 @@ export class App extends React.Component<IAppProps, IAppState> {
         return this.resizeActiveResizable('decrease-active-resizable-width')
       case 'toggle-changes-filter':
         return this.toggleChangesFilterVisibility()
+      case 'show-keybindings':
+        return this.props.dispatcher.showPopup({
+          type: PopupType.Preferences,
+          initialSelectedTab: PreferencesTab.Keybindings,
+        })
       default:
         if (isTestMenuEvent(name)) {
           return showTestUI(

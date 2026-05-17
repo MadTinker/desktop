@@ -551,14 +551,9 @@ export function buildDefaultMenu({
   }
 
   const showKeyboardShortcuts: Electron.MenuItemConstructorOptions = {
-    label: __DARWIN__ ? 'Show Keyboard Shortcuts' : 'Show keyboard shortcuts',
-    click() {
-      shell
-        .openExternal(
-          'https://docs.github.com/en/desktop/installing-and-configuring-github-desktop/overview/keyboard-shortcuts'
-        )
-        .catch(err => log.error('Failed opening keyboard shortcuts page', err))
-    },
+    label: __DARWIN__ ? 'Keyboard Shortcuts…' : 'Keyboard &shortcuts…',
+    id: 'show-keybindings',
+    click: emit('show-keybindings'),
   }
 
   const showLogsLabel = __DARWIN__
