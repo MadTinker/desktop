@@ -1,10 +1,20 @@
 import * as React from 'react'
 import { DialogContent } from '../dialog'
+import { TextBox } from '../lib/text-box'
 import { Checkbox, CheckboxValue } from '../lib/checkbox'
 import { LinkButton } from '../lib/link-button'
+import { Button } from '../lib/button'
 import { SamplesURL } from '../../lib/stats'
 import { isWindowsOpenSSHAvailable } from '../../lib/ssh/ssh'
 import { enableAutoSwitchOnChanges } from '../../lib/feature-flag'
+import {
+  IChatHistoryArchiveConfig,
+  IChatHistoryArchiveLogEntry,
+} from '../../models/chat-history-archive'
+import {
+  loadArchiveLog,
+  clearArchiveLog,
+} from '../../lib/chat-history-archive'
 
 interface IAdvancedPreferencesProps {
   readonly useWindowsOpenSSH: boolean
@@ -19,12 +29,18 @@ interface IAdvancedPreferencesProps {
   readonly onRepositoryIndicatorsEnabledChanged: (enabled: boolean) => void
   readonly onAutoSwitchOnChangesEnabledChanged: (enabled: boolean) => void
   readonly onShowReflogTabChanged: (value: boolean) => void
+  // Chat History Archive (merged)
+  readonly chatHistoryArchiveConfig: IChatHistoryArchiveConfig
+  readonly onChatHistoryArchiveConfigChanged: (
+    config: IChatHistoryArchiveConfig
+  ) => void
 }
 
 interface IAdvancedPreferencesState {
   readonly optOutOfUsageTracking: boolean
   readonly canUseWindowsSSH: boolean
   readonly useExternalCredentialHelper: boolean
+  readonly archiveLog: ReadonlyArray<IChatHistoryArchiveLogEntry>
 }
 
 export class Advanced extends React.Component<
@@ -38,11 +54,13 @@ export class Advanced extends React.Component<
       optOutOfUsageTracking: this.props.optOutOfUsageTracking,
       canUseWindowsSSH: false,
       useExternalCredentialHelper: this.props.useExternalCredentialHelper,
+      archiveLog: [],
     }
   }
 
   public componentDidMount() {
     this.checkSSHAvailability()
+    this.setState({ archiveLog: loadArchiveLog() })
   }
 
   private async checkSSHAvailability() {
@@ -204,7 +222,137 @@ export class Advanced extends React.Component<
             </p>
           </div>
         </div>
+        {this.renderChatHistoryArchive()}
       </DialogContent>
+    )
+  }
+
+  // ─── Chat History Archive ──────────────────────────────────────────────────
+
+  private onArchiveEnabledChanged = (
+    e: React.FormEvent<HTMLInputElement>
+  ) => {
+    this.props.onChatHistoryArchiveConfigChanged({
+      ...this.props.chatHistoryArchiveConfig,
+      enabled: (e.currentTarget as HTMLInputElement).checked,
+    })
+  }
+
+  private onArchivePathChanged = (value: string) => {
+    this.props.onChatHistoryArchiveConfigChanged({
+      ...this.props.chatHistoryArchiveConfig,
+      archivePath: value,
+    })
+  }
+
+  private onWatchDirsChanged = (value: string) => {
+    const watchDirs = value
+      .split(',')
+      .map(s => s.trim())
+      .filter(s => s.length > 0)
+    this.props.onChatHistoryArchiveConfigChanged({
+      ...this.props.chatHistoryArchiveConfig,
+      watchDirs,
+    })
+  }
+
+  private onAutoCommitChanged = (e: React.FormEvent<HTMLInputElement>) => {
+    const autoCommit = (e.currentTarget as HTMLInputElement).checked
+    this.props.onChatHistoryArchiveConfigChanged({
+      ...this.props.chatHistoryArchiveConfig,
+      autoCommit,
+      autoPush: autoCommit
+        ? this.props.chatHistoryArchiveConfig.autoPush
+        : false,
+    })
+  }
+
+  private onAutoPushChanged = (e: React.FormEvent<HTMLInputElement>) => {
+    this.props.onChatHistoryArchiveConfigChanged({
+      ...this.props.chatHistoryArchiveConfig,
+      autoPush: (e.currentTarget as HTMLInputElement).checked,
+    })
+  }
+
+  private onClearArchiveLog = () => {
+    clearArchiveLog()
+    this.setState({ archiveLog: loadArchiveLog() })
+  }
+
+  private renderChatHistoryArchive() {
+    const { chatHistoryArchiveConfig: config } = this.props
+    const disabled = !config.enabled
+
+    return (
+      <div className="advanced-section">
+        <h2>Chat History Archive</h2>
+        <p className="git-settings-description">
+          Automatically detect and centralize AI conversation history from
+          tracked repositories.
+        </p>
+
+        <Checkbox
+          label="Enable background chat history archiving"
+          value={config.enabled ? CheckboxValue.On : CheckboxValue.Off}
+          onChange={this.onArchiveEnabledChanged}
+        />
+
+        <TextBox
+          label="Archive Path"
+          value={config.archivePath}
+          onValueChanged={this.onArchivePathChanged}
+          placeholder="/path/to/archive/repo"
+          disabled={disabled}
+        />
+
+        <TextBox
+          label="Watch Directories"
+          value={config.watchDirs.join(', ')}
+          onValueChanged={this.onWatchDirsChanged}
+          placeholder=".specstory/history, .claude"
+          disabled={disabled}
+        />
+
+        <Checkbox
+          label="Auto-commit after archiving"
+          value={config.autoCommit ? CheckboxValue.On : CheckboxValue.Off}
+          onChange={this.onAutoCommitChanged}
+          disabled={disabled}
+        />
+
+        <Checkbox
+          label="Auto-push after commit"
+          value={config.autoPush ? CheckboxValue.On : CheckboxValue.Off}
+          onChange={this.onAutoPushChanged}
+          disabled={disabled || !config.autoCommit}
+        />
+
+        {this.state.archiveLog.length > 0 && (
+          <div className="chat-history-archive-history">
+            <h3>Archive History</h3>
+            <div
+              className="chat-history-log-list"
+              style={{ maxHeight: '200px', overflow: 'auto' }}
+            >
+              {this.state.archiveLog.map((entry, index) => (
+                <div key={index} className="chat-history-log-entry">
+                  <div>{new Date(entry.timestamp).toLocaleString()}</div>
+                  <div>{entry.repos.join(', ')}</div>
+                  <div>
+                    {entry.archived} archived,{' '}
+                    <span
+                      style={entry.failed > 0 ? { color: 'red' } : undefined}
+                    >
+                      {entry.failed} failed
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <Button onClick={this.onClearArchiveLog}>Clear Log</Button>
+          </div>
+        )}
+      </div>
     )
   }
 

@@ -41,12 +41,8 @@ import {
 } from '../../lib/helpers/default-branch'
 import { Prompts } from './prompts'
 import { Repository } from '../../models/repository'
-import { Notifications } from './notifications'
-import { Accessibility } from './accessibility'
-import { OmnispindlePreferences } from './omnispindle'
 import { AutomationHooksPreferences } from './automation-hooks'
-import { LocalAIPreferences } from './local-ai'
-import { ChatHistoryArchivePreferences } from './chat-history-archive'
+import { AIServicesPreferences } from './ai-services'
 import { Keybindings } from './keybindings'
 import { HotkeyStore } from '../../lib/hotkeys'
 import { ILocalAIConfig, DefaultLocalAIConfig } from '../../models/local-ai'
@@ -408,29 +404,17 @@ export class Preferences extends React.Component<
               <Octicon className="icon" symbol={octicons.paintbrush} />
               Appearance
             </span>
-            <span id={this.getTabId(PreferencesTab.Notifications)}>
-              <Octicon className="icon" symbol={octicons.bell} />
-              Notifications
-            </span>
             <span id={this.getTabId(PreferencesTab.Prompts)}>
               <Octicon className="icon" symbol={octicons.question} />
               Prompts
             </span>
-            <span id={this.getTabId(PreferencesTab.Omnispindle)}>
+            <span id={this.getTabId(PreferencesTab.AIServices)}>
               <Octicon className="icon" symbol={octicons.zap} />
-              Omnispindle
+              AI Services
             </span>
             <span id={this.getTabId(PreferencesTab.AutomationHooks)}>
               <Octicon className="icon" symbol={octicons.terminal} />
               Automation
-            </span>
-            <span id={this.getTabId(PreferencesTab.LocalAI)}>
-              <Octicon className="icon" symbol={octicons.hubot} />
-              Local AI
-            </span>
-            <span id={this.getTabId(PreferencesTab.ChatHistoryArchive)}>
-              <Octicon className="icon" symbol={octicons.archive} />
-              Chat Archive
             </span>
             <span id={this.getTabId(PreferencesTab.Keybindings)}>
               <Octicon className="icon" symbol={octicons.key} />
@@ -439,10 +423,6 @@ export class Preferences extends React.Component<
             <span id={this.getTabId(PreferencesTab.Advanced)}>
               <Octicon className="icon" symbol={octicons.gear} />
               Advanced
-            </span>
-            <span id={this.getTabId(PreferencesTab.Accessibility)}>
-              <Octicon className="icon" symbol={octicons.accessibility} />
-              Accessibility
             </span>
           </TabBar>
 
@@ -471,32 +451,20 @@ export class Preferences extends React.Component<
       case PreferencesTab.Appearance:
         suffix = 'appearance'
         break
-      case PreferencesTab.Notifications:
-        suffix = 'notifications'
-        break
       case PreferencesTab.Prompts:
         suffix = 'prompts'
         break
-      case PreferencesTab.Omnispindle:
-        suffix = 'omnispindle'
+      case PreferencesTab.AIServices:
+        suffix = 'ai-services'
         break
       case PreferencesTab.AutomationHooks:
         suffix = 'automation-hooks'
-        break
-      case PreferencesTab.LocalAI:
-        suffix = 'local-ai'
-        break
-      case PreferencesTab.ChatHistoryArchive:
-        suffix = 'chat-history-archive'
         break
       case PreferencesTab.Keybindings:
         suffix = 'keybindings'
         break
       case PreferencesTab.Advanced:
         suffix = 'advanced'
-        break
-      case PreferencesTab.Accessibility:
-        suffix = 'accessibility'
         break
       default:
         return assertNever(tab, `Unknown tab type: ${tab}`)
@@ -667,14 +635,12 @@ export class Preferences extends React.Component<
               this.state.preferAbsoluteDates ?? getPreferAbsoluteDates()
             }
             onPreferAbsoluteDatesChanged={this.onPreferAbsoluteDatesChanged}
-          />
-        )
-        break
-      case PreferencesTab.Notifications:
-        View = (
-          <Notifications
             notificationsEnabled={this.state.notificationsEnabled}
             onNotificationsEnabledChanged={this.onNotificationsEnabledChanged}
+            underlineLinks={this.state.underlineLinks}
+            onUnderlineLinksChanged={this.onUnderlineLinksChanged}
+            showDiffCheckMarks={this.state.showDiffCheckMarks}
+            onShowDiffCheckMarksChanged={this.onShowDiffCheckMarksChanged}
           />
         )
         break
@@ -725,11 +691,14 @@ export class Preferences extends React.Component<
         )
         break
       }
-      case PreferencesTab.Omnispindle:
+      case PreferencesTab.AIServices:
         View = (
-          <OmnispindlePreferences
+          <AIServicesPreferences
             apiKey={this.state.omnispindleApiKey}
             onApiKeyChanged={this.onOmnispindleApiKeyChanged}
+            localAIConfig={this.state.localAIConfig}
+            onLocalAIConfigChanged={this.onLocalAIConfigChanged}
+            showSecuritySettings={enableLocalAISecuritySettings()}
           />
         )
         break
@@ -737,23 +706,6 @@ export class Preferences extends React.Component<
         View = (
           <AutomationHooksPreferences
             omnispindleApiKey={this.state.omnispindleApiKey}
-          />
-        )
-        break
-      case PreferencesTab.LocalAI:
-        View = (
-          <LocalAIPreferences
-            config={this.state.localAIConfig}
-            onConfigChanged={this.onLocalAIConfigChanged}
-            showSecuritySettings={enableLocalAISecuritySettings()}
-          />
-        )
-        break
-      case PreferencesTab.ChatHistoryArchive:
-        View = (
-          <ChatHistoryArchivePreferences
-            config={this.state.chatHistoryArchiveConfig}
-            onConfigChanged={this.onChatHistoryArchiveConfigChanged}
           />
         )
         break
@@ -783,20 +735,14 @@ export class Preferences extends React.Component<
               this.onAutoSwitchOnChangesEnabledChanged
             }
             onShowReflogTabChanged={this.onShowReflogTabChanged}
+            chatHistoryArchiveConfig={this.state.chatHistoryArchiveConfig}
+            onChatHistoryArchiveConfigChanged={
+              this.onChatHistoryArchiveConfigChanged
+            }
           />
         )
         break
       }
-      case PreferencesTab.Accessibility:
-        View = (
-          <Accessibility
-            underlineLinks={this.state.underlineLinks}
-            showDiffCheckMarks={this.state.showDiffCheckMarks}
-            onShowDiffCheckMarksChanged={this.onShowDiffCheckMarksChanged}
-            onUnderlineLinksChanged={this.onUnderlineLinksChanged}
-          />
-        )
-        break
       default:
         return assertNever(index, `Unknown tab index: ${index}`)
     }

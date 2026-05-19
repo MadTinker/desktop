@@ -18,6 +18,16 @@ import { DialogContent } from '../dialog'
 import { RadioGroup } from '../lib/radio-group'
 import { Select } from '../lib/select'
 import { Checkbox, CheckboxValue } from '../lib/checkbox'
+import { LinkButton } from '../lib/link-button'
+import {
+  getNotificationSettingsUrl,
+  supportsNotifications,
+  supportsNotificationsPermissionRequest,
+} from 'desktop-notifications'
+import {
+  getNotificationsPermission,
+  requestNotificationsPermission,
+} from '../main-process-proxy'
 import { encodePathAsUrl } from '../../lib/path'
 import { tabSizeDefault } from '../../lib/stores/app-store'
 import { enableFormattingPreferences } from '../../lib/feature-flag'
@@ -49,11 +59,22 @@ interface IAppearanceProps {
   readonly onSelectedNumberFormatChanged: (format: INumberFormat) => void
   readonly preferAbsoluteDates: boolean
   readonly onPreferAbsoluteDatesChanged: (value: boolean) => void
+  // Notifications (merged)
+  readonly notificationsEnabled: boolean
+  readonly onNotificationsEnabledChanged: (checked: boolean) => void
+  // Accessibility (merged)
+  readonly underlineLinks: boolean
+  readonly onUnderlineLinksChanged: (value: boolean) => void
+  readonly showDiffCheckMarks: boolean
+  readonly onShowDiffCheckMarksChanged: (value: boolean) => void
 }
 
 interface IAppearanceState {
   readonly selectedTheme: ApplicationTheme | null
   readonly selectedTabSize: number
+  readonly suggestGrantNotificationPermission: boolean
+  readonly warnNotificationsDenied: boolean
+  readonly suggestConfigureNotifications: boolean
 }
 
 export class Appearance extends React.Component<
@@ -70,11 +91,18 @@ export class Appearance extends React.Component<
     this.state = {
       selectedTheme: usePropTheme ? props.selectedTheme : null,
       selectedTabSize: props.selectedTabSize,
+      suggestGrantNotificationPermission: false,
+      warnNotificationsDenied: false,
+      suggestConfigureNotifications: false,
     }
 
     if (!usePropTheme) {
       this.initializeSelectedTheme()
     }
+  }
+
+  public componentDidMount() {
+    this.updateNotificationsState()
   }
 
   public async componentDidUpdate(prevProps: IAppearanceProps) {
@@ -363,6 +391,177 @@ export class Appearance extends React.Component<
     )
   }
 
+  // ─── Notifications ──────────────────────────────────────────────────────────
+
+  private onNotificationsEnabledChanged = (
+    event: React.FormEvent<HTMLInputElement>
+  ) => {
+    this.props.onNotificationsEnabledChanged(event.currentTarget.checked)
+  }
+
+  private onGrantNotificationPermission = async () => {
+    await requestNotificationsPermission()
+    this.updateNotificationsState()
+  }
+
+  private async updateNotificationsState() {
+    const notificationsPermission = await getNotificationsPermission()
+    this.setState({
+      suggestGrantNotificationPermission:
+        supportsNotificationsPermissionRequest() &&
+        notificationsPermission === 'default',
+      warnNotificationsDenied: notificationsPermission === 'denied',
+      suggestConfigureNotifications: notificationsPermission === 'granted',
+    })
+  }
+
+  private renderNotificationHint() {
+    if (!supportsNotifications() || !this.props.notificationsEnabled) {
+      return null
+    }
+
+    const {
+      suggestGrantNotificationPermission,
+      warnNotificationsDenied,
+      suggestConfigureNotifications,
+    } = this.state
+
+    if (suggestGrantNotificationPermission) {
+      return (
+        <>
+          {' '}
+          You need to{' '}
+          <LinkButton onClick={this.onGrantNotificationPermission}>
+            grant permission
+          </LinkButton>{' '}
+          to display these notifications from Madness Desktop.
+        </>
+      )
+    }
+
+    const notificationSettingsURL = getNotificationSettingsUrl()
+    if (notificationSettingsURL === null) {
+      return null
+    }
+
+    if (warnNotificationsDenied) {
+      return (
+        <div className="setting-hint-warning">
+          <span className="warning-icon">⚠️</span> Madness Desktop has no
+          permission to display notifications. Please, enable them in the{' '}
+          <LinkButton uri={notificationSettingsURL}>
+            Notifications Settings
+          </LinkButton>
+          .
+        </div>
+      )
+    }
+
+    const verb = suggestConfigureNotifications
+      ? 'properly configured'
+      : 'enabled'
+
+    return (
+      <>
+        {' '}
+        Make sure notifications are {verb} for Madness Desktop in the{' '}
+        <LinkButton uri={notificationSettingsURL}>
+          Notifications Settings
+        </LinkButton>
+        .
+      </>
+    )
+  }
+
+  private renderNotifications() {
+    return (
+      <div className="appearance-section">
+        <h2>Notifications</h2>
+        <Checkbox
+          label="Enable notifications"
+          value={
+            this.props.notificationsEnabled
+              ? CheckboxValue.On
+              : CheckboxValue.Off
+          }
+          onChange={this.onNotificationsEnabledChanged}
+        />
+        <p className="git-settings-description">
+          Allows the display of notifications when high-signal events take
+          place in the current repository.{this.renderNotificationHint()}
+        </p>
+      </div>
+    )
+  }
+
+  // ─── Accessibility ─────────────────────────────────────────────────────────
+
+  private onUnderlineLinksChanged = (
+    event: React.FormEvent<HTMLInputElement>
+  ) => {
+    this.props.onUnderlineLinksChanged(event.currentTarget.checked)
+  }
+
+  private onShowDiffCheckMarksChanged = (
+    event: React.FormEvent<HTMLInputElement>
+  ) => {
+    this.props.onShowDiffCheckMarksChanged(event.currentTarget.checked)
+  }
+
+  private renderExampleLink() {
+    const style = {
+      textDecoration: this.props.underlineLinks ? 'underline' : 'none',
+    }
+    return (
+      <span className="link-button-component" style={style}>
+        This is an example link
+      </span>
+    )
+  }
+
+  private renderAccessibility() {
+    return (
+      <div className="appearance-section">
+        <h2>Accessibility</h2>
+        <Checkbox
+          label="Underline links"
+          value={
+            this.props.underlineLinks ? CheckboxValue.On : CheckboxValue.Off
+          }
+          onChange={this.onUnderlineLinksChanged}
+          ariaDescribedBy="underline-setting-description"
+        />
+        <p
+          id="underline-setting-description"
+          className="git-settings-description"
+        >
+          When enabled, Madness Desktop will underline links in commit
+          messages, comments, and other text fields. {this.renderExampleLink()}
+        </p>
+
+        <Checkbox
+          label="Show check marks in the diff"
+          value={
+            this.props.showDiffCheckMarks
+              ? CheckboxValue.On
+              : CheckboxValue.Off
+          }
+          onChange={this.onShowDiffCheckMarksChanged}
+          ariaDescribedBy="diff-checkmarks-setting-description"
+        />
+        <p
+          id="diff-checkmarks-setting-description"
+          className="git-settings-description"
+        >
+          When enabled, check marks will be displayed along side the line
+          numbers in the diff when committing.
+        </p>
+      </div>
+    )
+  }
+
+  // ─── Main render ───────────────────────────────────────────────────────────
+
   public render() {
     return (
       <DialogContent>
@@ -371,6 +570,8 @@ export class Appearance extends React.Component<
         {this.renderPersonalitySelector()}
         {this.renderFormatting()}
         {this.renderSelectedTabSize()}
+        {this.renderNotifications()}
+        {this.renderAccessibility()}
       </DialogContent>
     )
   }
