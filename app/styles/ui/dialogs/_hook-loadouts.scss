@@ -1,0 +1,256 @@
+.hook-loadouts {
+  .loadout-description {
+    margin: 0 0 var(--spacing) 0;
+    color: var(--text-secondary-color);
+    font-size: var(--font-size-sm);
+    line-height: 1.5;
+
+    code {
+      font-family: var(--font-family-monospace);
+      background: var(--box-alt-background-color);
+      padding: 1px 4px;
+      border-radius: 3px;
+      font-size: var(--font-size-xs);
+    }
+  }
+
+  .loadout-status-bar {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-half);
+    padding: var(--spacing-half) var(--spacing);
+    margin-bottom: var(--spacing);
+    background: var(--box-alt-background-color);
+    border-radius: var(--border-radius);
+    border-left: 3px solid var(--focus-color);
+    font-size: var(--font-size-sm);
+
+    .loadout-status-label {
+      color: var(--text-secondary-color);
+    }
+
+    .loadout-status-name {
+      font-weight: var(--font-weight-semibold);
+      color: var(--text-color);
+    }
+
+    .loadout-status-date {
+      margin-left: auto;
+      color: var(--text-secondary-color);
+      font-size: 10px;
+    }
+  }
+
+  .loadout-error {
+    margin: 0 0 var(--spacing) 0;
+    padding: var(--spacing-half) var(--spacing);
+    background: rgba(229, 57, 53, 0.1);
+    border: 1px solid rgba(229, 57, 53, 0.3);
+    border-radius: var(--border-radius);
+    color: #ef9a9a;
+    font-size: var(--font-size-sm);
+  }
+
+  // --- Loadout Cards ---
+
+  .loadout-card {
+    background: var(--box-alt-background-color);
+    border: 1px solid var(--box-border-color);
+    border-left: 3px solid transparent;
+    border-radius: var(--border-radius);
+    margin-bottom: var(--spacing);
+    overflow: hidden;
+    transition: border-color 0.15s ease;
+
+    &:hover {
+      border-color: var(--box-border-contrast-color);
+    }
+
+    &.installed {
+      border-left-color: var(--focus-color);
+      border-color: var(--focus-color);
+      background: var(--box-background-color);
+    }
+
+    &.disabled {
+      opacity: 0.5;
+      pointer-events: none;
+    }
+  }
+
+  .loadout-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--spacing-half) var(--spacing);
+    border-bottom: 1px solid var(--box-border-color);
+
+    .loadout-card-title {
+      font-weight: var(--font-weight-semibold);
+      color: var(--text-color);
+      font-size: var(--font-size);
+    }
+  }
+
+  .loadout-badge {
+    font-size: 10px;
+    font-weight: var(--font-weight-semibold);
+    padding: 1px 6px;
+    border-radius: 3px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+
+    &.badge-installed {
+      background: rgba(46, 125, 50, 0.2);
+      color: #a5d6a7;
+    }
+
+    &.badge-available {
+      background: rgba(100, 100, 200, 0.15);
+      color: #9fa8da;
+    }
+
+    &.badge-builtin {
+      background: rgba(142, 36, 170, 0.15);
+      color: #ce93d8;
+    }
+  }
+
+  .loadout-card-body {
+    padding: var(--spacing-half) var(--spacing);
+  }
+
+  .loadout-card-description {
+    margin: 0 0 var(--spacing-half) 0;
+    color: var(--text-secondary-color);
+    font-size: var(--font-size-sm);
+    line-height: 1.4;
+  }
+
+  // --- Script list (collapsed) ---
+
+  .loadout-script-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: var(--spacing-half);
+  }
+
+  .loadout-script-chip {
+    font-size: 10px;
+    font-family: var(--font-family-monospace);
+    padding: 1px 6px;
+    border-radius: 3px;
+    background: var(--list-item-badge-background-color);
+    color: var(--text-secondary-color);
+  }
+
+  // --- Script list (expanded / installed) ---
+
+  .loadout-scripts-expanded {
+    border-top: 1px solid var(--box-border-color);
+    padding: var(--spacing-half) 0;
+  }
+
+  .loadout-hook-group {
+    padding: 0 var(--spacing);
+
+    & + .loadout-hook-group {
+      margin-top: var(--spacing-half);
+      padding-top: var(--spacing-half);
+      border-top: 1px solid var(--box-border-color);
+    }
+  }
+
+  .loadout-hook-type {
+    font-size: 10px;
+    font-family: var(--font-family-monospace);
+    color: var(--text-secondary-color);
+    text-transform: none;
+    letter-spacing: 0.02em;
+    margin-bottom: 2px;
+  }
+
+  .loadout-script-row {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-half);
+    padding: 2px 0;
+
+    .checkbox-component {
+      margin: 0;
+    }
+
+    .loadout-script-label {
+      font-size: var(--font-size-sm);
+      color: var(--text-color);
+    }
+
+    .loadout-script-desc {
+      color: var(--text-secondary-color);
+      font-size: 10px;
+      margin-left: auto;
+      text-align: right;
+      max-width: 50%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+
+  // --- Card footer with actions ---
+
+  .loadout-card-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--spacing-half);
+    padding: var(--spacing-half) var(--spacing);
+    border-top: 1px solid var(--box-border-color);
+  }
+
+  .loadout-btn {
+    font-size: var(--font-size-sm);
+    font-family: inherit;
+    padding: 3px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    border: var(--base-border);
+    background: transparent;
+    color: var(--text-color);
+    transition: background 0.1s ease, border-color 0.1s ease;
+
+    &:hover {
+      background: var(--list-item-hover-background-color);
+    }
+
+    &:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    &.loadout-btn-install {
+      border-color: var(--focus-color);
+      color: var(--focus-color);
+
+      &:hover {
+        background: rgba(var(--focus-color-rgb, 3, 102, 214), 0.1);
+      }
+    }
+
+    &.loadout-btn-uninstall {
+      border-color: rgba(229, 57, 53, 0.5);
+      color: #ef9a9a;
+
+      &:hover {
+        background: rgba(229, 57, 53, 0.1);
+      }
+    }
+  }
+
+  .loadout-working {
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary-color);
+    font-style: italic;
+    padding: var(--spacing-half) 0;
+  }
+}

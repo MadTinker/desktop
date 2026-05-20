@@ -1,9 +1,15 @@
 import * as React from 'react'
 import { DialogContent } from '../dialog'
 import { Checkbox, CheckboxValue } from '../lib/checkbox'
-import { Button } from '../lib/button'
-import { HookLoadout, HookScript, LoadoutInstallation } from '../../lib/hooks/loadout-types'
-import { BUILTIN_SCRIPTS, getBuiltinScript } from '../../lib/hooks/loadout-scripts'
+import {
+  HookLoadout,
+  HookScript,
+  LoadoutInstallation,
+} from '../../lib/hooks/loadout-types'
+import {
+  BUILTIN_SCRIPTS,
+  getBuiltinScript,
+} from '../../lib/hooks/loadout-scripts'
 import { BUILTIN_LOADOUTS } from '../../lib/hooks/loadout-presets'
 import {
   getInstallation,
@@ -26,7 +32,10 @@ interface IHookLoadoutsProps {
 interface IHookLoadoutsState {
   readonly loadouts: ReadonlyArray<HookLoadout>
   readonly installation: LoadoutInstallation | null
-  readonly installedScripts: ReadonlyArray<{ scriptId: string; enabled: boolean }>
+  readonly installedScripts: ReadonlyArray<{
+    scriptId: string
+    enabled: boolean
+  }>
   readonly installing: boolean
   readonly error: string | null
 }
@@ -67,10 +76,7 @@ export class HookLoadoutsSettings extends React.Component<
       const installedScripts = await detectInstalledScripts(this.props.repoPath)
       this.setState({ installation, installedScripts, installing: false })
     } catch (e) {
-      this.setState({
-        installing: false,
-        error: `Install failed: ${e}`,
-      })
+      this.setState({ installing: false, error: `Install failed: ${e}` })
     }
   }
 
@@ -85,27 +91,26 @@ export class HookLoadoutsSettings extends React.Component<
         installing: false,
       })
     } catch (e) {
-      this.setState({
-        installing: false,
-        error: `Uninstall failed: ${e}`,
-      })
+      this.setState({ installing: false, error: `Uninstall failed: ${e}` })
     }
   }
 
-  private onToggleScript = (script: HookScript) => async (
-    event: React.FormEvent<HTMLInputElement>
-  ) => {
-    const enabled = (event.currentTarget as HTMLInputElement).checked
-    try {
-      await toggleScriptOnDisk(this.props.repoPath, script, enabled)
-      toggleScriptInStore(this.props.repoPath, script.id, enabled)
-      const installation = getInstallation(this.props.repoPath)
-      const installedScripts = await detectInstalledScripts(this.props.repoPath)
-      this.setState({ installation, installedScripts })
-    } catch (e) {
-      this.setState({ error: `Toggle failed: ${e}` })
+  private onToggleScript =
+    (script: HookScript) =>
+    async (event: React.FormEvent<HTMLInputElement>) => {
+      const enabled = (event.currentTarget as HTMLInputElement).checked
+      try {
+        await toggleScriptOnDisk(this.props.repoPath, script, enabled)
+        toggleScriptInStore(this.props.repoPath, script.id, enabled)
+        const installation = getInstallation(this.props.repoPath)
+        const installedScripts = await detectInstalledScripts(
+          this.props.repoPath
+        )
+        this.setState({ installation, installedScripts })
+      } catch (e) {
+        this.setState({ error: `Toggle failed: ${e}` })
+      }
     }
-  }
 
   private isScriptEnabled(scriptId: string): boolean {
     const found = this.state.installedScripts.find(
@@ -114,15 +119,11 @@ export class HookLoadoutsSettings extends React.Component<
     return found ? found.enabled : true
   }
 
-  private renderLoadoutCard(loadout: HookLoadout) {
-    const { installation, installing } = this.state
-    const isInstalled = installation?.loadoutId === loadout.id
-
+  private renderScriptsExpanded(loadout: HookLoadout) {
     const scripts = loadout.scriptIds
       .map(id => getBuiltinScript(id))
       .filter((s): s is HookScript => s !== undefined)
 
-    // Group scripts by hook type for display
     const byType = new Map<string, HookScript[]>()
     for (const s of scripts) {
       const group = byType.get(s.hookType) ?? []
@@ -131,96 +132,101 @@ export class HookLoadoutsSettings extends React.Component<
     }
 
     return (
-      <div
-        key={loadout.id}
-        className="loadout-card"
-        style={{
-          border: isInstalled
-            ? '2px solid var(--focus-color)'
-            : '1px solid var(--box-border-color)',
-          borderRadius: 'var(--border-radius)',
-          padding: 'var(--spacing)',
-          marginBottom: 'var(--spacing)',
-        }}
-      >
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: 'var(--spacing-half)',
-          }}
-        >
-          <strong>{loadout.name}</strong>
+      <div className="loadout-scripts-expanded">
+        {Array.from(byType.entries()).map(([hookType, hookScripts]) => (
+          <div key={hookType} className="loadout-hook-group">
+            <div className="loadout-hook-type">{hookType}</div>
+            {hookScripts.map(s => (
+              <div key={s.id} className="loadout-script-row">
+                <Checkbox
+                  label={s.name}
+                  value={
+                    this.isScriptEnabled(s.id)
+                      ? CheckboxValue.On
+                      : CheckboxValue.Off
+                  }
+                  onChange={this.onToggleScript(s)}
+                />
+                <span className="loadout-script-desc">{s.description}</span>
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+    )
+  }
+
+  private renderScriptChips(loadout: HookLoadout) {
+    const scripts = loadout.scriptIds
+      .map(id => getBuiltinScript(id))
+      .filter((s): s is HookScript => s !== undefined)
+
+    return (
+      <div className="loadout-script-summary">
+        {scripts.map(s => (
+          <span key={s.id} className="loadout-script-chip">
+            {s.name}
+          </span>
+        ))}
+      </div>
+    )
+  }
+
+  private renderLoadoutCard(loadout: HookLoadout) {
+    const { installation, installing } = this.state
+    const isInstalled = installation?.loadoutId === loadout.id
+    const hasOtherInstalled = installation !== null && !isInstalled
+
+    const cardClass = [
+      'loadout-card',
+      isInstalled ? 'installed' : '',
+      hasOtherInstalled ? 'disabled' : '',
+    ]
+      .filter(Boolean)
+      .join(' ')
+
+    return (
+      <div key={loadout.id} className={cardClass}>
+        <div className="loadout-card-header">
+          <span className="loadout-card-title">{loadout.name}</span>
+          <span
+            className={`loadout-badge ${isInstalled ? 'badge-installed' : 'badge-available'}`}
+          >
+            {isInstalled ? 'Installed' : 'Available'}
+          </span>
+          {loadout.builtin && (
+            <span className="loadout-badge badge-builtin">Builtin</span>
+          )}
+        </div>
+
+        <div className="loadout-card-body">
+          <p className="loadout-card-description">{loadout.description}</p>
+          {!isInstalled && this.renderScriptChips(loadout)}
+        </div>
+
+        {isInstalled && this.renderScriptsExpanded(loadout)}
+
+        <div className="loadout-card-actions">
           {isInstalled ? (
-            <Button
+            <button
+              className="loadout-btn loadout-btn-uninstall"
               onClick={this.onUninstall}
               disabled={installing}
               type="button"
             >
               Uninstall
-            </Button>
+            </button>
           ) : (
-            <Button
+            <button
+              className="loadout-btn loadout-btn-install"
               onClick={() => this.onInstall(loadout)}
-              disabled={installing || installation !== null}
+              disabled={installing || hasOtherInstalled}
               type="button"
             >
               Install
-            </Button>
+            </button>
           )}
         </div>
-
-        <p
-          style={{
-            fontSize: 'var(--font-size-sm)',
-            color: 'var(--text-secondary-color)',
-            margin: '0 0 var(--spacing-half) 0',
-          }}
-        >
-          {loadout.description}
-        </p>
-
-        {isInstalled && (
-          <div className="loadout-scripts">
-            {Array.from(byType.entries()).map(([hookType, hookScripts]) => (
-              <div key={hookType} style={{ marginTop: 'var(--spacing-half)' }}>
-                <span
-                  style={{
-                    fontSize: 'var(--font-size-sm)',
-                    color: 'var(--text-secondary-color)',
-                    fontFamily: 'var(--font-family-monospace)',
-                  }}
-                >
-                  {hookType}
-                </span>
-                {hookScripts.map(s => (
-                  <Checkbox
-                    key={s.id}
-                    label={`${s.name} — ${s.description}`}
-                    value={
-                      this.isScriptEnabled(s.id)
-                        ? CheckboxValue.On
-                        : CheckboxValue.Off
-                    }
-                    onChange={this.onToggleScript(s)}
-                  />
-                ))}
-              </div>
-            ))}
-          </div>
-        )}
-
-        {!isInstalled && (
-          <div
-            style={{
-              fontSize: 'var(--font-size-sm)',
-              color: 'var(--text-secondary-color)',
-            }}
-          >
-            {scripts.map(s => s.name).join(', ')}
-          </div>
-        )}
       </div>
     )
   }
@@ -230,37 +236,34 @@ export class HookLoadoutsSettings extends React.Component<
 
     return (
       <DialogContent>
-        <p className="loadout-description">
-          Hook loadouts install composable git hook scripts into this
-          repository. Each hook type gets a dispatcher that runs individual
-          scripts from a <code>.d/</code> directory, so scripts can be toggled
-          independently.
-        </p>
-
-        {error && (
-          <p style={{ color: 'var(--error-color)' }}>{error}</p>
-        )}
-
-        {installation && (
-          <p
-            style={{
-              fontSize: 'var(--font-size-sm)',
-              color: 'var(--text-secondary-color)',
-              marginBottom: 'var(--spacing)',
-            }}
-          >
-            Installed:{' '}
-            <strong>
-              {this.state.loadouts.find(l => l.id === installation.loadoutId)
-                ?.name ?? installation.loadoutId}
-            </strong>{' '}
-            — {new Date(installation.installedAt).toLocaleDateString()}
+        <div className="hook-loadouts">
+          <p className="loadout-description">
+            Hook loadouts install composable git hook scripts into this
+            repository. Each hook type gets a dispatcher that runs individual
+            scripts from a <code>.d/</code> directory, so scripts can be
+            toggled independently.
           </p>
-        )}
 
-        {installing && <p>Working...</p>}
+          {error && <div className="loadout-error">{error}</div>}
 
-        {this.state.loadouts.map(l => this.renderLoadoutCard(l))}
+          {installation && (
+            <div className="loadout-status-bar">
+              <span className="loadout-status-label">Active:</span>
+              <span className="loadout-status-name">
+                {this.state.loadouts.find(
+                  l => l.id === installation.loadoutId
+                )?.name ?? installation.loadoutId}
+              </span>
+              <span className="loadout-status-date">
+                {new Date(installation.installedAt).toLocaleDateString()}
+              </span>
+            </div>
+          )}
+
+          {installing && <p className="loadout-working">Working...</p>}
+
+          {this.state.loadouts.map(l => this.renderLoadoutCard(l))}
+        </div>
       </DialogContent>
     )
   }
