@@ -17,6 +17,7 @@ import { readGitIgnoreAtRoot } from '../../lib/git'
 import { OkCancelButtonGroup } from '../dialog/ok-cancel-button-group'
 import { ForkSettings } from './fork-settings'
 import { HooksSettings } from './hooks'
+import { HookLoadoutsSettings } from './hook-loadouts'
 import { ForkContributionTarget } from '../../models/workflow-preferences'
 import { GitConfigLocation, GitConfig } from './git-config'
 import {
@@ -47,6 +48,7 @@ export enum RepositorySettingsTab {
   IgnoredFiles,
   GitConfig,
   Hooks,
+  HookLoadouts,
   ForkSettings,
 }
 
@@ -201,6 +203,10 @@ export class RepositorySettings extends React.Component<
               <Octicon className="icon" symbol={octicons.webhook} />
               Hooks
             </span>
+            <span>
+              <Octicon className="icon" symbol={octicons.package_} />
+              {__DARWIN__ ? 'Hook Loadouts' : 'Hook loadouts'}
+            </span>
             {showForkSettings && (
               <span>
                 <Octicon className="icon" symbol={octicons.repoForked} />
@@ -249,6 +255,12 @@ export class RepositorySettings extends React.Component<
       case RepositorySettingsTab.Hooks: {
         return (
           <HooksSettings repoPath={this.props.repository.path} />
+        )
+      }
+
+      case RepositorySettingsTab.HookLoadouts: {
+        return (
+          <HookLoadoutsSettings repoPath={this.props.repository.path} />
         )
       }
 
