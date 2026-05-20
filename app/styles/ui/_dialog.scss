@@ -63,7 +63,7 @@ dialog {
   opacity: 1;
 
   min-width: 400px;
-  max-width: 600px;
+  max-width: 900px;
 
   .secondary-text {
     color: var(--text-secondary-color);
@@ -517,7 +517,7 @@ dialog {
   }
 
   &#preferences {
-    width: 600px;
+    width: 850px;
 
     .dialog-content {
       $default-tab-height: 440px;
