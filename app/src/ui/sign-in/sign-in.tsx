@@ -26,6 +26,8 @@ interface ISignInProps {
 
 interface ISignInState {
   readonly endpoint: string
+  readonly tokenInput: string
+  readonly showTokenInput: boolean
 }
 
 const SignInWithBrowserTitle = __DARWIN__
@@ -50,6 +52,8 @@ export class SignIn extends React.Component<ISignInProps, ISignInState> {
 
     this.state = {
       endpoint: '',
+      tokenInput: '',
+      showTokenInput: false,
     }
   }
 
@@ -95,7 +99,11 @@ export class SignIn extends React.Component<ISignInProps, ISignInState> {
           .then(() => this.props.dispatcher.setSignInEndpoint(state.endpoint))
         break
       case SignInStep.Authentication:
-        this.props.dispatcher.requestBrowserAuthentication()
+        if (this.state.showTokenInput && this.state.tokenInput.length > 0) {
+          this.props.dispatcher.authenticateWithToken(this.state.tokenInput)
+        } else {
+          this.props.dispatcher.requestBrowserAuthentication()
+        }
         break
       case SignInStep.Success:
         this.onDismissed()
@@ -107,6 +115,14 @@ export class SignIn extends React.Component<ISignInProps, ISignInState> {
 
   private onEndpointChanged = (endpoint: string) => {
     this.setState({ endpoint })
+  }
+
+  private onTokenChanged = (tokenInput: string) => {
+    this.setState({ tokenInput })
+  }
+
+  private onShowTokenInput = () => {
+    this.setState({ showTokenInput: true })
   }
 
   private renderFooter(): JSX.Element | null {
@@ -133,7 +149,12 @@ export class SignIn extends React.Component<ISignInProps, ISignInState> {
         primaryButtonText = continueWithBrowserLabel
         break
       case SignInStep.Authentication:
-        primaryButtonText = continueWithBrowserLabel
+        if (this.state.showTokenInput) {
+          disableSubmit = this.state.tokenInput.length === 0
+          primaryButtonText = __DARWIN__ ? 'Sign In' : 'Sign in'
+        } else {
+          primaryButtonText = continueWithBrowserLabel
+        }
         break
       default:
         return assertNever(state, `Unknown sign in step ${stepKind}`)
@@ -189,10 +210,34 @@ export class SignIn extends React.Component<ISignInProps, ISignInState> {
         </p>
       ) : undefined
 
+    const tokenSection = this.state.showTokenInput ? (
+      <Row>
+        <TextBox
+          label="Personal Access Token"
+          value={this.state.tokenInput}
+          onValueChanged={this.onTokenChanged}
+          placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
+          type="password"
+          autoFocus={true}
+        />
+      </Row>
+    ) : (
+      <Row>
+        <button
+          className="link-button"
+          onClick={this.onShowTokenInput}
+          type="button"
+        >
+          Use a token instead
+        </button>
+      </Row>
+    )
+
     return (
       <DialogContent>
         {credentialHelperInfo}
         {browserSignInInfoContent}
+        {tokenSection}
       </DialogContent>
     )
   }

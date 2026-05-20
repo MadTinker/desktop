@@ -329,6 +329,34 @@ export class SignInStore extends TypedBaseStore<SignInState | null> {
       })
   }
 
+  public async authenticateWithToken(token: string) {
+    const currentState = this.state
+
+    if (currentState?.kind !== SignInStep.Authentication) {
+      const stepText = currentState ? currentState.kind : 'null'
+      return fatalError(
+        `Sign in step '${stepText}' not compatible with token authentication`
+      )
+    }
+
+    this.setState({ ...currentState, loading: true, error: null })
+
+    try {
+      const account = await fetchUser(currentState.endpoint, token)
+      this.emitAuthenticate(account)
+      this.setState({
+        kind: SignInStep.Success,
+        resultCallback: currentState.resultCallback,
+      })
+    } catch (e) {
+      this.setState({
+        ...currentState,
+        loading: false,
+        error: e instanceof Error ? e : new Error(String(e)),
+      })
+    }
+  }
+
   public async resolveOAuthRequest(action: IOAuthAction) {
     if (!this.state || this.state.kind !== SignInStep.Authentication) {
       return

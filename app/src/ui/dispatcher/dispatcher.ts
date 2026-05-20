@@ -1663,6 +1663,11 @@ export class Dispatcher {
     this.appStore._requestBrowserAuthentication()
   }
 
+  /** Sign in using a Personal Access Token directly, bypassing OAuth browser flow. */
+  public authenticateWithToken(token: string) {
+    return this.appStore._authenticateWithToken(token)
+  }
+
   /**
    * Initiate an OAuth sign in using the system configured browser to GitHub.com.
    *
