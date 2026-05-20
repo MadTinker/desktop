@@ -105,11 +105,17 @@ async function getCredential(cred: Credential, store: Store, token: string) {
   const apiEndpoint = getAPIEndpoint(endpoint)
 
   // If it appears as if the endpoint is a GitHub host and we don't have an
-  // account for that endpoint then we should prompt the user to sign in.
+  // account for that endpoint then we should prompt the user to sign in,
+  // unless they've opted into the external credential helper.
   if (
     endpointKind !== 'generic' &&
     !accounts.some(a => a.endpoint === apiEndpoint)
   ) {
+    if (useExternalCredentialHelper()) {
+      info(`no account for ${endpoint}, falling through to external helper`)
+      return getExternalCredential(cred, token)
+    }
+
     if (getIsBackgroundTaskEnvironment(token)) {
       debug('background task environment, skipping prompt')
       return undefined
@@ -126,7 +132,9 @@ async function getCredential(cred: Credential, store: Store, token: string) {
 
   // GitHub.com/GHE creds are only stored internally
   if (endpointKind !== 'generic') {
-    return undefined
+    return useExternalCredentialHelper()
+      ? getExternalCredential(cred, token)
+      : undefined
   }
 
   return useExternalCredentialHelper()
@@ -181,6 +189,9 @@ const getEndpointKind = async (cred: Credential, store: Store) => {
 /** Implementation of the 'store' git credential helper command */
 async function storeCredential(cred: Credential, store: Store, token: string) {
   if ((await getEndpointKind(cred, store)) !== 'generic') {
+    if (useExternalCredentialHelper()) {
+      return storeExternalCredential(cred, token)
+    }
     return
   }
 
@@ -201,6 +212,9 @@ const storeExternalCredential = (cred: Credential, token: string) => {
 /** Implementation of the 'erase' git credential helper command */
 async function eraseCredential(cred: Credential, store: Store, token: string) {
   if ((await getEndpointKind(cred, store)) !== 'generic') {
+    if (useExternalCredentialHelper()) {
+      return eraseExternalCredential(cred, token)
+    }
     return
   }
 
