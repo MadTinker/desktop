@@ -44,6 +44,8 @@ import { Repository } from '../../models/repository'
 import { AutomationHooksPreferences } from './automation-hooks'
 import { AIServicesPreferences } from './ai-services'
 import { Keybindings } from './keybindings'
+import { MqttPreferences } from './mqtt'
+import { IMqttConfig, DefaultMqttConfig } from '../../lib/mqtt/mqtt-config'
 import { HotkeyStore } from '../../lib/hotkeys'
 import { ILocalAIConfig, DefaultLocalAIConfig } from '../../models/local-ai'
 import {
@@ -126,6 +128,7 @@ interface IPreferencesProps {
   readonly autoSwitchOnChangesEnabled: boolean
   readonly showReflogTab: boolean
   readonly omnispindleApiKey: string
+  readonly mqttConfig: IMqttConfig
   readonly localAIConfig: ILocalAIConfig
   readonly chatHistoryArchiveConfig: IChatHistoryArchiveConfig
   readonly onEditGlobalGitConfig: () => void
@@ -183,6 +186,7 @@ interface IPreferencesState {
   readonly autoSwitchOnChangesEnabled: boolean
   readonly showReflogTab: boolean
   readonly omnispindleApiKey: string
+  readonly mqttConfig: IMqttConfig
   readonly localAIConfig: ILocalAIConfig
   readonly chatHistoryArchiveConfig: IChatHistoryArchiveConfig
 
@@ -263,6 +267,7 @@ export class Preferences extends React.Component<
       autoSwitchOnChangesEnabled: this.props.autoSwitchOnChangesEnabled,
       showReflogTab: this.props.showReflogTab,
       omnispindleApiKey: this.props.omnispindleApiKey,
+      mqttConfig: this.props.mqttConfig ?? DefaultMqttConfig,
       localAIConfig: this.props.localAIConfig ?? DefaultLocalAIConfig,
       chatHistoryArchiveConfig:
         this.props.chatHistoryArchiveConfig ?? DefaultChatHistoryArchiveConfig,
@@ -412,6 +417,10 @@ export class Preferences extends React.Component<
               <Octicon className="icon" symbol={octicons.zap} />
               AI Services
             </span>
+            <span id={this.getTabId(PreferencesTab.Mqtt)}>
+              <Octicon className="icon" symbol={octicons.broadcast} />
+              MQTT
+            </span>
             <span id={this.getTabId(PreferencesTab.AutomationHooks)}>
               <Octicon className="icon" symbol={octicons.terminal} />
               Automation
@@ -456,6 +465,9 @@ export class Preferences extends React.Component<
         break
       case PreferencesTab.AIServices:
         suffix = 'ai-services'
+        break
+      case PreferencesTab.Mqtt:
+        suffix = 'mqtt'
         break
       case PreferencesTab.AutomationHooks:
         suffix = 'automation-hooks'
@@ -702,6 +714,14 @@ export class Preferences extends React.Component<
           />
         )
         break
+      case PreferencesTab.Mqtt:
+        View = (
+          <MqttPreferences
+            config={this.state.mqttConfig}
+            onConfigChanged={this.onMqttConfigChanged}
+          />
+        )
+        break
       case PreferencesTab.AutomationHooks:
         View = (
           <AutomationHooksPreferences
@@ -776,6 +796,10 @@ export class Preferences extends React.Component<
 
   private onOmnispindleApiKeyChanged = (omnispindleApiKey: string) => {
     this.setState({ omnispindleApiKey })
+  }
+
+  private onMqttConfigChanged = (mqttConfig: IMqttConfig) => {
+    this.setState({ mqttConfig })
   }
 
   private onLocalAIConfigChanged = (localAIConfig: ILocalAIConfig) => {
@@ -1055,6 +1079,10 @@ export class Preferences extends React.Component<
 
       if (this.props.omnispindleApiKey !== this.state.omnispindleApiKey) {
         dispatcher.setOmnispindleApiKey(this.state.omnispindleApiKey)
+      }
+
+      if (this.props.mqttConfig !== this.state.mqttConfig) {
+        dispatcher.setMqttConfig(this.state.mqttConfig)
       }
 
       if (this.props.localAIConfig !== this.state.localAIConfig) {

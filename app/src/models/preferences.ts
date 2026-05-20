@@ -6,6 +6,7 @@ export enum PreferencesTab {
   Appearance,
   Prompts,
   AIServices,
+  Mqtt,
   AutomationHooks,
   Keybindings,
   Advanced,

@@ -9,6 +9,7 @@ import { getRepoHookEnabled } from './hook-state'
 import { createHooksProxy } from './hooks-proxy'
 import { getShellEnv } from './get-shell-env'
 import memoizeOne from 'memoize-one'
+import { getMqttConfig, mqttConfigToEnv } from '../mqtt/mqtt-config'
 import {
   getCacheHooksEnv,
   getGitHookEnvShell,
@@ -90,8 +91,7 @@ export async function withHooksEnv<T>(
       existingGitEnvConfig.length > 0 ? `${existingGitEnvConfig} ` : ''
 
     return await fn({
-      // TODO: Do we need to escape tmpHooksDir? Could it possibly include a single quote?
-      // probably not?
+      ...mqttConfigToEnv(getMqttConfig()),
       GIT_CONFIG_PARAMETERS: `${gitEnvConfigPrefix}'core.hooksPath=${tmpHooksDir}'`,
       PROCESS_PROXY_PORT: `${port}`,
       PROCESS_PROXY_TOKEN: token,

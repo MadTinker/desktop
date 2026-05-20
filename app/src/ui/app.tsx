@@ -1689,6 +1689,7 @@ export class App extends React.Component<IAppProps, IAppState> {
             autoSwitchOnChangesEnabled={this.state.autoSwitchOnChangesEnabled}
             showReflogTab={this.state.showReflogTab}
             omnispindleApiKey={this.state.omnispindleApiKey}
+            mqttConfig={this.state.mqttConfig}
             localAIConfig={this.state.localAIConfig}
             chatHistoryArchiveConfig={this.state.chatHistoryArchiveConfig}
             onEditGlobalGitConfig={this.editGlobalGitConfig}

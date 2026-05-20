@@ -1153,6 +1153,12 @@ export class Dispatcher {
     )
   }
 
+  public setMqttConfig(
+    config: import('../../lib/mqtt/mqtt-config').IMqttConfig
+  ) {
+    return this.appStore._setMqttConfig(config)
+  }
+
   public setLocalAIConfig(
     config: import('../../models/local-ai').ILocalAIConfig
   ) {

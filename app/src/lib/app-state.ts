@@ -439,6 +439,9 @@ export interface IAppState {
   /** Configuration for local AI commit message generation (Ollama / LM Studio) */
   readonly localAIConfig: import('../models/local-ai').ILocalAIConfig
 
+  /** MQTT broker configuration for multi-machine workflow */
+  readonly mqttConfig: import('./mqtt/mqtt-config').IMqttConfig
+
   /** Configuration for chat history background archiver */
   readonly chatHistoryArchiveConfig: import('../models/chat-history-archive').IChatHistoryArchiveConfig
 

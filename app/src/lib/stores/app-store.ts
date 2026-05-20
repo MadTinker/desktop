@@ -27,6 +27,13 @@ import {
   DefaultLocalAIConfig,
 } from '../../models/local-ai'
 import {
+  IMqttConfig,
+  DefaultMqttConfig,
+  getMqttConfig,
+  saveMqttConfig,
+  mqttConfigToEnv,
+} from '../mqtt/mqtt-config'
+import {
   loadLocalAIConfig,
   saveLocalAIConfig,
   generateLocalAICommitMessage,
@@ -718,6 +725,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
   private omnispindleTodos: ReadonlyArray<import('../../models/omnispindle').IOmnispindleTodo> = []
   private omnispindleStatus: import('../../models/omnispindle').OmnispindleConnectionStatus = 'unconfigured'
   private omnispindleApiKey: string = ''
+  private mqttConfig: IMqttConfig = DefaultMqttConfig
   private localAIConfig: ILocalAIConfig = DefaultLocalAIConfig
 
   private selectedCopilotModels: CopilotModelSelections = {}
@@ -805,6 +813,10 @@ export class AppStore extends TypedBaseStore<IAppState> {
     this.showReflogTab = getBoolean(showReflogTabKey, false)
 
     this.omnispindleApiKey = localStorage.getItem(omnispindleApiKeyKey) ?? ''
+    this.mqttConfig = getMqttConfig()
+    // Inject MQTT env vars into process.env on startup
+    const mqttEnv = mqttConfigToEnv(this.mqttConfig)
+    Object.entries(mqttEnv).forEach(([k, v]) => { process.env[k] = v })
     this.localAIConfig = loadLocalAIConfig()
 
     // Chat history archive watcher
@@ -1313,6 +1325,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
       omnispindleTodos: this.omnispindleTodos,
       omnispindleStatus: this.omnispindleStatus,
       omnispindleApiKey: this.omnispindleApiKey,
+      mqttConfig: this.mqttConfig,
       localAIConfig: this.localAIConfig,
       chatHistoryArchiveConfig: this.chatHistoryArchiveConfig,
       selectedCopilotModels: this.selectedCopilotModels,
@@ -3331,6 +3344,14 @@ export class AppStore extends TypedBaseStore<IAppState> {
       }
     }
 
+    this.emitUpdate()
+  }
+
+  public _setMqttConfig(config: IMqttConfig): void {
+    saveMqttConfig(config)
+    this.mqttConfig = config
+    const env = mqttConfigToEnv(config)
+    Object.entries(env).forEach(([k, v]) => { process.env[k] = v })
     this.emitUpdate()
   }
 
