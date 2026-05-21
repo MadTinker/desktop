@@ -51,6 +51,7 @@ and how things work:
 
 Documentation for features added in the madness_interactive fork:
 
+ - **[Ecosystem Overview](ecosystem.md)** - how madnessDesktop, Omnispindle, Inventorium, and MQTT fit together
  - **[Authentication](authentication.md)** - PAT sign-in and external credential helper (use these instead of OAuth browser flow)
  - **[Hook Loadouts](hook-loadouts.md)** - composable git hook scripts, built-in presets, per-script toggles
  - **[MQTT Integration](mqtt-integration.md)** - multi-machine workflow setup, broker config, topic paths
