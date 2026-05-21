@@ -10,8 +10,8 @@ Download the `Madness Desktop.zip`, unpack the application and put it wherever y
 
 On Windows you have two options:
 
- - Download the `GitHubDesktopSetup.exe` and run it to install it for the current user.
- - Download the `GitHubDesktopSetup.msi` and run it to install a machine-wide version of Madness Desktop - each logged-in user will then be able to run Madness Desktop from the program at `%PROGRAMFILES(x86)\Madness Desktop Installer\desktop.exe`.
+ - Download the `MadnessDesktopSetup.exe` and run it to install it for the current user.
+ - Download the `MadnessDesktopSetup.msi` and run it to install a machine-wide version of Madness Desktop - each logged-in user will then be able to run Madness Desktop from the program at `%PROGRAMFILES(x86)\Madness Desktop Installer\desktop.exe`.
 
 ## Data Directories
 
@@ -22,7 +22,7 @@ Madness Desktop will create directories to manage the files and data it needs to
 
 ### Windows
 
- - `%LOCALAPPDATA%\GitHubDesktop\` - contains the latest versions of the app, and some older versions if the user has updated from a previous version.
+ - `%LOCALAPPDATA%\MadnessDesktop\` - contains the latest versions of the app, and some older versions if the user has updated from a previous version.
  - `%APPDATA%\Madness Desktop\` - this directory contains user-specific data which the application requires to run, and is created on launch if it doesn't exist. Log files are also stored in this location.
 
 ## Log Files
@@ -35,10 +35,9 @@ Problems with installing or updating Madness Desktop are tracked in a separate f
 
 ### macOS
 
- - `~/Library/Caches/com.github.GitHubClient.ShipIt/ShipIt_stderr.log` - this file will contain details about why the installation or update failed - check the end of the file for recent activity.
+ - `~/Library/Caches/com.madnessengineering.MadnessDesktop.ShipIt/ShipIt_stderr.log` - this file will contain details about why the installation or update failed - check the end of the file for recent activity.
 
 ### Windows
 
- - `%LOCALAPPDATA%\GitHubDesktop\SquirrelSetup.log` - this file will contain details about update attempts for Madness Desktop after it's been successfully installed.
- - `%LOCALAPPDATA%\SquirrelSetup.log` - information about the initial installation may be found here. As this framework is used by different apps, it may also contain details about other apps. Ensure that you focus on mentions of `GitHubDesktop.exe` in the log.
-
+ - `%LOCALAPPDATA%\MadnessDesktop\SquirrelSetup.log` - this file will contain details about update attempts for Madness Desktop after it's been successfully installed.
+ - `%LOCALAPPDATA%\SquirrelSetup.log` - information about the initial installation may be found here. As this framework is used by different apps, it may also contain details about other apps. Ensure that you focus on mentions of `MadnessDesktop.exe` in the log.

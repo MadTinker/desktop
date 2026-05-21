@@ -1,7 +1,6 @@
 # Madness Desktop Documentation
 
-This is the [GitHub Desktop](https://github.com/desktop/desktop) development
-documentation.
+This is the [Madness Desktop](https://github.com/MadnessEngineering/madnessDesktop) development documentation.
 
 ## Contributing
 
@@ -47,3 +46,11 @@ and how things work:
     Desktop is currently packaged for all platforms 
  - **[Automatic Git Proxy support](technical/proxies.md)** - A pre-launch overview
     and troubleshooting guide for the Git automatic proxy support in Madness Desktop.
+
+## Madness Desktop Features
+
+Documentation for features added in the madness_interactive fork:
+
+ - **[Authentication](authentication.md)** - PAT sign-in and external credential helper (use these instead of OAuth browser flow)
+ - **[Hook Loadouts](hook-loadouts.md)** - composable git hook scripts, built-in presets, per-script toggles
+ - **[MQTT Integration](mqtt-integration.md)** - multi-machine workflow setup, broker config, topic paths

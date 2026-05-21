@@ -1,13 +1,13 @@
-# Contributing to GitHub Desktop
+# Contributing to Madness Desktop
 
 :+1: :tada: :sparkling_heart: Thanks for your interest! :sparkling_heart: :tada: :+1:
 
-The following is a set of guidelines for contributing to GitHub Desktop and its
-related projects, which are hosted in the [Desktop organization](https://github.com/desktop)
+The following is a set of guidelines for contributing to Madness Desktop and its
+related projects, which are hosted in the [Madness Engineering organization](https://github.com/MadnessEngineering)
 on GitHub. These are just guidelines, not rules. Use your best judgment, and
 feel free to propose changes to this document in a pull request.
 
-Note that GitHub Desktop is an evolving project, so expect things to change over
+Note that Madness Desktop is an evolving project, so expect things to change over
 time as the team learns, listens and refines how we work with the community.
 
 #### Table Of Contents
@@ -29,11 +29,11 @@ time as the team learns, listens and refines how we work with the community.
 
 This project adheres to the Contributor Covenant [code of conduct](../CODE_OF_CONDUCT.md).
 By participating, you are expected to uphold this code.
-Please report unacceptable behavior to [opensource+desktop@github.com](mailto:opensource+desktop@github.com).
+Please report unacceptable behavior to [madnessengineering@gmail.com](mailto:madnessengineering@gmail.com).
 
 ### The Roadmap
 
-We are working on a roadmap you can read [here](https://github.com/desktop/desktop/blob/development/docs/process/roadmap.md).
+We are working on a roadmap you can read [here](https://github.com/MadnessEngineering/madnessDesktop/blob/development/docs/process/roadmap.md).
 The immediate milestones are more detailed, and the latter milestones are more
 fuzzy and subject to change.
 
@@ -45,7 +45,7 @@ how to contribute your feedback.
 
 ### Reporting Bugs
 
-This section guides you through submitting a bug report for GitHub Desktop.
+This section guides you through submitting a bug report for Madness Desktop.
 Following these guidelines helps maintainers and the community understand your
 report :pencil:, reproduce the behavior :computer: :computer:, and find related
 reports :mag_right:.
@@ -57,7 +57,7 @@ Fill out the required template, the information it asks for helps us resolve iss
 
 #### Before Submitting A Bug Report
 
-**Perform a [cursory search](https://github.com/desktop/desktop/labels/bug)**
+**Perform a [cursory search](https://github.com/MadnessEngineering/madnessDesktop/labels/bug)**
 to see if the problem has already been reported. If it does exist, add a
 :thumbsup: to the issue to indicate this is also an issue for you, and add a
 comment to the existing issue if there is extra information you can contribute.
@@ -66,7 +66,7 @@ comment to the existing issue if there is extra information you can contribute.
 
 Bugs are tracked as [GitHub issues](https://guides.github.com/features/issues/).
 
-Simply create an issue on the [GitHub Desktop issue tracker](https://github.com/desktop/desktop/issues/new?template=bug_report.yaml)
+Simply create an issue on the [Madness Desktop issue tracker](https://github.com/MadnessEngineering/madnessDesktop/issues/new?template=bug_report.yaml)
 and fill out the provided issue template.
 
 The information we are interested in includes:
@@ -79,7 +79,7 @@ The information we are interested in includes:
 ### Suggesting Enhancements
 
 This section guides you through submitting an enhancement suggestion for
-GitHub Desktop, including completely new features and minor improvements to
+Madness Desktop, including completely new features and minor improvements to
 existing functionality. Following these guidelines helps maintainers and the
 community understand your suggestion :pencil: and find related suggestions
 :mag_right:.
@@ -92,7 +92,7 @@ that you imagine you would take if the feature you're requesting existed.
 
 #### Before Submitting An Enhancement Suggestion
 
-**Perform a [cursory search](https://github.com/desktop/desktop/labels/enhancement)**
+**Perform a [cursory search](https://github.com/MadnessEngineering/madnessDesktop/labels/enhancement)**
 to see if the enhancement has already been suggested. If it has, add a
 :thumbsup: to indicate your interest in it, or comment if there is additional
 information you would like to add.
@@ -101,7 +101,7 @@ information you would like to add.
 
 Enhancement suggestions are tracked as [GitHub issues](https://guides.github.com/features/issues/).
 
-Simply create an issue on the [GitHub Desktop issue tracker](https://github.com/desktop/desktop/issues/new?template=feature_request.yaml)
+Simply create an issue on the [Madness Desktop issue tracker](https://github.com/MadnessEngineering/madnessDesktop/issues/new?template=feature_request.yaml)
 and fill out the provided issue template.
 
 Some additional advice:
@@ -110,16 +110,16 @@ Some additional advice:
 * **Provide a step-by-step description of the suggested enhancement**
   This additional context helps the maintainers understand the enhancement from
   your perspective
-* **Explain why this enhancement would be useful** to GitHub Desktop users
+* **Explain why this enhancement would be useful** to Madness Desktop users
 * **Include screenshots and animated GIFs** if relevant to help you demonstrate
-  the steps or point out the part of GitHub Desktop which the suggestion is
+  the steps or point out the part of Madness Desktop which the suggestion is
   related to. You can use [this tool](http://www.cockos.com/licecap/) to record
   GIFs on macOS and Windows
 * **List some other applications where this enhancement exists, if applicable**
 
 ### Help Wanted
 
-As part of building GitHub Desktop, we'll identify tasks that are good for
+As part of building Madness Desktop, we'll identify tasks that are good for
 external contributors to pick up. These tasks:
 
  - have low impact, or have a known workaround
@@ -127,22 +127,22 @@ external contributors to pick up. These tasks:
  - have a narrow scope and/or easy reproduction steps
  - can be worked on independent of other tasks
 
-These issues will be labelled as [`help wanted`](https://github.com/desktop/desktop/labels/help%20wanted)
+These issues will be labelled as [`help wanted`](https://github.com/MadnessEngineering/madnessDesktop/labels/help%20wanted)
 in the repository. If you are interested in contributing to the project, please
 comment on the issue to let the core team (and the community) know you are
 interested in the issue.
 
 ### Set Up Your Machine
 
-Start [here](https://github.com/desktop/desktop/blob/development/docs/contributing/setup.md).
+Start [here](https://github.com/MadnessEngineering/madnessDesktop/blob/development/docs/contributing/setup.md).
 
 
 ## Process Documentation
 
 These documents are useful resources for contributors  to learn more about the project and how it is run:
 
- - [Teams](https://github.com/desktop/desktop/blob/development/docs/process/teams.md)
- - [Release Planning](https://github.com/desktop/desktop/blob/development/docs/process/release-planning.md)
- - [Issue Triage](https://github.com/desktop/desktop/blob/development/docs/process/issue-triage.md)
- - [Issue and Pull Request Labels](https://github.com/desktop/desktop/blob/development/docs/process/labels.md)
- - [Pull Requests](https://github.com/desktop/desktop/blob/development/docs/process/pull-requests.md)
+ - [Teams](https://github.com/MadnessEngineering/madnessDesktop/blob/development/docs/process/teams.md)
+ - [Release Planning](https://github.com/MadnessEngineering/madnessDesktop/blob/development/docs/process/release-planning.md)
+ - [Issue Triage](https://github.com/MadnessEngineering/madnessDesktop/blob/development/docs/process/issue-triage.md)
+ - [Issue and Pull Request Labels](https://github.com/MadnessEngineering/madnessDesktop/blob/development/docs/process/labels.md)
+ - [Pull Requests](https://github.com/MadnessEngineering/madnessDesktop/blob/development/docs/process/pull-requests.md)
