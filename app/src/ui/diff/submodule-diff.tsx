@@ -14,12 +14,19 @@ import { getSubmoduleCommitsBetween } from '../../lib/git/submodule'
 import { Button } from '../lib/button'
 import { Repository } from '../../models/repository'
 import { getStatus } from '../../lib/git/status'
-import { getWorkingDirectoryDiff } from '../../lib/git/diff'
+import { getWorkingDirectoryDiff, getFilesDiffText } from '../../lib/git/diff'
 import { createCommit } from '../../lib/git/commit'
+import { getCommits } from '../../lib/git/log'
 import {
   WorkingDirectoryFileChange,
   AppFileStatusKind,
 } from '../../models/status'
+import {
+  streamLocalAICommitMessage,
+  loadLocalAIConfig,
+  ILocalAICommitContext,
+} from '../../lib/local-ai-commit-message'
+import { ILocalAIConfig } from '../../models/local-ai'
 
 type SubmoduleItemIcon =
   | {
@@ -68,6 +75,8 @@ interface ISubmoduleDiffState {
   readonly isCommitting: boolean
   readonly loadingStatus: boolean
   readonly lastCommitSha: string | null
+  readonly localAIConfig: ILocalAIConfig | null
+  readonly isGeneratingAIMessage: boolean
 }
 
 export class SubmoduleDiff extends React.Component<
@@ -85,10 +94,18 @@ export class SubmoduleDiff extends React.Component<
       isCommitting: false,
       loadingStatus: false,
       lastCommitSha: null,
+      localAIConfig: null,
+      isGeneratingAIMessage: false,
     }
   }
 
   public async componentDidMount() {
+    try {
+      this.setState({ localAIConfig: loadLocalAIConfig() })
+    } catch {
+      // ignore — config load failures fall back to disabled state
+    }
+
     const { diff } = this.props
     if (diff.oldSHA !== null && diff.newSHA !== null) {
       try {
@@ -208,6 +225,55 @@ export class SubmoduleDiff extends React.Component<
       })
     } catch (e) {
       this.setState({ isCommitting: false })
+    }
+  }
+
+  private onGenerateAICommitMessage = async () => {
+    const { submoduleFiles, localAIConfig, isGeneratingAIMessage } = this.state
+    if (
+      submoduleFiles.length === 0 ||
+      !localAIConfig?.enabled ||
+      isGeneratingAIMessage
+    ) {
+      return
+    }
+
+    this.setState({ isGeneratingAIMessage: true })
+    const submoduleRepo = this.getSubmoduleRepo()
+
+    try {
+      const diffText = await getFilesDiffText(submoduleRepo, submoduleFiles)
+      if (!diffText) {
+        this.setState({ isGeneratingAIMessage: false })
+        return
+      }
+
+      let recentCommits: ReadonlyArray<string> = []
+      try {
+        const commits = await getCommits(submoduleRepo, undefined, 5)
+        recentCommits = commits.map(c => c.summary)
+      } catch {
+        // best-effort context
+      }
+
+      const context: ILocalAICommitContext = { recentCommits }
+
+      const result = await streamLocalAICommitMessage(
+        diffText,
+        localAIConfig,
+        context,
+        progress => {
+          if (progress.title) {
+            this.setState({ commitSummary: progress.title })
+          }
+        }
+      )
+      this.setState({
+        commitSummary: result.title,
+        isGeneratingAIMessage: false,
+      })
+    } catch {
+      this.setState({ isGeneratingAIMessage: false })
     }
   }
 
@@ -370,6 +436,8 @@ export class SubmoduleDiff extends React.Component<
       isCommitting,
       loadingStatus,
       lastCommitSha,
+      localAIConfig,
+      isGeneratingAIMessage,
     } = this.state
     const { diff, readOnly } = this.props
 
@@ -456,7 +524,11 @@ export class SubmoduleDiff extends React.Component<
           <input
             className="submodule-commit-summary"
             type="text"
-            placeholder="Summary (required)"
+            placeholder={
+              isGeneratingAIMessage
+                ? 'Generating with local AI…'
+                : 'Summary (required)'
+            }
             value={commitSummary}
             onChange={e => this.setState({ commitSummary: e.target.value })}
             onKeyDown={e => {
@@ -464,10 +536,51 @@ export class SubmoduleDiff extends React.Component<
                 this.onCommit()
               }
             }}
+            disabled={isGeneratingAIMessage}
           />
+          {localAIConfig?.enabled && (
+            <Button
+              className="submodule-local-ai-button"
+              onClick={this.onGenerateAICommitMessage}
+              disabled={
+                isCommitting ||
+                isGeneratingAIMessage ||
+                submoduleFiles.length === 0
+              }
+              type="button"
+              ariaLabel={
+                isGeneratingAIMessage
+                  ? 'Generating commit message…'
+                  : `Generate commit message with ${
+                      localAIConfig.provider === 'lmstudio'
+                        ? 'LM Studio'
+                        : localAIConfig.provider === 'ollama'
+                          ? 'Ollama'
+                          : 'Local AI'
+                    }`
+              }
+              tooltip={
+                isGeneratingAIMessage
+                  ? 'Generating commit message…'
+                  : `Generate commit message with ${
+                      localAIConfig.provider === 'lmstudio'
+                        ? 'LM Studio'
+                        : localAIConfig.provider === 'ollama'
+                          ? 'Ollama'
+                          : 'Local AI'
+                    }`
+              }
+            >
+              <Octicon symbol={octicons.hubot} />
+            </Button>
+          )}
           <Button
             onClick={this.onCommit}
-            disabled={commitSummary.trim() === '' || isCommitting}
+            disabled={
+              commitSummary.trim() === '' ||
+              isCommitting ||
+              isGeneratingAIMessage
+            }
             type="button"
           >
             {isCommitting ? 'Committing…' : `Commit ${submoduleFiles.length} file${submoduleFiles.length !== 1 ? 's' : ''} to submodule`}
