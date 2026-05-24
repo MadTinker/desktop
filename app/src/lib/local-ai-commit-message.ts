@@ -85,16 +85,14 @@ function buildContextPrefix(
 }
 
 /**
- * Call a local OpenAI-compatible API (Ollama or LM Studio) to generate
- * a commit message from a git diff.
- *
- * Returns the parsed { title, description } or throws on error.
+ * Build the system prompt and user prompt for commit message generation.
+ * Shared by both streaming and non-streaming paths.
  */
-export async function generateLocalAICommitMessage(
+function buildCommitPrompts(
   diff: string,
   config: ILocalAIConfig,
-  context: ILocalAICommitContext = {}
-): Promise<{ title: string; description: string }> {
+  context: ILocalAICommitContext
+): { systemPrompt: string; userPrompt: string } {
   const tags = generateCommitMessagePromptTags()
   let systemPrompt: string
   switch (config.promptMode) {
@@ -102,7 +100,8 @@ export async function generateLocalAICommitMessage(
       systemPrompt = ConventionalCommitsSystemPrompt
       break
     case 'custom':
-      systemPrompt = config.customSystemPrompt || buildCommitMessageSystemPrompt(false, tags)
+      systemPrompt =
+        config.customSystemPrompt || buildCommitMessageSystemPrompt(false, tags)
       break
     default:
       systemPrompt = buildCommitMessageSystemPrompt(false, tags)
@@ -110,9 +109,11 @@ export async function generateLocalAICommitMessage(
   }
   const contextPrefix = buildContextPrefix(context, config.sanitizeGitContext)
   const userPrompt = contextPrefix + buildCommitMessageUserPrompt(diff, tags)
+  return { systemPrompt, userPrompt }
+}
 
-  // Both Ollama (/v1/chat/completions) and LM Studio (/v1/chat/completions)
-  // follow the OpenAI Chat Completions spec.
+/** Validate and resolve the endpoint URL. Throws on invalid or disallowed URLs. */
+function resolveEndpoint(config: ILocalAIConfig): string {
   const baseUrl = config.baseUrl.replace(/\/$/, '')
 
   if (!config.allowNonLocalHttp) {
@@ -129,7 +130,47 @@ export async function generateLocalAICommitMessage(
     }
   }
 
-  const endpoint = `${baseUrl}/v1/chat/completions`
+  return `${baseUrl}/v1/chat/completions`
+}
+
+/** Format a connection error with a user-friendly provider label. */
+function formatConnectionError(config: ILocalAIConfig, e: Error): Error {
+  if (e.name === 'AbortError') {
+    return new Error(
+      `Local AI request timed out after ${config.timeoutMs / 1000}s`
+    )
+  }
+  if (
+    e.message.includes('Failed to fetch') ||
+    e.message.includes('fetch') ||
+    e.message.includes('ECONNREFUSED')
+  ) {
+    const providerLabel =
+      config.provider === 'lmstudio'
+        ? 'LM Studio'
+        : config.provider === 'ollama'
+          ? 'Ollama'
+          : 'local AI'
+    return new Error(
+      `Could not reach ${providerLabel} at ${config.baseUrl} — is it running?`
+    )
+  }
+  return e
+}
+
+/**
+ * Call a local OpenAI-compatible API (Ollama or LM Studio) to generate
+ * a commit message from a git diff.
+ *
+ * Returns the parsed { title, description } or throws on error.
+ */
+export async function generateLocalAICommitMessage(
+  diff: string,
+  config: ILocalAIConfig,
+  context: ILocalAICommitContext = {}
+): Promise<{ title: string; description: string }> {
+  const { systemPrompt, userPrompt } = buildCommitPrompts(diff, config, context)
+  const endpoint = resolveEndpoint(config)
 
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), config.timeoutMs)
@@ -165,27 +206,176 @@ export async function generateLocalAICommitMessage(
     return parseCopilotCommitMessage(content)
   } catch (e) {
     if (e instanceof Error) {
-      if (e.name === 'AbortError') {
-        throw new Error(
-          `Local AI request timed out after ${config.timeoutMs / 1000}s`
-        )
+      throw formatConnectionError(config, e)
+    }
+    throw e
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
+/**
+ * Try to extract title and description from a partial JSON string that is
+ * still being streamed. Handles escaped quotes within JSON string values.
+ */
+export function tryExtractPartialCommitMessage(
+  accumulated: string
+): { title: string | null; description: string | null } {
+  // Strip markdown code fences if present
+  const stripped =
+    accumulated.replace(/^```(?:json)?\s*/m, '').replace(/```\s*$/, '')
+
+  // Extract title — look for "title": "..." with escaped quote support
+  const titleMatch = stripped.match(
+    /"title"\s*:\s*"((?:[^"\\]|\\.)*)(?:"|$)/
+  )
+  // Extract description — same pattern
+  const descMatch = stripped.match(
+    /"description"\s*:\s*"((?:[^"\\]|\\.)*)(?:"|$)/
+  )
+
+  return {
+    title: titleMatch ? unescape(titleMatch[1]) : null,
+    description: descMatch ? unescape(descMatch[1]) : null,
+  }
+}
+
+/** Unescape JSON string escape sequences. */
+function unescape(s: string): string {
+  return s
+    .replace(/\\n/g, '\n')
+    .replace(/\\t/g, '\t')
+    .replace(/\\"/g, '"')
+    .replace(/\\\\/g, '\\')
+}
+
+/**
+ * Streaming callback. Called with progressive partial results as tokens arrive.
+ * `done` is true on the final call with the complete parsed message.
+ */
+export interface IStreamProgress {
+  title: string
+  description: string
+  done: boolean
+}
+
+/**
+ * Streaming variant of generateLocalAICommitMessage. Calls onProgress as
+ * tokens arrive so the UI can show the message assembling in real time.
+ *
+ * Falls back to non-streaming if the response body is not streamable.
+ */
+export async function streamLocalAICommitMessage(
+  diff: string,
+  config: ILocalAIConfig,
+  context: ILocalAICommitContext,
+  onProgress: (progress: IStreamProgress) => void
+): Promise<{ title: string; description: string }> {
+  const { systemPrompt, userPrompt } = buildCommitPrompts(diff, config, context)
+  const endpoint = resolveEndpoint(config)
+
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), config.timeoutMs)
+
+  try {
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      signal: controller.signal,
+      body: JSON.stringify({
+        model: config.modelId,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt },
+        ],
+        temperature: 0.3,
+        stream: true,
+      }),
+    })
+
+    if (!response.ok) {
+      throw new Error(
+        `Local AI returned HTTP ${response.status}: ${await response.text().catch(() => '')}`
+      )
+    }
+
+    // Fallback: if body isn't streamable, parse as non-streaming response
+    if (!response.body) {
+      const json = await response.json()
+      const content: string | undefined = json?.choices?.[0]?.message?.content
+      if (!content) {
+        throw new Error('Local AI returned an empty response')
       }
-      // connection refused / network error
-      if (
-        e.message.includes('Failed to fetch') ||
-        e.message.includes('fetch') ||
-        e.message.includes('ECONNREFUSED')
-      ) {
-        const providerLabel =
-          config.provider === 'lmstudio'
-            ? 'LM Studio'
-            : config.provider === 'ollama'
-              ? 'Ollama'
-              : 'local AI'
-        throw new Error(
-          `Could not reach ${providerLabel} at ${config.baseUrl} — is it running?`
-        )
+      const result = parseCopilotCommitMessage(content)
+      onProgress({ title: result.title, description: result.description, done: true })
+      return result
+    }
+
+    const reader = response.body.getReader()
+    const decoder = new TextDecoder()
+    let accumulated = ''
+    let buffer = ''
+
+    for (;;) {
+      const { done, value } = await reader.read()
+      if (done) {
+        break
       }
+
+      buffer += decoder.decode(value, { stream: true })
+
+      // Process complete SSE lines
+      const lines = buffer.split('\n')
+      // Keep the last potentially incomplete line in the buffer
+      buffer = lines.pop() ?? ''
+
+      for (const line of lines) {
+        const trimmed = line.trim()
+        if (!trimmed || trimmed.startsWith(':')) {
+          continue
+        }
+
+        if (trimmed === 'data: [DONE]') {
+          continue
+        }
+
+        if (trimmed.startsWith('data: ')) {
+          const jsonStr = trimmed.slice(6)
+          try {
+            const chunk = JSON.parse(jsonStr)
+            const token: string | undefined =
+              chunk?.choices?.[0]?.delta?.content
+            if (token) {
+              accumulated += token
+              const partial = tryExtractPartialCommitMessage(accumulated)
+              onProgress({
+                title: partial.title ?? '',
+                description: partial.description ?? '',
+                done: false,
+              })
+            }
+          } catch {
+            // Skip malformed SSE chunks
+          }
+        }
+      }
+    }
+
+    if (!accumulated) {
+      throw new Error('Local AI returned an empty response')
+    }
+
+    // Final parse for correctness
+    const result = parseCopilotCommitMessage(accumulated)
+    onProgress({
+      title: result.title,
+      description: result.description,
+      done: true,
+    })
+    return result
+  } catch (e) {
+    if (e instanceof Error) {
+      throw formatConnectionError(config, e)
     }
     throw e
   } finally {

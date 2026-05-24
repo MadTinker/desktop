@@ -36,7 +36,7 @@ import {
 import {
   loadLocalAIConfig,
   saveLocalAIConfig,
-  generateLocalAICommitMessage,
+  streamLocalAICommitMessage,
   ILocalAICommitContext,
 } from '../local-ai-commit-message'
 import type {
@@ -6189,11 +6189,22 @@ export class AppStore extends TypedBaseStore<IAppState> {
       const context: ILocalAICommitContext = { branchName, recentCommits }
 
       try {
-        const response = await generateLocalAICommitMessage(
+        const response = await streamLocalAICommitMessage(
           diff,
           this.localAIConfig,
-          context
+          context,
+          progress => {
+            if (progress.title || progress.description) {
+              this._setCommitMessage(repository, {
+                summary: progress.title,
+                description: progress.description,
+                timestamp: Date.now(),
+                generatedByCopilot: false,
+              })
+            }
+          }
         )
+        // Final set with fully parsed result
         this._setCommitMessage(repository, {
           summary: response.title,
           description: response.description,
@@ -6202,7 +6213,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
         })
         logActivity(
           'ai-generate',
-          `Generated commit message via ${this.localAIConfig.provider}`,
+          `Generated commit message (streamed) via ${this.localAIConfig.provider}`,
           `model: ${this.localAIConfig.modelId}, mode: ${this.localAIConfig.promptMode}`
         )
         return true
