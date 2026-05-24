@@ -938,5 +938,109 @@
     .open-merge-tool {
       margin-right: var(--spacing-half);
     }
+
+    .explain-diff-component {
+      margin-right: var(--spacing-half);
+      flex-shrink: 0;
+
+      > button {
+        -webkit-appearance: none;
+        font-family: inherit;
+        background: transparent;
+        border: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        color: var(--text-color);
+        cursor: pointer;
+
+        &:hover {
+          color: var(--text-secondary-color);
+        }
+
+        &:disabled {
+          opacity: 0.5;
+          cursor: default;
+        }
+
+        &:focus {
+          outline-offset: 3px;
+        }
+
+        .octicon {
+          margin-right: 0;
+        }
+      }
+    }
+  }
+
+  .explain-diff-panel {
+    background: var(--box-alt-background-color);
+    border-bottom: 1px solid var(--diff-border-color);
+    flex-shrink: 0;
+
+    .explain-diff-panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--spacing-third) var(--spacing);
+      border-bottom: 1px solid var(--diff-border-color);
+    }
+
+    .explain-diff-panel-title {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-half);
+      font-size: var(--font-size-sm);
+      font-weight: 600;
+      color: var(--text-color);
+    }
+
+    .explain-diff-panel-close {
+      -webkit-appearance: none;
+      background: transparent;
+      border: none;
+      padding: 2px;
+      margin: 0;
+      cursor: pointer;
+      color: var(--text-secondary-color);
+      display: flex;
+      align-items: center;
+
+      &:hover {
+        color: var(--text-color);
+      }
+    }
+
+    .explain-diff-panel-body {
+      padding: var(--spacing-half) var(--spacing);
+      font-size: var(--font-size-sm);
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .explain-diff-loading {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-half);
+      color: var(--text-secondary-color);
+      padding: var(--spacing-half) 0;
+    }
+
+    .explain-diff-error {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--spacing-half);
+      color: var(--error-color);
+      padding: var(--spacing-half) 0;
+    }
+
+    .explain-diff-content {
+      white-space: pre-wrap;
+      color: var(--text-color);
+      line-height: 1.5;
+      padding: var(--spacing-half) 0;
+    }
   }
 }
