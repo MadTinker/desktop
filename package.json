@@ -29,6 +29,8 @@
     "generate-themes": "node scripts/generate-madness-themes.js",
     "build:dev": "yarn generate-themes && yarn compile:dev && cross-env DESKTOP_SKIP_PACKAGE=1 NODE_ENV=development ts-node -P script/tsconfig.json script/build.ts",
     "build:prod": "yarn generate-themes && yarn compile:prod && cross-env NODE_ENV=production ts-node -P script/tsconfig.json script/build.ts",
+    "install:prod": "cross-env NODE_ENV=production ts-node -P script/tsconfig.json script/install-local.ts",
+    "build:install": "yarn build:prod && yarn install:prod",
     "package": "ts-node -P script/tsconfig.json script/package.ts",
     "generate-octicons": "ts-node -P script/tsconfig.json script/generate-octicons.ts",
     "compile:script": "tsc -P script/tsconfig.json",

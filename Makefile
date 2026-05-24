@@ -1,4 +1,12 @@
-.PHONY: all
+.PHONY: all dev prod install
 
-all:
-	DESKTOP_SKIP_PACKAGE=1 yarn build:dev && yarn start
+all: dev
+
+dev:
+	yarn build:dev
+
+prod:
+	yarn build:prod
+
+install:
+	yarn build:install
