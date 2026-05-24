@@ -28,7 +28,7 @@ import { forceUnwrap } from '../fatal-error'
 import { git } from './core'
 import { NullTreeSHA } from './diff-index'
 import { GitError } from 'dugite'
-import { listSubmodules } from './submodule'
+import { listSubmodules, isSubmodulePath } from './submodule'
 import { IChangesetData, parseRawLogWithNumstat } from './log'
 import { getConfigValue } from './config'
 import { getMergeBase } from './merge'
@@ -710,6 +710,18 @@ async function buildDiff(
       file,
       file.status.submoduleStatus
     )
+  }
+
+  // Fallback: git porcelain v2 may not flag a path as a submodule if the
+  // gitlink entry is missing from the index (e.g. submodule added to
+  // .gitmodules but never properly initialized). Check .gitmodules directly.
+  if (await isSubmodulePath(repository, file.path)) {
+    const syntheticStatus: SubmoduleStatus = {
+      commitChanged: false,
+      modifiedChanges: false,
+      untrackedChanges: false,
+    }
+    return buildSubmoduleDiff(buffer, repository, file, syntheticStatus)
   }
 
   if (!isValidBuffer(buffer)) {

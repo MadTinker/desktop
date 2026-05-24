@@ -219,14 +219,53 @@ export async function listSubmodules(
   // about it if you want to learn more:
   //
   // https://git-scm.com/docs/git-describe
-  const statusRe = /^(.)([^ ]+) (.+) \((.+?)\)$/gm
+  // Description suffix is optional — uninitialized submodules don't output it
+  const statusRe = /^(.)([^ ]+) (.+?)(?:\s+\((.+?)\))?$/gm
 
   for (const [, statusChar, sha, path, describe] of stdout.matchAll(statusRe)) {
     const status = charToSubmoduleStatus(statusChar)
-    submodules.push(new SubmoduleEntry(sha, path, describe, status))
+    submodules.push(new SubmoduleEntry(sha, path, describe ?? '', status))
   }
 
   return submodules
+}
+
+/**
+ * Check if a file path is registered as a submodule in .gitmodules.
+ * Cheaper than `listSubmodules` — doesn't run `git submodule status`.
+ */
+export async function isSubmodulePath(
+  repository: Repository,
+  filePath: string
+): Promise<boolean> {
+  const gitmodulesPath = Path.join(repository.path, '.gitmodules')
+  if (!(await pathExists(gitmodulesPath))) {
+    return false
+  }
+
+  const { stdout, exitCode } = await git(
+    [
+      'config',
+      '--file',
+      '.gitmodules',
+      '--get-regexp',
+      'submodule\\..*\\.path',
+    ],
+    repository.path,
+    'isSubmodulePath',
+    { successExitCodes: new Set([0, 1]) }
+  )
+
+  if (exitCode !== 0) {
+    return false
+  }
+
+  const paths = stdout
+    .split('\n')
+    .filter(line => line.length > 0)
+    .map(line => line.replace(/^submodule\..*\.path\s+/, ''))
+
+  return paths.includes(filePath)
 }
 
 export async function resetSubmodulePaths(
