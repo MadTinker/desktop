@@ -143,6 +143,7 @@ export function request(
     headers,
     method,
     body: JSON.stringify(jsonBody),
+    signal: AbortSignal.timeout(30_000),
   }
 
   if (reloadCache) {

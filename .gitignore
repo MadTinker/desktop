@@ -22,3 +22,4 @@ tslint-rules/
 playwright-videos/
 /.claude
 /.claude_temp
+/app/.claude_temp
