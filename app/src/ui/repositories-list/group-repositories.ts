@@ -130,8 +130,10 @@ export function groupRepositories(
     }
 
     const memberGroups = repoToCustomGroups.get(repo.id)
-    if (memberGroups !== undefined && repo instanceof Repository) {
-      for (const cg of memberGroups) {
+    const inCustomGroup =
+      memberGroups !== undefined && repo instanceof Repository
+    if (inCustomGroup) {
+      for (const cg of memberGroups!) {
         addToGroup(
           { kind: 'custom-group', groupId: cg.id, groupName: cg.name },
           repo
@@ -139,11 +141,15 @@ export function groupRepositories(
       }
     }
 
-    if (recentSet?.has(repo.id) && repo instanceof Repository) {
+    const inRecent =
+      recentSet?.has(repo.id) === true && repo instanceof Repository
+    if (inRecent) {
       addToGroup({ kind: 'recent' }, repo)
     }
 
-    addToGroup(getGroupForRepository(repo), repo)
+    if (!inCustomGroup && !inRecent) {
+      addToGroup(getGroupForRepository(repo), repo)
+    }
   }
 
   return Array.from(groups)

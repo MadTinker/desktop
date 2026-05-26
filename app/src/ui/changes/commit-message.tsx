@@ -35,7 +35,6 @@ import {
 } from './commit-message-avatar'
 import {
   getStealthEmailForUser,
-  isAttributableEmailFor,
   lookupPreferredEmail,
 } from '../../lib/email'
 import { setGlobalConfigValue } from '../../lib/git/config'
@@ -793,13 +792,10 @@ export class CommitMessage extends React.Component<
         this.state.repoRuleCommitAuthorFailures.status !== 'pass'
       ) {
         warningType = 'disallowedEmail'
-      } else if (
-        repositoryAccount !== null &&
-        repositoryAccount !== undefined &&
-        isAttributableEmailFor(repositoryAccount, email) === false
-      ) {
-        warningType = 'misattribution'
       }
+      // Misattribution warning intentionally suppressed in this fork:
+      // local git config email is treated as source of truth even when it
+      // isn't in the GitHub account's verified-email set.
     }
 
     return (
