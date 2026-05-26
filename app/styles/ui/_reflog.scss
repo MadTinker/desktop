@@ -18,9 +18,15 @@
   background-color: var(--background-color);
   border-bottom: var(--base-border);
   padding: var(--spacing-half) var(--spacing);
+  cursor: pointer;
 
   &:hover {
     background: var(--list-item-hover-background-color);
+  }
+
+  &.selected {
+    background: var(--list-item-selected-background-color);
+    color: var(--list-item-selected-text-color);
   }
 }
 

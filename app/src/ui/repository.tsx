@@ -422,7 +422,19 @@ export class RepositoryView extends React.Component<
   }
 
   private renderReflogSidebar(): JSX.Element {
-    return <ReflogSidebar entries={this.props.state.reflogEntries} />
+    const selectedSha =
+      this.props.state.commitSelection.shas[0] ?? null
+    return (
+      <ReflogSidebar
+        entries={this.props.state.reflogEntries}
+        selectedSha={selectedSha}
+        onEntrySelected={this.onReflogEntrySelected}
+      />
+    )
+  }
+
+  private onReflogEntrySelected = (sha: string) => {
+    this.props.dispatcher.selectReflogCommit(this.props.repository, sha)
   }
 
   private renderSidebarContents(): JSX.Element {

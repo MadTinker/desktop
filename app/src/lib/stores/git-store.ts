@@ -670,6 +670,19 @@ export class GitStore extends BaseStore {
     }
   }
 
+  /** Ensure a commit identified by `sha` is in the lookup cache. */
+  public async ensureCommit(sha: string): Promise<Commit | null> {
+    const existing = this.commitLookup.get(sha)
+    if (existing !== undefined) {
+      return existing
+    }
+    const commit = await getCommit(this.repository, sha)
+    if (commit !== null) {
+      this.storeCommits([commit])
+    }
+    return commit
+  }
+
   private async undoFirstCommit(
     repository: Repository
   ): Promise<true | undefined> {

@@ -7,6 +7,8 @@ import { Button } from '../lib/button'
 
 interface IReflogSidebarProps {
   readonly entries: ReadonlyArray<IReflogEntry>
+  readonly selectedSha: string | null
+  readonly onEntrySelected: (sha: string) => void
 }
 
 interface IReflogSidebarState {
@@ -107,33 +109,44 @@ export class ReflogSidebar extends React.Component<
     )
   }
 
+  private onEntryClick = (sha: string) => () => {
+    this.props.onEntrySelected(sha)
+  }
+
   public render() {
-    const { entries } = this.props
+    const { entries, selectedSha } = this.props
 
     return (
       <div className="reflog-sidebar">
         {entries.length === 0 ? (
           <p className="reflog-empty">No reflog entries found.</p>
         ) : (
-          entries.map(entry => (
-            <div key={entry.selector} className="reflog-entry">
-              <div className="reflog-entry-info">
-                <div className="reflog-summary">{entry.description}</div>
-                <div className="reflog-byline">
-                  <span
-                    className={`reflog-action reflog-action--${entry.action}`}
-                    title={entry.action}
-                  >
-                    {entry.action}
-                  </span>
-                  {entry.author && (
-                    <span className="reflog-author">{entry.author}</span>
-                  )}
-                  <RelativeTime date={entry.date} className="reflog-date" />
+          entries.map(entry => {
+            const isSelected = entry.sha === selectedSha
+            return (
+              <div
+                key={entry.selector}
+                className={`reflog-entry${isSelected ? ' selected' : ''}`}
+                onClick={this.onEntryClick(entry.sha)}
+              >
+                <div className="reflog-entry-info">
+                  <div className="reflog-summary">{entry.description}</div>
+                  <div className="reflog-byline">
+                    <span
+                      className={`reflog-action reflog-action--${entry.action}`}
+                      title={entry.action}
+                    >
+                      {entry.action}
+                    </span>
+                    {entry.author && (
+                      <span className="reflog-author">{entry.author}</span>
+                    )}
+                    <RelativeTime date={entry.date} className="reflog-date" />
+                  </div>
                 </div>
               </div>
-            </div>
-          ))
+            )
+          })
         )}
         {this.renderActivityLog()}
       </div>

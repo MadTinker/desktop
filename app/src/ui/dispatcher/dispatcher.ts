@@ -264,6 +264,14 @@ export class Dispatcher {
     return this.appStore._changeCommitSelection(repository, shas, isContiguous)
   }
 
+  /** Select a commit from a reflog entry and load its diff into the main pane. */
+  public selectReflogCommit(
+    repository: Repository,
+    sha: string
+  ): Promise<void> {
+    return this.appStore._selectReflogCommit(repository, sha)
+  }
+
   /** Update the shas that should be highlighted */
   public updateShasToHighlight(
     repository: Repository,

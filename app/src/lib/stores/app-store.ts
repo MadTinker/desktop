@@ -1699,6 +1699,17 @@ export class AppStore extends TypedBaseStore<IAppState> {
     }
   }
 
+  /** Select a commit identified by a reflog entry, loading metadata as needed. */
+  public async _selectReflogCommit(
+    repository: Repository,
+    sha: string
+  ): Promise<void> {
+    const gitStore = this.gitStoreCache.get(repository)
+    await gitStore.ensureCommit(sha)
+    this._changeCommitSelection(repository, [sha], true)
+    await this._loadChangedFilesForCurrentSelection(repository)
+  }
+
   /** This shouldn't be called directly. See `Dispatcher`. */
   public async _initializeCompare(
     repository: Repository,
