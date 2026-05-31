@@ -306,6 +306,10 @@ export class PullRequestFilesChanged extends React.Component<
         onOpenBinaryFile={this.onOpenBinaryFile}
         onChangeImageDiffType={this.onChangeImageDiffType}
         onHideWhitespaceInDiffChanged={this.onHideWhitespaceInDiffChanged}
+        onOpenInExternalEditor={path =>
+          this.props.dispatcher.openInExternalEditor(path)
+        }
+        externalEditorLabel={this.props.externalEditorLabel}
       />
     )
   }

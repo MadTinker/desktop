@@ -171,6 +171,10 @@ export class SelectedCommits extends React.Component<
           onChangeImageDiffType={this.props.onChangeImageDiffType}
           onHideWhitespaceInDiffChanged={this.onHideWhitespaceInDiffChanged}
           onOpenSubmodule={this.props.onOpenSubmodule}
+          onOpenInExternalEditor={path =>
+            this.props.dispatcher.openInExternalEditor(path)
+          }
+          externalEditorLabel={this.props.externalEditorLabel}
         />
       </div>
     )

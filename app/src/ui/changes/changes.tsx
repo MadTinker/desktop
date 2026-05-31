@@ -61,6 +61,9 @@ interface IChangesProps {
   /** Whether or not to show the diff check marks indicating inclusion in a commit */
   readonly showDiffCheckMarks: boolean
 
+  /** The label for the external editor. */
+  readonly externalEditorLabel?: string
+
   /** Called when the user opens the diff options popover */
   readonly onDiffOptionsOpened: () => void
 }
@@ -141,6 +144,10 @@ export class Changes extends React.Component<IChangesProps, {}> {
           onInitializeSubmodule={this.props.onInitializeSubmodule}
           onSyncSubmodule={this.props.onSyncSubmodule}
           onRollbackSubmodule={this.props.onRollbackSubmodule}
+          onOpenInExternalEditor={path =>
+            this.props.dispatcher.openInExternalEditor(path)
+          }
+          externalEditorLabel={this.props.externalEditorLabel}
           onChangeImageDiffType={this.props.onChangeImageDiffType}
           onHideWhitespaceInDiffChanged={this.onHideWhitespaceInDiffChanged}
         />

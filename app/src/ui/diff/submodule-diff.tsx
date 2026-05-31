@@ -17,10 +17,23 @@ import { getStatus } from '../../lib/git/status'
 import { getWorkingDirectoryDiff, getFilesDiffText } from '../../lib/git/diff'
 import { createCommit } from '../../lib/git/commit'
 import { getCommits } from '../../lib/git/log'
+import { appendIgnoreFile } from '../../lib/git/gitignore'
+import { IMenuItem, showContextualMenu } from '../../lib/menu-item'
+import { revealInFileManager, openPath } from '../../lib/app-shell'
+import {
+  RevealInFileManagerLabel,
+  OpenWithDefaultProgramLabel,
+  DefaultEditorLabel,
+} from '../lib/context-menu'
+import { checkoutPaths } from '../../lib/git/checkout'
+import { clipboard, shell } from 'electron'
+import * as Path from 'path'
+import * as FS from 'fs'
 import {
   WorkingDirectoryFileChange,
   AppFileStatusKind,
 } from '../../models/status'
+import { isSafeFileExtension } from '../../lib/file-extensions'
 import {
   streamLocalAICommitMessage,
   loadLocalAIConfig,
@@ -55,6 +68,8 @@ interface ISubmoduleDiffProps {
   readonly onInitializeSubmodule?: (submodulePath: string) => void
   readonly onSyncSubmodule?: (submodulePath: string) => void
   readonly onRollbackSubmodule?: (submodulePath: string) => void
+  readonly onOpenInExternalEditor: (fullPath: string) => void
+  readonly externalEditorLabel?: string
   readonly diff: ISubmoduleDiff
 
   /**
@@ -600,6 +615,7 @@ export class SubmoduleDiff extends React.Component<
         key={file.path}
         className={`submodule-file-item ${statusClass}${isSelected ? ' selected' : ''}`}
         onClick={() => this.onFileClick(file)}
+        onContextMenu={e => this.onContextMenu(file, e)}
         role="button"
         tabIndex={0}
         onKeyDown={e => {
@@ -612,6 +628,144 @@ export class SubmoduleDiff extends React.Component<
         <span className="submodule-file-path">{file.path}</span>
       </div>
     )
+  }
+
+  private onContextMenu = (
+    file: WorkingDirectoryFileChange,
+    event: React.MouseEvent
+  ) => {
+    event.preventDefault()
+
+    const { path } = file
+    const extension = Path.extname(path)
+    const isSafeExtension = isSafeFileExtension(extension)
+    const isGitIgnore = path.endsWith('.gitignore')
+
+    const items: IMenuItem[] = [
+      {
+        label: __DARWIN__ ? 'Discard Changes…' : 'Discard changes…',
+        action: () => this.onDiscardChanges(file),
+      },
+      { type: 'separator' },
+      {
+        label: __DARWIN__
+          ? 'Ignore File (Add to .gitignore)'
+          : 'Ignore file (add to .gitignore)',
+        action: () => this.onIgnoreFile(path),
+        enabled: !isGitIgnore,
+      },
+    ]
+
+    const pathComponents = path.split('/').slice(0, -1)
+    if (pathComponents.length > 0) {
+      const submenu = pathComponents.map((_, index) => {
+        const label = `/${pathComponents
+          .slice(0, pathComponents.length - index)
+          .join('/')}`
+        return {
+          label,
+          action: () => this.onIgnoreFile(label),
+        }
+      })
+
+      items.push({
+        label: __DARWIN__
+          ? 'Ignore Folder (Add to .gitignore)'
+          : 'Ignore folder (add to .gitignore)',
+        submenu,
+        enabled: !isGitIgnore,
+      })
+    }
+
+    if (extension.length > 0) {
+      items.push({
+        label: __DARWIN__
+          ? `Ignore All ${extension} Files (Add to .gitignore)`
+          : `Ignore all ${extension} files (add to .gitignore)`,
+        action: () => this.onIgnoreFile(`*${extension}`),
+        enabled: !isGitIgnore,
+      })
+    }
+
+    items.push(
+      { type: 'separator' },
+      {
+        label: __DARWIN__ ? 'Copy Path' : 'Copy path',
+        action: () =>
+          clipboard.writeText(Path.join(this.props.diff.fullPath, path)),
+      },
+      {
+        label: __DARWIN__ ? 'Copy Relative Path' : 'Copy relative path',
+        action: () => clipboard.writeText(Path.normalize(path)),
+      },
+      { type: 'separator' },
+      {
+        label: RevealInFileManagerLabel,
+        action: () => revealInFileManager(this.getSubmoduleRepo(), path),
+        enabled: file.status.kind !== AppFileStatusKind.Deleted,
+      }
+    )
+
+    const isDeleted = file.status.kind === AppFileStatusKind.Deleted
+    const { externalEditorLabel } = this.props
+    const openInExternalEditorLabel = externalEditorLabel
+      ? `Open in ${externalEditorLabel}`
+      : DefaultEditorLabel
+
+    items.push({
+      label: openInExternalEditorLabel,
+      action: () => this.onOpenItemInExternalEditor(path),
+      enabled: !isDeleted,
+    })
+
+    items.push({
+      label: OpenWithDefaultProgramLabel,
+      action: () => this.onOpenItem(path),
+      enabled: !isDeleted && isSafeExtension,
+    })
+
+    showContextualMenu(items)
+  }
+
+  private onDiscardChanges = async (file: WorkingDirectoryFileChange) => {
+    const submoduleRepo = this.getSubmoduleRepo()
+    if (
+      file.status.kind === AppFileStatusKind.Untracked ||
+      file.status.kind === AppFileStatusKind.New
+    ) {
+      const fullPath = Path.join(submoduleRepo.path, file.path)
+      try {
+        await shell.moveItemToTrash(fullPath)
+      } catch (e) {
+        await new Promise<void>((resolve, reject) => {
+          FS.unlink(fullPath, err => {
+            if (err) {
+              reject(err)
+            } else {
+              resolve()
+            }
+          })
+        })
+      }
+    } else {
+      await checkoutPaths(submoduleRepo, [file.path])
+    }
+    await this.loadSubmoduleStatus()
+  }
+
+  private onOpenItem = (path: string) => {
+    const fullPath = Path.join(this.getSubmoduleRepo().path, path)
+    openPath(fullPath)
+  }
+
+  private onOpenItemInExternalEditor = (path: string) => {
+    const fullPath = Path.join(this.getSubmoduleRepo().path, path)
+    this.props.onOpenInExternalEditor(fullPath)
+  }
+
+  private onIgnoreFile = async (path: string) => {
+    await appendIgnoreFile(this.getSubmoduleRepo(), path)
+    await this.loadSubmoduleStatus()
   }
 
   private fileStatusClass(file: WorkingDirectoryFileChange): string {

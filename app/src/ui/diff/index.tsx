@@ -88,6 +88,12 @@ interface IDiffProps {
   /** Called when the user requests to open a submodule. */
   readonly onOpenSubmodule?: (fullPath: string) => void
 
+  /** Called when the user requests to open a file in an external editor. */
+  readonly onOpenInExternalEditor: (fullPath: string) => void
+
+  /** The label for the external editor. */
+  readonly externalEditorLabel?: string
+
   /** Called when the user clicks Initialize on an uninitialized submodule. */
   readonly onInitializeSubmodule?: (submodulePath: string) => void
 
@@ -279,6 +285,8 @@ export class Diff extends React.Component<IDiffProps, IDiffState> {
         onInitializeSubmodule={this.props.onInitializeSubmodule}
         onSyncSubmodule={this.props.onSyncSubmodule}
         onRollbackSubmodule={this.props.onRollbackSubmodule}
+        onOpenInExternalEditor={this.props.onOpenInExternalEditor}
+        externalEditorLabel={this.props.externalEditorLabel}
         diff={diff}
         readOnly={this.props.readOnly}
       />

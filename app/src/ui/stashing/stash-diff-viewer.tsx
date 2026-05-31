@@ -120,6 +120,8 @@ export class StashDiffViewer extends React.PureComponent<IStashDiffViewerProps> 
             this.props.onHideWhitespaceInDiffChanged
           }
           onOpenSubmodule={onOpenSubmodule}
+          onOpenInExternalEditor={path => dispatcher.openInExternalEditor(path)}
+          externalEditorLabel={this.props.externalEditorLabel}
         />
       ) : null
 

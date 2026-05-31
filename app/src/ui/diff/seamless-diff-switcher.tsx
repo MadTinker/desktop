@@ -101,6 +101,14 @@ interface ISeamlessDiffSwitcherProps {
   // eslint-disable-next-line react/no-unused-prop-types
   readonly onRollbackSubmodule?: (submodulePath: string) => void
 
+  /** Called when the user requests to open a file in an external editor. */
+  // eslint-disable-next-line react/no-unused-prop-types
+  readonly onOpenInExternalEditor: (fullPath: string) => void
+
+  /** The label for the external editor. */
+  // eslint-disable-next-line react/no-unused-prop-types
+  readonly externalEditorLabel?: string
+
   /**
    * Called when the user is viewing an image diff and requests
    * to change the diff presentation mode.
@@ -353,6 +361,8 @@ export class SeamlessDiffSwitcher extends React.Component<
       onInitializeSubmodule,
       onSyncSubmodule,
       onRollbackSubmodule,
+      onOpenInExternalEditor,
+      externalEditorLabel,
       onChangeImageDiffType,
       onHideWhitespaceInDiffChanged,
     } = this.state.propSnapshot
@@ -396,6 +406,10 @@ export class SeamlessDiffSwitcher extends React.Component<
             onRollbackSubmodule={
               isLoadingDiff ? undefined : onRollbackSubmodule
             }
+            onOpenInExternalEditor={
+              isLoadingDiff ? noop : onOpenInExternalEditor
+            }
+            externalEditorLabel={externalEditorLabel}
             onChangeImageDiffType={isLoadingDiff ? noop : onChangeImageDiffType}
             onHideWhitespaceInDiffChanged={
               isLoadingDiff ? noop : onHideWhitespaceInDiffChanged
