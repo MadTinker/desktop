@@ -1,17 +1,44 @@
-import { CopilotClient } from '@github/copilot-sdk'
-import type { ModelInfo, SessionConfig } from '@github/copilot-sdk'
+import { CopilotClient, CopilotSession } from '@github/copilot-sdk'
+import type {
+  AssistantMessageEvent,
+  MessageOptions,
+  ModelInfo,
+  SessionConfig,
+} from '@github/copilot-sdk'
 import { AccountsStore } from './accounts-store'
 import { Account, isDotComAccount } from '../../models/account'
 import {
   ICopilotCommitMessage,
   parseCopilotCommitMessage,
 } from '../copilot-commit-message'
+import { getCopilotPaymentRequiredErrorFromSessionError } from '../copilot-error'
+import {
+  CopilotValidationError,
+  ConflictResolutionSystemPrompt,
+  ICopilotConflictResolutionResponse,
+  IConflictResolutionProgress,
+  IFileResolution,
+  SinglePromptFileLimit,
+  MaxConcurrentChunks,
+  parseCopilotConflictResolution,
+  validateResolutionPaths,
+  createDependencyAwareChunks,
+} from '../copilot-conflict-resolution'
+import {
+  ICopilotConflictContext,
+  IConflictCommitContext,
+  IFileConflictContext,
+  formatConflictContextForPrompt,
+} from '../copilot-conflict-context'
+import { PullRequest } from '../../models/pull-request'
 import * as ipcRenderer from '../ipc-renderer'
 import { join } from 'path'
 import { pathToFileURL } from 'url'
 import { randomBytes } from 'crypto'
 import { BaseStore } from './base-store'
 import { IRepoRulesMetadataRule } from '../../models/repo-rules'
+import { pathExists } from '../path-exists'
+import { enableCopilotSdkCommitMessageGeneration } from '../feature-flag'
 
 /** The default model ID used for Copilot commit message generation. */
 export const DefaultCopilotModel = 'gpt-5-mini'
@@ -373,7 +400,8 @@ export class CopilotStore extends BaseStore {
       // Proactively fetch models so they are ready when the user opens the
       // Copilot tab in Settings, even if they signed in without reopening
       // the dialog.
-      this.getCachedModels().then(this.emitUpdate, this.emitUpdate)
+      const emit = () => this.emitUpdate()
+      this.getCachedModels().then(emit, emit)
     }
   }
 
@@ -397,16 +425,25 @@ export class CopilotStore extends BaseStore {
     // CLI fails to parse the arguments correctly, so we ended up using --eval
     // and just importing the index.js from the CLI as a workaround.
     const cliDir = getCopilotCLIDir()
-    let importPath = join(cliDir, 'index.js')
+    const indexPath = join(cliDir, 'index.js')
 
-    if (__WIN32__) {
-      // On Windows, we need the import path to be a valid file:// URL.
-      importPath = pathToFileURL(importPath).href
+    // Make sure the import path exists before creating the client, so we don't
+    // end up with a half-broken client that can't start. We check the
+    // filesystem path here, before converting it to a file:// URL on Windows,
+    // because `fs.access` doesn't accept URL-form strings.
+    if (!(await pathExists(indexPath))) {
+      throw new Error('Cannot create Copilot client: CLI entry point not found')
     }
+
+    // On Windows, `import` requires a valid file:// URL rather than a bare
+    // absolute path.
+    const importSpecifier = __WIN32__
+      ? pathToFileURL(indexPath).href
+      : indexPath
 
     return new CopilotClient({
       cliPath: await getCopilotCLIPath(),
-      cliArgs: ['--eval', `import '${importPath}'`, '--'],
+      cliArgs: ['--eval', `import '${importSpecifier}'`, '--'],
       env: {
         ELECTRON_RUN_AS_NODE: '1',
         COPILOT_RUN_APP: '1',
@@ -425,6 +462,48 @@ export class CopilotStore extends BaseStore {
       await client.stop()
     } catch (e) {
       log.error('CopilotStore: Error stopping client', e)
+    }
+  }
+
+  /**
+   * Sends a prompt on the given session and waits for the assistant
+   * response, while capturing any `session.error` events emitted during
+   * the round-trip.
+   *
+   * If the SDK emits a `session.error` whose upstream HTTP status code is
+   * 402 (Payment Required), the corresponding `CopilotError` is thrown
+   * instead of whatever {@link CopilotSession.sendAndWait} would have
+   * rejected with — the underlying rejection is intentionally swallowed
+   * because the SDK surfaces the same failure twice (once on the event
+   * channel, once on the awaited promise) and only the parsed 402 error
+   * carries actionable billing metadata for the UI.
+   *
+   * Any other `session.error` event is logged and otherwise ignored so
+   * the original `sendAndWait` rejection (or success) is propagated
+   * unchanged.
+   */
+  private async sendAndWait(
+    session: CopilotSession,
+    options: MessageOptions,
+    timeoutMs: number
+  ): Promise<AssistantMessageEvent | undefined> {
+    let paymentRequiredError: Error | undefined
+
+    const unsubscribe = session.on('session.error', e => {
+      const captured = getCopilotPaymentRequiredErrorFromSessionError(e.data)
+      if (captured !== null) {
+        paymentRequiredError = captured
+      } else {
+        log.error(`CopilotStore: Session error: ${e.toString()}`)
+      }
+    })
+
+    try {
+      return await session.sendAndWait(options, timeoutMs)
+    } catch (e) {
+      throw paymentRequiredError ?? e
+    } finally {
+      unsubscribe()
     }
   }
 
@@ -518,7 +597,9 @@ export class CopilotStore extends BaseStore {
         tags,
         cleanedRuleDescriptions
       )
-      const response = await session.sendAndWait(
+
+      const response = await this.sendAndWait(
+        session,
         { prompt: userPrompt },
         timeoutMs
       )
@@ -538,6 +619,180 @@ export class CopilotStore extends BaseStore {
       // Stop the client after use
       await this.stopClient(client)
     }
+  }
+
+  /**
+   * Use the Copilot SDK to analyze conflicts and suggest resolutions.
+   *
+   * For small conflict sets (≤20 files) a single prompt is sent. Larger sets
+   * are automatically batched into parallel chunks with up to 5 concurrent
+   * requests. Each chunk is retried once on parse failure.
+   *
+   * @param context - The structured conflict context (files with hunks)
+   * @param commitContext - Optional commit history from both sides
+   * @param pullRequest - Optional pull request for enrichment
+   * @param repositoryPath - Path to the repository working directory
+   * @param onProgress - Optional callback for streaming progress to the UI
+   * @returns The parsed conflict resolution response
+   * @throws Error if no GitHub.com account is available or if resolution fails
+   */
+  public async resolveConflicts(
+    context: ICopilotConflictContext,
+    commitContext: IConflictCommitContext | null,
+    pullRequest: PullRequest | null,
+    repositoryPath: string,
+    onProgress?: (progress: IConflictResolutionProgress) => void
+  ): Promise<ICopilotConflictResolutionResponse> {
+    const resolvableFiles = context.files.filter(f => !f.skippedReason)
+    const filesTotal = resolvableFiles.length
+
+    if (filesTotal === 0) {
+      throw new Error('No resolvable conflicted files')
+    }
+
+    onProgress?.({ filesResolved: 0, filesTotal })
+
+    const client = await this.createClient(repositoryPath)
+
+    try {
+      if (filesTotal <= SinglePromptFileLimit) {
+        const filteredContext: ICopilotConflictContext = {
+          ourLabel: context.ourLabel,
+          theirLabel: context.theirLabel,
+          files: resolvableFiles,
+        }
+        const prompt = formatConflictContextForPrompt(
+          filteredContext,
+          commitContext,
+          pullRequest
+        )
+        const resolutions = await this.resolveChunk(
+          client,
+          prompt,
+          resolvableFiles
+        )
+        onProgress?.({ filesResolved: filesTotal, filesTotal })
+        return { resolutions }
+      }
+
+      // Batch into chunks and resolve concurrently. Smaller chunks at high
+      // file counts protect output quality (less truncation/malformed JSON).
+      const chunkSize = filesTotal > 100 ? 15 : 20
+      const chunks = createDependencyAwareChunks(resolvableFiles, chunkSize)
+      const allResolutions: Array<IFileResolution> = []
+      let filesResolved = 0
+
+      // Process chunks with bounded concurrency
+      for (let i = 0; i < chunks.length; i += MaxConcurrentChunks) {
+        const batch = chunks.slice(i, i + MaxConcurrentChunks)
+        const batchSettled = await Promise.allSettled(
+          batch.map(chunkFiles => {
+            const chunkContext: ICopilotConflictContext = {
+              ourLabel: context.ourLabel,
+              theirLabel: context.theirLabel,
+              files: chunkFiles,
+            }
+            const prompt = formatConflictContextForPrompt(
+              chunkContext,
+              commitContext,
+              pullRequest
+            )
+            return this.resolveChunk(client, prompt, chunkFiles)
+          })
+        )
+
+        // Collect results; throw the first failure after all settle
+        let firstError: Error | undefined
+        for (const result of batchSettled) {
+          if (result.status === 'fulfilled') {
+            allResolutions.push(...result.value)
+            filesResolved += result.value.length
+            onProgress?.({
+              filesResolved,
+              filesTotal,
+            })
+          } else if (firstError === undefined) {
+            firstError =
+              result.reason instanceof Error
+                ? result.reason
+                : new Error(String(result.reason))
+          }
+        }
+
+        if (firstError !== undefined) {
+          throw firstError
+        }
+      }
+
+      onProgress?.({ filesResolved: filesTotal, filesTotal })
+      return { resolutions: allResolutions }
+    } finally {
+      await this.stopClient(client)
+    }
+  }
+
+  /**
+   * Resolve a single chunk of files. Retries once on parse or validation
+   * failure. Transport errors (timeouts, auth, session creation) fail fast.
+   */
+  private async resolveChunk(
+    client: CopilotClient,
+    prompt: string,
+    expectedFiles: ReadonlyArray<IFileConflictContext>
+  ): Promise<ReadonlyArray<IFileResolution>> {
+    const expectedPaths = new Set(expectedFiles.map(f => f.path))
+    let lastError: Error | undefined
+
+    for (let attempt = 0; attempt < 2; attempt++) {
+      let session: Awaited<ReturnType<CopilotClient['createSession']>> | null =
+        null
+
+      try {
+        session = await client.createSession({
+          model: 'gpt-5-mini',
+          reasoningEffort: 'high',
+          availableTools: [],
+          systemMessage: {
+            mode: 'append',
+            content: ConflictResolutionSystemPrompt,
+          },
+          onPermissionRequest: async () => ({
+            kind: 'denied-interactively-by-user',
+          }),
+        })
+
+        const response = await this.sendAndWait(session, { prompt }, 600_000)
+
+        if (!response || !response.data.content) {
+          throw new Error('No response from Copilot')
+        }
+
+        const parsed = parseCopilotConflictResolution(response.data.content)
+        validateResolutionPaths(parsed.resolutions, expectedPaths)
+
+        return parsed.resolutions
+      } catch (e) {
+        lastError = e instanceof Error ? e : new Error(String(e))
+
+        // Only retry on parse/validation failures — fail fast on
+        // transport errors (timeouts, auth, session creation).
+        const isRetryable = lastError instanceof CopilotValidationError
+
+        if (!isRetryable || attempt > 0) {
+          break
+        }
+
+        log.warn(
+          'CopilotStore: Conflict resolution parse/validation failed, retrying',
+          e
+        )
+      } finally {
+        await session?.destroy().catch(() => {})
+      }
+    }
+
+    log.warn('CopilotStore: Failed to resolve conflicts after retry', lastError)
+    throw lastError ?? new Error('Conflict resolution failed')
   }
 
   /**
@@ -573,7 +828,10 @@ export class CopilotStore extends BaseStore {
    * would mean Copilot legitimately reports no models.
    */
   public async listModels(): Promise<ReadonlyArray<ModelInfo> | null> {
-    if (this.currentAccount === null) {
+    if (
+      this.currentAccount === null ||
+      !enableCopilotSdkCommitMessageGeneration(this.currentAccount)
+    ) {
       return null
     }
 
@@ -603,7 +861,11 @@ export class CopilotStore extends BaseStore {
       return this.modelsInFlight
     }
 
-    this.modelsInFlight = this.fetchModels()
+    this.modelsInFlight = this.fetchModels().catch(e => {
+      log.warn('CopilotStore: Failed to fetch and cache models', e)
+      return null
+    })
+
     try {
       return await this.modelsInFlight
     } finally {

@@ -57,6 +57,9 @@ interface IStashDiffViewerProps {
    * @param path The path of the file relative to the root of the repository
    */
   readonly onOpenInExternalEditor: (path: string) => void
+
+  /** The label for the external editor. */
+  readonly externalEditorLabel?: string
 }
 
 /// Id of the stash diff viewer

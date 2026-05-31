@@ -19,21 +19,21 @@ import { createCommit } from '../../lib/git/commit'
 import { getCommits } from '../../lib/git/log'
 import { appendIgnoreFile } from '../../lib/git/gitignore'
 import { IMenuItem, showContextualMenu } from '../../lib/menu-item'
-import { revealInFileManager, openPath } from '../../lib/app-shell'
+import { revealInFileManager, shell as appShell } from '../../lib/app-shell'
 import {
   RevealInFileManagerLabel,
   OpenWithDefaultProgramLabel,
   DefaultEditorLabel,
+  isSafeFileExtension,
 } from '../lib/context-menu'
 import { checkoutPaths } from '../../lib/git/checkout'
-import { clipboard, shell } from 'electron'
+import { clipboard } from 'electron'
 import * as Path from 'path'
 import * as FS from 'fs'
 import {
   WorkingDirectoryFileChange,
   AppFileStatusKind,
 } from '../../models/status'
-import { isSafeFileExtension } from '../../lib/file-extensions'
 import {
   streamLocalAICommitMessage,
   loadLocalAIConfig,
@@ -735,7 +735,7 @@ export class SubmoduleDiff extends React.Component<
     ) {
       const fullPath = Path.join(submoduleRepo.path, file.path)
       try {
-        await shell.moveItemToTrash(fullPath)
+        await appShell.moveItemToTrash(fullPath)
       } catch (e) {
         await new Promise<void>((resolve, reject) => {
           FS.unlink(fullPath, err => {
@@ -755,7 +755,7 @@ export class SubmoduleDiff extends React.Component<
 
   private onOpenItem = (path: string) => {
     const fullPath = Path.join(this.getSubmoduleRepo().path, path)
-    openPath(fullPath)
+    appShell.openPath(fullPath)
   }
 
   private onOpenItemInExternalEditor = (path: string) => {

@@ -216,6 +216,12 @@ export function buildDefaultMenu({
         accelerator: getAccelerator('show-branches', hotkeyBindings, 'CmdOrCtrl+B'),
         click: emit('show-branches'),
       },
+      {
+        label: __DARWIN__ ? 'Show Worktrees List' : '&Worktrees list',
+        id: 'show-worktrees-list',
+        accelerator: 'CmdOrCtrl+Alt+W',
+        click: emit('show-worktrees'),
+      },
       separator,
       {
         label: __DARWIN__ ? 'Go to Summary' : 'Go to &Summary',
@@ -392,6 +398,13 @@ export function buildDefaultMenu({
           : 'Create &issue on GitHub',
         accelerator: getAccelerator('create-issue-in-repository-on-github', hotkeyBindings, 'CmdOrCtrl+I'),
         click: emit('create-issue-in-repository-on-github'),
+      },
+      separator,
+      {
+        id: 'create-worktree',
+        label: __DARWIN__ ? 'New Worktree…' : 'New work&tree…',
+        click: emit('create-worktree'),
+        accelerator: 'CmdOrCtrl+Shift+W',
       },
       separator,
       {

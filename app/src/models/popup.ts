@@ -109,9 +109,13 @@ export enum PopupType {
   GenerateCommitMessageDisclaimer = 'GenerateCommitMessageDisclaimer',
   HookFailed = 'HookFailed',
   CommitProgress = 'CommitProgress',
+  AddWorktree = 'AddWorktree',
+  RenameWorktree = 'RenameWorktree',
+  DeleteWorktree = 'DeleteWorktree',
   EditCopilotBYOKProvider = 'EditCopilotBYOKProvider',
   EditCopilotBYOKModel = 'EditCopilotBYOKModel',
   ConfirmDeleteCopilotBYOKProvider = 'ConfirmDeleteCopilotBYOKProvider',
+  DeleteWorktreeFailed = 'DeleteWorktreeFailed',
   SubmoduleManagement = 'SubmoduleManagement',
   ConfirmArchiveChatHistory = 'ConfirmArchiveChatHistory',
 }
@@ -504,6 +508,28 @@ export type PopupDetail =
   | {
       type: PopupType.CommitProgress
       subscribeToCommitOutput: TerminalOutputListener
+    }
+  | {
+      type: PopupType.AddWorktree
+      repository: Repository
+      initialBranchName?: string
+      initialWorktreeName?: string
+    }
+  | {
+      type: PopupType.RenameWorktree
+      repository: Repository
+      worktreePath: string
+    }
+  | {
+      type: PopupType.DeleteWorktree
+      repository: Repository
+      worktreePath: string
+    }
+  | {
+      type: PopupType.DeleteWorktreeFailed
+      repository: Repository
+      worktreePath: string
+      error: Error
     }
   | { type: PopupType.SubmoduleManagement; repository: Repository }
   | {

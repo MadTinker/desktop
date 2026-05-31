@@ -132,12 +132,6 @@ interface IRepositoryViewProps {
   readonly onRefreshOmnispindleTodos: (project?: string) => void
 
   /**
-   * Whether there are any hooks in the repository that could be
-   * skipped during commit with the --no-verify flag
-   */
-  readonly hasCommitHooks: boolean
-
-  /**
    * Whether or not to skip blocking commit hooks when creating commits
    * by means of passing the `--no-verify` flag to git commit
    */
@@ -356,7 +350,6 @@ export class RepositoryView extends React.Component<
         omnispindleStatus={this.props.omnispindleStatus}
         omnispindleApiKey={this.props.omnispindleApiKey}
         onRefreshOmnispindleTodos={this.props.onRefreshOmnispindleTodos}
-        hasCommitHooks={this.props.hasCommitHooks}
         skipCommitHooks={this.props.skipCommitHooks}
         signOffCommits={this.props.signOffCommits}
         allowEmptyCommit={this.props.allowEmptyCommit}
@@ -516,6 +509,7 @@ export class RepositoryView extends React.Component<
           onChangeImageDiffType={this.onChangeImageDiffType}
           onHideWhitespaceInDiffChanged={this.onHideWhitespaceInDiffChanged}
           onOpenInExternalEditor={this.props.onOpenInExternalEditor}
+          externalEditorLabel={this.props.externalEditorLabel}
         />
       )
     }
