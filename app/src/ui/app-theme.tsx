@@ -62,9 +62,10 @@ export class AppTheme extends React.PureComponent<IAppThemeProps> {
       ? `theme-madness-${this.props.madnessTheme}`
       : null
 
-    const currentMadness = [...document.body.classList].find(c =>
-      c.startsWith('theme-madness-')
-    )
+    const currentMadness =
+      [...document.body.classList].find(c =>
+        c.startsWith('theme-madness-')
+      ) ?? null
 
     if (currentMadness !== madnessCls) {
       if (currentMadness) {

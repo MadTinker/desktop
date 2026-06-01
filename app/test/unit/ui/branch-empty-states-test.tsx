@@ -2,6 +2,7 @@ import assert from 'node:assert'
 import { describe, it } from 'node:test'
 import * as React from 'react'
 
+import { HotkeyStore, setGlobalHotkeyStore } from '../../../src/lib/hotkeys'
 import { NoBranches } from '../../../src/ui/branches/no-branches'
 import { NoPullRequests } from '../../../src/ui/branches/no-pull-requests'
 import { fireEvent, render, screen } from '../../helpers/ui/render'
@@ -13,6 +14,8 @@ interface IRenderedNoBranches {
 function renderNoBranches(
   props: Partial<React.ComponentProps<typeof NoBranches>> = {}
 ): IRenderedNoBranches {
+  setGlobalHotkeyStore(new HotkeyStore())
+
   const createCalls = { count: 0 }
 
   function onCreateNewBranch() {

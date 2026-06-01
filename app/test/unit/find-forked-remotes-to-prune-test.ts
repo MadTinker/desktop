@@ -5,7 +5,7 @@ import { Branch, BranchType } from '../../src/models/branch'
 import { CommitIdentity } from '../../src/models/commit-identity'
 import { GitHubRepository } from '../../src/models/github-repository'
 import { PullRequest } from '../../src/models/pull-request'
-import { IRemote } from '../../src/models/remote'
+import { forkPullRequestRemoteName, IRemote } from '../../src/models/remote'
 import { gitHubRepoFixture } from '../helpers/github-repo-builder'
 
 function createSamplePullRequest(
@@ -53,8 +53,9 @@ describe('findForkedRemotesToPrune', () => {
 
   const OriginRemote = 'origin'
   const NonGitHubDesktopRemote = 'non-github-desktop-remote'
-  const GitHubDesktopRemoteWithLocalBranch = 'github-desktop-niik'
-  const GitHubDesktopRemoteWithPullRequest = `github-desktop-${TestUserName}`
+  const GitHubDesktopRemoteWithLocalBranch = forkPullRequestRemoteName('niik')
+  const GitHubDesktopRemoteWithPullRequest =
+    forkPullRequestRemoteName(TestUserName)
 
   const remotes = [
     {
@@ -83,7 +84,7 @@ describe('findForkedRemotesToPrune', () => {
     const remotesToPrune = findForkedRemotesToPrune(remotes, [], [])
 
     const names = getNamesFromRemotes(remotesToPrune)
-    assert.notEqual(names.length, 0, 'Expected names to be empty')
+    assert.notEqual(names.length, 0, 'Expected pruneable app-created remotes')
     assert(!names.includes(OriginRemote))
     assert(!names.includes(NonGitHubDesktopRemote))
   })
