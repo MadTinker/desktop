@@ -12,6 +12,7 @@ import { generateLocalAIDiffExplanation } from '../../lib/local-ai-diff-explanat
 import { logActivity } from '../../lib/activity-log'
 import { Tooltip, TooltipDirection } from '../lib/tooltip'
 import { createObservableRef } from '../lib/observable-ref'
+import { Button } from '../lib/button'
 
 interface IDiffHeaderProps {
   readonly path: string
@@ -32,6 +33,15 @@ interface IDiffHeaderProps {
 
   /** Called when the user opens the diff options popover */
   readonly onDiffOptionsOpened: () => void
+
+  /** Whether the current file can be edited in the working tree. */
+  readonly canEditFile?: boolean
+
+  /** Whether the current file is currently open in the built-in editor. */
+  readonly isEditingFile?: boolean
+
+  /** Called when the user wants to edit the current working tree file. */
+  readonly onEditFile?: () => void
 }
 
 interface IDiffHeaderState {
@@ -61,7 +71,10 @@ export class DiffHeader extends React.Component<
   }
 
   public componentDidUpdate(prevProps: IDiffHeaderProps) {
-    if (prevProps.diff !== this.props.diff || prevProps.path !== this.props.path) {
+    if (
+      prevProps.diff !== this.props.diff ||
+      prevProps.path !== this.props.path
+    ) {
       this.setState({
         explanation: null,
         error: null,
@@ -132,6 +145,8 @@ export class DiffHeader extends React.Component<
         <div className="header">
           <PathLabel path={this.props.path} status={this.props.status} />
 
+          {this.renderEditButton()}
+
           {this.renderExplainButton()}
 
           {this.renderDiffOptions()}
@@ -148,6 +163,10 @@ export class DiffHeader extends React.Component<
   }
 
   private renderExplainButton() {
+    if (this.props.isEditingFile) {
+      return null
+    }
+
     const { localAIConfig, isExplaining } = this.state
     if (!localAIConfig.enabled) {
       return null
@@ -162,8 +181,8 @@ export class DiffHeader extends React.Component<
       localAIConfig.provider === 'lmstudio'
         ? 'LM Studio'
         : localAIConfig.provider === 'ollama'
-          ? 'Ollama'
-          : 'Local AI'
+        ? 'Ollama'
+        : 'Local AI'
 
     const ariaLabel = isExplaining
       ? 'Explaining changes…'
@@ -234,6 +253,10 @@ export class DiffHeader extends React.Component<
   }
 
   private renderDiffOptions() {
+    if (this.props.isEditingFile) {
+      return null
+    }
+
     if (this.props.diff?.kind === DiffType.Submodule) {
       return null
     }
@@ -249,6 +272,30 @@ export class DiffHeader extends React.Component<
         showSideBySideDiff={this.props.showSideBySideDiff}
         onDiffOptionsOpened={this.props.onDiffOptionsOpened}
       />
+    )
+  }
+
+  private renderEditButton() {
+    if (
+      this.props.isEditingFile ||
+      !this.props.canEditFile ||
+      this.props.onEditFile === undefined
+    ) {
+      return null
+    }
+
+    const label = __DARWIN__ ? 'Edit File' : 'Edit file'
+
+    return (
+      <Button
+        ariaLabel={label}
+        tooltip={label}
+        className="diff-header-icon-button"
+        onClick={this.props.onEditFile}
+        applyTooltipAriaDescribedBy={false}
+      >
+        <Octicon symbol={octicons.pencil} />
+      </Button>
     )
   }
 }
