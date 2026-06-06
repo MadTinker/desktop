@@ -14,3 +14,8 @@ export interface OmnispindleTestResult {
   readonly status: OmnispindleConnectionStatus
   readonly message?: string
 }
+
+/** Result of an Auth0 login that mints and persists an Omnispindle API key. */
+export type Auth0LoginResult =
+  | { readonly ok: true; readonly apiKey: string; readonly keyPrefix: string }
+  | { readonly ok: false; readonly error: string }

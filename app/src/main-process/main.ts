@@ -52,6 +52,14 @@ import { initializeDesktopNotifications } from './notifications'
 import parseCommandLineArgs from 'minimist'
 import { CLIAction } from '../lib/cli-action'
 import { OmnispindleClient } from './omnispindle-client'
+import { send } from './ipc-webcontents'
+import {
+  startAuth0Login,
+  completeAuth0Login,
+  isAuth0CallbackURL,
+} from './auth0'
+import { loadKey, saveKey } from './omnispindle-key-store'
+import { Auth0LoginResult } from '../models/omnispindle'
 import {
   fetchRemoteHooks,
   pushRemoteHook,
@@ -70,6 +78,61 @@ const omnispindleClient = new OmnispindleClient(
   () => mainWindow?.webContents ?? null
 )
 const ptyManager = new PtyManager()
+
+const OMNISPINDLE_API_URL = 'https://madnessinteractive.cc/api'
+
+/** Configure the client and notify the renderer that the key has changed. */
+function applyOmnispindleApiKey(apiKey: string) {
+  omnispindleClient.setApiKey(apiKey)
+  onDidLoad(window =>
+    send(window.webContents, 'omnispindle-api-key-set', apiKey)
+  )
+}
+
+/**
+ * Drive an Auth0 login, mint a fresh Omnispindle API key for the authenticated
+ * user, persist it (encrypted) to disk, and configure the client.
+ */
+async function runAuth0Login(): Promise<Auth0LoginResult> {
+  try {
+    const accessToken = await startAuth0Login()
+    const response = await fetch(`${OMNISPINDLE_API_URL}/api-keys`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({ name: 'Madness Desktop', expiresInDays: 365 }),
+    })
+
+    if (!response.ok) {
+      const body = await response.text()
+      return {
+        ok: false,
+        error: `Key creation failed: HTTP ${response.status} ${body.slice(
+          0,
+          160
+        )}`,
+      }
+    }
+
+    const json = await response.json()
+    const apiKey = json?.data?.api_key
+    const keyPrefix = String(json?.data?.key_prefix ?? '')
+    if (typeof apiKey !== 'string' || apiKey.length === 0) {
+      return { ok: false, error: 'Key creation returned no api_key' }
+    }
+
+    await saveKey(apiKey)
+    applyOmnispindleApiKey(apiKey)
+    return { ok: true, apiKey, keyPrefix }
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : String(err),
+    }
+  }
+}
 
 const launchTime = now()
 
@@ -176,6 +239,15 @@ initializeDesktopNotifications()
 
 function handleAppURL(url: string) {
   log.info('Processing protocol url')
+
+  // Auth0 login callbacks arrive on our own custom scheme and are handled
+  // entirely in the main process — they never become a renderer URLAction.
+  if (isAuth0CallbackURL(url)) {
+    completeAuth0Login(url)
+    onDidLoad(window => window.focus())
+    return
+  }
+
   const action = parseAppURL(url)
   onDidLoad(window => {
     // This manual focus call _shouldn't_ be necessary, but is for Chrome on
@@ -618,6 +690,18 @@ app.on('ready', () => {
   ipcMain.handle('omnispindle-test', (_, apiKey: string) =>
     omnispindleClient.testConnection(apiKey)
   )
+
+  ipcMain.handle('auth0-login', () => runAuth0Login())
+
+  // The encrypted key file is the boot-time source of truth: load it and
+  // configure the client before the renderer's localStorage gets involved.
+  loadKey()
+    .then(storedApiKey => {
+      if (storedApiKey) {
+        applyOmnispindleApiKey(storedApiKey)
+      }
+    })
+    .catch(err => log.error('[omnispindle] failed to load stored key', err))
 
   ipcMain.handle('automation-hooks-fetch', (_, apiKey: string) =>
     fetchRemoteHooks(apiKey)

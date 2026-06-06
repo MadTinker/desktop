@@ -37,10 +37,12 @@ type LocalAITestStatus =
 
 interface IAIServicesPreferencesState {
   readonly omnispindleTestStatus: TestStatus
+  readonly omnispindleSignInStatus: TestStatus
   readonly localAITestStatus: LocalAITestStatus
 }
 
 const testConnectionIpc = invokeProxy('omnispindle-test', 1)
+const auth0LoginIpc = invokeProxy('auth0-login', 0)
 
 export class AIServicesPreferences extends React.Component<
   IAIServicesPreferencesProps,
@@ -50,13 +52,14 @@ export class AIServicesPreferences extends React.Component<
     super(props)
     this.state = {
       omnispindleTestStatus: { kind: 'idle' },
+      omnispindleSignInStatus: { kind: 'idle' },
       localAITestStatus: { kind: 'idle' },
     }
   }
 
-  public componentDidUpdate(prev: IAIServicesPreferencesProps) {
+  public componentDidUpdate(prevProps: IAIServicesPreferencesProps) {
     if (
-      prev.apiKey !== this.props.apiKey &&
+      prevProps.apiKey !== this.props.apiKey &&
       this.state.omnispindleTestStatus.kind !== 'idle'
     ) {
       this.setState({ omnispindleTestStatus: { kind: 'idle' } })
@@ -108,6 +111,61 @@ export class AIServicesPreferences extends React.Component<
     }
   }
 
+  private onSignIn = async () => {
+    this.setState({ omnispindleSignInStatus: { kind: 'testing' } })
+    try {
+      const result = await auth0LoginIpc()
+      if (result.ok) {
+        // Persists to localStorage + reconfigures the main process.
+        this.props.onApiKeyChanged(result.apiKey)
+        this.setState({
+          omnispindleSignInStatus: {
+            kind: 'success',
+            message: result.keyPrefix
+              ? `Signed in — key ${result.keyPrefix}…`
+              : 'Signed in — API key saved',
+          },
+        })
+      } else {
+        this.setState({
+          omnispindleSignInStatus: { kind: 'error', message: result.error },
+        })
+      }
+    } catch (err) {
+      this.setState({
+        omnispindleSignInStatus: {
+          kind: 'error',
+          message: err instanceof Error ? err.message : 'Sign in failed',
+        },
+      })
+    }
+  }
+
+  private renderStatusLine(status: TestStatus) {
+    if (status.kind === 'idle') {
+      return null
+    }
+    if (status.kind === 'testing') {
+      return (
+        <p className="omnispindle-test-status omnispindle-test-working">
+          Working…
+        </p>
+      )
+    }
+    if (status.kind === 'success') {
+      return (
+        <p className="omnispindle-test-status omnispindle-test-ok">
+          ✓ {status.message}
+        </p>
+      )
+    }
+    return (
+      <p className="omnispindle-test-status omnispindle-test-error">
+        ✗ {status.message}
+      </p>
+    )
+  }
+
   private renderOmnispindleTestStatus() {
     const { omnispindleTestStatus } = this.state
     if (omnispindleTestStatus.kind === 'idle') {
@@ -137,13 +195,25 @@ export class AIServicesPreferences extends React.Component<
   private renderOmnispindle() {
     const { apiKey } = this.props
     const testing = this.state.omnispindleTestStatus.kind === 'testing'
+    const signingIn = this.state.omnispindleSignInStatus.kind === 'testing'
 
     return (
       <div className="omnispindle-preferences-section">
         <h2>Omnispindle</h2>
         <p className="git-settings-description">
-          Connect to your Omnispindle MCP server to display active todos in
-          the Changes sidebar.
+          Connect to your Omnispindle MCP server to display active todos in the
+          Changes sidebar.
+        </p>
+
+        <div className="omnispindle-test-row">
+          <Button onClick={this.onSignIn} disabled={signingIn} type="submit">
+            {signingIn ? 'Signing in…' : 'Sign in with Madness Interactive'}
+          </Button>
+          {this.renderStatusLine(this.state.omnispindleSignInStatus)}
+        </div>
+        <p className="git-settings-description">
+          Signs you in and generates an API key automatically. Or paste one
+          manually below.
         </p>
 
         <TextBox

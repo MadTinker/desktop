@@ -21,6 +21,7 @@ import {
   IOmnispindleTodo,
   OmnispindleConnectionStatus,
   OmnispindleTestResult,
+  Auth0LoginResult,
 } from '../models/omnispindle'
 import type {
   HooksFetchResult,
@@ -112,15 +113,14 @@ export type RequestChannels = {
     status: OmnispindleConnectionStatus
   ) => void
   'omnispindle-configure': (apiKey: string) => void
+  'omnispindle-api-key-set': (apiKey: string) => void
   'omnispindle-refresh': (project?: string) => void
   'omnispindle-fire-event': (
     trigger: string,
     data: Record<string, unknown>,
     meta: Record<string, unknown>
   ) => void
-  'update-hotkey-bindings': (
-    bindings: Record<string, string | null>
-  ) => void
+  'update-hotkey-bindings': (bindings: Record<string, string | null>) => void
   'terminal-input': (id: string, data: string) => void
   'terminal-resize': (id: string, cols: number, rows: number) => void
   'terminal-kill': (id: string) => void
@@ -175,6 +175,7 @@ export type RequestResponseChannels = {
   'get-notifications-permission': () => Promise<DesktopNotificationPermission>
   'request-notifications-permission': () => Promise<boolean>
   'omnispindle-test': (apiKey: string) => Promise<OmnispindleTestResult>
+  'auth0-login': () => Promise<Auth0LoginResult>
   'automation-hooks-fetch': (apiKey: string) => Promise<HooksFetchResult>
   'automation-hooks-push': (
     apiKey: string,

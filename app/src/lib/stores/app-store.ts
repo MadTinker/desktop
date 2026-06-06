@@ -23,10 +23,7 @@ import {
   getBYOKSecret,
   parseModelKey,
 } from '../copilot/byok'
-import {
-  ILocalAIConfig,
-  DefaultLocalAIConfig,
-} from '../../models/local-ai'
+import { ILocalAIConfig, DefaultLocalAIConfig } from '../../models/local-ai'
 import {
   IMqttConfig,
   DefaultMqttConfig,
@@ -746,8 +743,11 @@ export class AppStore extends TypedBaseStore<IAppState> {
 
   private showChangesFilter: boolean = false
 
-  private omnispindleTodos: ReadonlyArray<import('../../models/omnispindle').IOmnispindleTodo> = []
-  private omnispindleStatus: import('../../models/omnispindle').OmnispindleConnectionStatus = 'unconfigured'
+  private omnispindleTodos: ReadonlyArray<
+    import('../../models/omnispindle').IOmnispindleTodo
+  > = []
+  private omnispindleStatus: import('../../models/omnispindle').OmnispindleConnectionStatus =
+    'unconfigured'
   private omnispindleApiKey: string = ''
   private mqttConfig: IMqttConfig = DefaultMqttConfig
   private localAIConfig: ILocalAIConfig = DefaultLocalAIConfig
@@ -840,7 +840,9 @@ export class AppStore extends TypedBaseStore<IAppState> {
     this.mqttConfig = getMqttConfig()
     // Inject MQTT env vars into process.env on startup
     const mqttEnv = mqttConfigToEnv(this.mqttConfig)
-    Object.entries(mqttEnv).forEach(([k, v]) => { process.env[k] = v })
+    Object.entries(mqttEnv).forEach(([k, v]) => {
+      process.env[k] = v
+    })
     this.localAIConfig = loadLocalAIConfig()
 
     // Chat history archive watcher
@@ -1093,8 +1095,19 @@ export class AppStore extends TypedBaseStore<IAppState> {
       this.emitUpdate()
     })
 
-    // Push stored API key to main process.
-    ipcRenderer.send('omnispindle-configure', this.omnispindleApiKey)
+    // The main process owns the encrypted key file; when it loads or mints a
+    // key it pushes it here so localStorage and the UI stay in sync.
+    ipcRenderer.on('omnispindle-api-key-set', (_, apiKey: string) => {
+      if (apiKey && apiKey !== this.omnispindleApiKey) {
+        this._setOmnispindleApiKey(apiKey)
+      }
+    })
+
+    // Push stored API key to main process. Skip when empty so a cleared
+    // localStorage can't clobber a key the main process loaded from disk.
+    if (this.omnispindleApiKey) {
+      ipcRenderer.send('omnispindle-configure', this.omnispindleApiKey)
+    }
   }
 
   private wireupStoreEventHandlers() {
@@ -2278,7 +2291,10 @@ export class AppStore extends TypedBaseStore<IAppState> {
   public _removeRepositoryFromGroup(repositoryId: number, groupId: string) {
     this.customRepositoryGroups = this.customRepositoryGroups.map(g =>
       g.id === groupId
-        ? { ...g, repositoryIds: g.repositoryIds.filter(id => id !== repositoryId) }
+        ? {
+            ...g,
+            repositoryIds: g.repositoryIds.filter(id => id !== repositoryId),
+          }
         : g
     )
     setObject(CustomRepositoryGroupsKey, this.customRepositoryGroups)
@@ -3399,7 +3415,9 @@ export class AppStore extends TypedBaseStore<IAppState> {
 
   private async refreshReflogSection(repository: Repository): Promise<void> {
     const entries = await getReflog(repository)
-    this.repositoryStateCache.update(repository, () => ({ reflogEntries: entries }))
+    this.repositoryStateCache.update(repository, () => ({
+      reflogEntries: entries,
+    }))
     this.emitUpdate()
   }
 
@@ -3425,7 +3443,9 @@ export class AppStore extends TypedBaseStore<IAppState> {
     saveMqttConfig(config)
     this.mqttConfig = config
     const env = mqttConfigToEnv(config)
-    Object.entries(env).forEach(([k, v]) => { process.env[k] = v })
+    Object.entries(env).forEach(([k, v]) => {
+      process.env[k] = v
+    })
     this.emitUpdate()
   }
 
@@ -3791,13 +3811,18 @@ export class AppStore extends TypedBaseStore<IAppState> {
 
         // Notify Inventorium automation bus (non-blocking)
         const tip = this.repositoryStateCache.get(repository).branchesState.tip
-        ipcRenderer.send('omnispindle-fire-event', 'git-commit', {
-          repository: repository.name,
-          path: repository.path,
-          commitSha: result,
-          summary: context.summary,
-          branch: tip.kind === TipState.Valid ? tip.branch.name : undefined,
-        }, {})
+        ipcRenderer.send(
+          'omnispindle-fire-event',
+          'git-commit',
+          {
+            repository: repository.name,
+            path: repository.path,
+            commitSha: result,
+            summary: context.summary,
+            branch: tip.kind === TipState.Valid ? tip.branch.name : undefined,
+          },
+          {}
+        )
 
         await this._recordCommitStats(
           gitStore,
@@ -4745,11 +4770,16 @@ export class AppStore extends TypedBaseStore<IAppState> {
     this.hasUserViewedStash = false
 
     // Notify Inventorium automation bus
-    ipcRenderer.send('omnispindle-fire-event', 'git-branch-switch', {
-      repository: repository.name,
-      path: repository.path,
-      branch: branch.name,
-    }, {})
+    ipcRenderer.send(
+      'omnispindle-fire-event',
+      'git-branch-switch',
+      {
+        repository: repository.name,
+        path: repository.path,
+        branch: branch.name,
+      },
+      {}
+    )
   }
 
   /**
@@ -5355,12 +5385,17 @@ export class AppStore extends TypedBaseStore<IAppState> {
 
       // Notify Inventorium automation bus
       const pushBranch = this.getBranchToPush(repository, options)
-      ipcRenderer.send('omnispindle-fire-event', 'git-push', {
-        repository: repository.name,
-        path: repository.path,
-        branch: pushBranch?.name,
-        remote: remote.name,
-      }, {})
+      ipcRenderer.send(
+        'omnispindle-fire-event',
+        'git-push',
+        {
+          repository: repository.name,
+          path: repository.path,
+          branch: pushBranch?.name,
+          remote: remote.name,
+        },
+        {}
+      )
     })
   }
 
@@ -5558,7 +5593,8 @@ export class AppStore extends TypedBaseStore<IAppState> {
                   progressCallback: progress => {
                     this.updatePushPullFetchProgress(repository, {
                       ...progress,
-                      value: scaledSubmoduleWeight + progress.value * pullWeight,
+                      value:
+                        scaledSubmoduleWeight + progress.value * pullWeight,
                     })
                   },
                   onHookFailure: (hookName, terminalOutput) =>
@@ -5628,12 +5664,17 @@ export class AppStore extends TypedBaseStore<IAppState> {
           await this._refreshRepository(repository)
 
           // Notify Inventorium automation bus
-          ipcRenderer.send('omnispindle-fire-event', 'git-pull', {
-            repository: repository.name,
-            path: repository.path,
-            branch: tip.branch.name,
-            remote: remote.name,
-          }, {})
+          ipcRenderer.send(
+            'omnispindle-fire-event',
+            'git-pull',
+            {
+              repository: repository.name,
+              path: repository.path,
+              branch: tip.branch.name,
+              remote: remote.name,
+            },
+            {}
+          )
         } finally {
           this.updatePushPullFetchProgress(repository, null)
         }
@@ -6408,8 +6449,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
 
       // Gather branch + recent commit context to help the model match style
       const tip = repoState?.branchesState?.tip
-      const branchName =
-        tip && 'branch' in tip ? tip.branch.name : undefined
+      const branchName = tip && 'branch' in tip ? tip.branch.name : undefined
 
       let recentCommits: ReadonlyArray<string> = []
       try {
@@ -6468,9 +6508,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
     this.emitUpdate()
   }
 
-  public _setChatHistoryArchiveConfig(
-    config: IChatHistoryArchiveConfig
-  ): void {
+  public _setChatHistoryArchiveConfig(config: IChatHistoryArchiveConfig): void {
     this.chatHistoryArchiveConfig = config
     localStorage.setItem(ChatHistoryArchiveConfigKey, JSON.stringify(config))
 
