@@ -3,6 +3,7 @@ import type {
   AssistantMessageEvent,
   MessageOptions,
   ModelInfo,
+  PermissionRequestResult,
   SessionConfig,
 } from '@github/copilot-sdk'
 import { AccountsStore } from './accounts-store'
@@ -450,7 +451,7 @@ export class CopilotStore extends BaseStore {
       },
       cwd: repositoryPath,
       autoStart: true,
-      githubToken: this.currentAccount.token,
+      gitHubToken: this.currentAccount.token,
     })
   }
 
@@ -583,8 +584,8 @@ export class CopilotStore extends BaseStore {
           content: buildCommitMessageSystemPrompt(hasRules, tags),
         },
         availableTools: [],
-        onPermissionRequest: async () => ({
-          kind: 'denied-interactively-by-user',
+        onPermissionRequest: async (): Promise<PermissionRequestResult> => ({
+          kind: 'reject',
         }),
       })
 
@@ -756,8 +757,8 @@ export class CopilotStore extends BaseStore {
             mode: 'append',
             content: ConflictResolutionSystemPrompt,
           },
-          onPermissionRequest: async () => ({
-            kind: 'denied-interactively-by-user',
+          onPermissionRequest: async (): Promise<PermissionRequestResult> => ({
+            kind: 'reject',
           }),
         })
 
