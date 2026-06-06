@@ -363,8 +363,16 @@ export function buildDefaultMenu({
           ? `Open in ${selectedShell ?? 'Shell'}`
           : `O&pen in ${selectedShell ?? 'shell'}`,
         id: 'open-in-shell',
-        accelerator: getAccelerator('open-in-shell', hotkeyBindings, 'Ctrl+`'),
+        accelerator: getAccelerator('open-in-shell', hotkeyBindings, 'CmdOrCtrl+Shift+`'),
         click: emit('open-in-shell'),
+      },
+      {
+        label: __DARWIN__
+          ? 'Toggle Integrated Terminal'
+          : 'Toggle Integrated &terminal',
+        id: 'toggle-integrated-terminal',
+        accelerator: getAccelerator('toggle-integrated-terminal', hotkeyBindings, 'Ctrl+`'),
+        click: emit('toggle-integrated-terminal'),
       },
       {
         label: __DARWIN__

@@ -17,6 +17,21 @@
     gap: var(--spacing);
   }
 
+  &-main {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+    min-width: 0;
+  }
+
+  &-content {
+    display: flex;
+    flex: 1 1 auto;
+    min-height: 0;
+    min-width: 0;
+  }
+
   &-sidebar {
     display: flex;
     flex-direction: column;
@@ -32,5 +47,93 @@
       min-height: 0;
       overflow-y: auto;
     }
+  }
+
+  &-terminal {
+    display: flex;
+    flex-direction: column;
+    border-top: var(--base-border);
+    background: var(--box-background-color);
+
+    &-header {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing);
+      min-height: 32px;
+      padding: 0 var(--spacing);
+      border-bottom: var(--base-border);
+      background: var(--box-alt-background-color);
+      color: var(--text-color);
+      flex-shrink: 0;
+    }
+
+    &-title {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-half);
+      font-weight: var(--font-weight-semibold);
+      flex-shrink: 0;
+    }
+
+    &-path {
+      @include ellipsis;
+      min-width: 0;
+      color: var(--text-secondary-color);
+      font-family: var(--font-family-monospace);
+      font-size: var(--font-size-sm);
+      user-select: text;
+      cursor: text;
+    }
+
+    &-close {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      margin-left: auto;
+      padding: 0;
+      border: 0;
+      color: var(--text-color);
+      background: transparent;
+      border-radius: var(--button-border-radius);
+
+      &:hover {
+        background: var(--box-hover-background-color);
+      }
+    }
+  }
+}
+
+.shell-view {
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  background: var(--box-background-color);
+
+  &-terminal {
+    flex: 1 1 auto;
+    min-height: 0;
+    min-width: 0;
+    padding: var(--spacing-half) var(--spacing);
+
+    .xterm {
+      height: 100%;
+    }
+  }
+
+  &-error {
+    position: absolute;
+    inset: var(--spacing);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing);
+    color: var(--form-error-text-color);
+    background: var(--form-error-background);
+    border: 1px solid var(--form-error-border-color);
+    border-radius: var(--button-border-radius);
   }
 }

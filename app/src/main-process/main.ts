@@ -59,6 +59,7 @@ import {
   validateHookScript,
   executeHookScript,
 } from './automation-hooks-sync'
+import { PtyManager } from './pty-manager'
 
 app.setAppLogsPath()
 enableSourceMaps()
@@ -68,6 +69,7 @@ let mainWindow: AppWindow | null = null
 const omnispindleClient = new OmnispindleClient(
   () => mainWindow?.webContents ?? null
 )
+const ptyManager = new PtyManager()
 
 const launchTime = now()
 
@@ -141,6 +143,10 @@ app.on('window-all-closed', () => {
   //
   // If we don't subscribe to this and change the default behavior we break
   // the crash process window which is shown after the main window is closed.
+})
+
+app.on('will-quit', () => {
+  ptyManager.killAll()
 })
 
 process.on('uncaughtException', (error: Error) => {
@@ -637,6 +643,20 @@ app.on('ready', () => {
       executeHookScript(script, env)
   )
 
+  ipcMain.handle('terminal-spawn', async (event, options) =>
+    ptyManager.spawn(event.sender, options)
+  )
+
+  ipcMain.on('terminal-input', (_, id: string, data: string) =>
+    ptyManager.write(id, data)
+  )
+
+  ipcMain.on('terminal-resize', (_, id: string, cols: number, rows: number) =>
+    ptyManager.resize(id, cols, rows)
+  )
+
+  ipcMain.on('terminal-kill', (_, id: string) => ptyManager.kill(id))
+
   /**
    * An event sent by the renderer asking for a copy of the current
    * application menu.
@@ -863,6 +883,7 @@ function createWindow() {
   }
 
   window.onClosed(() => {
+    ptyManager.killAll()
     mainWindow = null
     if (!__DARWIN__ && !preventQuit) {
       app.quit()

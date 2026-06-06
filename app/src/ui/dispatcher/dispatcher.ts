@@ -1019,6 +1019,11 @@ export class Dispatcher {
     return this.appStore._setSidebarWidth(width)
   }
 
+  /** Set the height of the integrated terminal panel. */
+  public setTerminalHeight(height: number): Promise<void> {
+    return this.appStore._setTerminalHeight(height)
+  }
+
   /**
    * Set the width of the Branch toolbar button to the given value.
    * This affects the toolbar button and its dropdown element.
@@ -1130,6 +1135,11 @@ export class Dispatcher {
    */
   public resetSidebarWidth(): Promise<void> {
     return this.appStore._resetSidebarWidth()
+  }
+
+  /** Reset the integrated terminal panel to its default height. */
+  public resetTerminalHeight(): Promise<void> {
+    return this.appStore._resetTerminalHeight()
   }
 
   /**

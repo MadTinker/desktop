@@ -21,3 +21,15 @@
     border: none;
   }
 }
+
+.resizable-component.vertical-resizable-component {
+  min-width: 0;
+
+  .resize-handle {
+    right: 0;
+    top: -3px;
+    height: 6px;
+    width: 100%;
+    cursor: ns-resize;
+  }
+}

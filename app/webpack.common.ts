@@ -4,7 +4,16 @@ import webpack from 'webpack'
 import merge from 'webpack-merge'
 import { getReplacements } from './app-info'
 
-export const externals = ['7zip']
+export const externals = [
+  '7zip',
+  '@lydell/node-pty',
+  '@lydell/node-pty-darwin-arm64',
+  '@lydell/node-pty-darwin-x64',
+  '@lydell/node-pty-linux-arm64',
+  '@lydell/node-pty-linux-x64',
+  '@lydell/node-pty-win32-arm64',
+  '@lydell/node-pty-win32-x64',
+]
 
 const outputDir = 'out'
 export const replacements = getReplacements()

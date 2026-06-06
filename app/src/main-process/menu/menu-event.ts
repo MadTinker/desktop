@@ -26,6 +26,7 @@ export type MenuEvent =
   | 'rebase-branch'
   | 'show-repository-settings'
   | 'open-in-shell'
+  | 'toggle-integrated-terminal'
   | 'compare-on-github'
   | 'branch-on-github'
   | 'view-repository-on-github'

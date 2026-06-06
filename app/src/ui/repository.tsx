@@ -9,7 +9,7 @@ import { NoChanges } from './changes/no-changes'
 import { MultipleSelection } from './changes/multiple-selection'
 import { FilesChangedBadge } from './changes/files-changed-badge'
 import { SelectedCommits, CompareSidebar } from './history'
-import { Resizable } from './resizable'
+import { Resizable, VerticalResizable } from './resizable'
 import { TabBar } from './tab-bar'
 import {
   IRepositoryState,
@@ -41,6 +41,9 @@ import { PullRequestSuggestedNextAction } from '../models/pull-request'
 import { clamp } from '../lib/clamp'
 import { Emoji } from '../lib/emoji'
 import { PopupType } from '../models/popup'
+import { ShellView } from './shell-view'
+import { Octicon } from './octicons'
+import * as octicons from './octicons/octicons.generated'
 
 interface IRepositoryViewProps {
   readonly repository: Repository
@@ -48,6 +51,7 @@ interface IRepositoryViewProps {
   readonly dispatcher: Dispatcher
   readonly emoji: Map<string, Emoji>
   readonly sidebarWidth: IConstrainedValue
+  readonly terminalHeight: IConstrainedValue
   readonly commitSummaryWidth: IConstrainedValue
   readonly stashedFilesWidth: IConstrainedValue
   readonly issuesStore: IssuesStore
@@ -160,6 +164,7 @@ interface IRepositoryViewProps {
 interface IRepositoryViewState {
   readonly changesListScrollTop: number
   readonly compareListScrollTop: number
+  readonly terminalVisible: boolean
 }
 
 const enum Tab {
@@ -191,6 +196,7 @@ export class RepositoryView extends React.Component<
     this.state = {
       changesListScrollTop: 0,
       compareListScrollTop: 0,
+      terminalVisible: false,
     }
   }
 
@@ -208,6 +214,12 @@ export class RepositoryView extends React.Component<
     this.setState({
       compareListScrollTop: 0,
     })
+  }
+
+  public toggleIntegratedTerminal(): void {
+    this.setState(state => ({
+      terminalVisible: !state.terminalVisible,
+    }))
   }
 
   private onChangesListScrolled = (scrollTop: number) => {
@@ -717,11 +729,71 @@ export class RepositoryView extends React.Component<
     }
   }
 
+  private closeIntegratedTerminal = () => {
+    this.setState({ terminalVisible: false })
+  }
+
+  private handleTerminalHeightReset = () => {
+    this.props.dispatcher.resetTerminalHeight()
+  }
+
+  private handleTerminalResize = (height: number) => {
+    this.props.dispatcher.setTerminalHeight(height)
+  }
+
+  private renderTerminalPanel(): JSX.Element | null {
+    if (!this.state.terminalVisible) {
+      return null
+    }
+
+    const terminalHeight = clamp(this.props.terminalHeight)
+
+    return (
+      <VerticalResizable
+        id="repository-terminal"
+        height={terminalHeight}
+        maximumHeight={this.props.terminalHeight.max}
+        minimumHeight={this.props.terminalHeight.min}
+        onReset={this.handleTerminalHeightReset}
+        onResize={this.handleTerminalResize}
+        description="Integrated terminal"
+      >
+        <div className="repository-terminal-header">
+          <div className="repository-terminal-title">
+            <Octicon symbol={octicons.terminal} />
+            <span>Terminal</span>
+          </div>
+          <div className="repository-terminal-path">
+            {this.props.repository.path}
+          </div>
+          <button
+            type="button"
+            className="repository-terminal-close"
+            onClick={this.closeIntegratedTerminal}
+            aria-label="Close terminal"
+          >
+            <Octicon symbol={octicons.x} />
+          </button>
+        </div>
+        <ShellView cwd={this.props.repository.path} />
+      </VerticalResizable>
+    )
+  }
+
+  private renderMainContent(): JSX.Element {
+    return (
+      <div id="repository-main">
+        <div id="repository-content">{this.renderContent()}</div>
+        {this.renderTerminalPanel()}
+      </div>
+    )
+  }
+
   public render() {
     return (
       <UiView id="repository">
         {this.renderSidebar()}
-        {this.renderContent()}
+        {this.renderMainContent()}
         {this.maybeRenderTutorialPanel()}
       </UiView>
     )

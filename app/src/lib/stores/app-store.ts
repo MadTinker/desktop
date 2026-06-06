@@ -461,6 +461,9 @@ const RecentRepositoriesLength = 3
 const defaultSidebarWidth: number = 250
 const sidebarWidthConfigKey: string = 'sidebar-width'
 
+const defaultTerminalHeight: number = 240
+const terminalHeightConfigKey: string = 'terminal-height'
+
 const defaultCommitSummaryWidth: number = 250
 const commitSummaryWidthConfigKey: string = 'commit-summary-width'
 
@@ -628,6 +631,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
   private appIsFocused: boolean = false
 
   private sidebarWidth = constrain(defaultSidebarWidth)
+  private terminalHeight = constrain(defaultTerminalHeight)
   private commitSummaryWidth = constrain(defaultCommitSummaryWidth)
   private stashedFilesWidth = constrain(defaultStashedFilesWidth)
   private pullRequestFileListWidth = constrain(defaultPullRequestFileListWidth)
@@ -1270,6 +1274,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
       focusCommitMessage: this.focusCommitMessage,
       emoji: this.emoji,
       sidebarWidth: this.sidebarWidth,
+      terminalHeight: this.terminalHeight,
       branchDropdownWidth: this.branchDropdownWidth,
       worktreeDropdownWidth: this.worktreeDropdownWidth,
       pushPullButtonWidth: this.pushPullButtonWidth,
@@ -2524,6 +2529,9 @@ export class AppStore extends TypedBaseStore<IAppState> {
     this.sidebarWidth = constrain(
       getNumber(sidebarWidthConfigKey, defaultSidebarWidth)
     )
+    this.terminalHeight = constrain(
+      getNumber(terminalHeightConfigKey, defaultTerminalHeight)
+    )
     this.commitSummaryWidth = constrain(
       getNumber(commitSummaryWidthConfigKey, defaultCommitSummaryWidth)
     )
@@ -2774,6 +2782,9 @@ export class AppStore extends TypedBaseStore<IAppState> {
 
     // Now calculate the width we have left to distribute for the other panes
     available -= clamp(this.sidebarWidth)
+
+    const maxTerminalHeight = Math.max(160, window.innerHeight - 280)
+    this.terminalHeight = constrain(this.terminalHeight, 120, maxTerminalHeight)
 
     // This is a pretty silly width for a diff but it will fit ~9 chars per line
     // in unified mode after subtracting the width of the unified gutter and ~4
@@ -6036,6 +6047,27 @@ export class AppStore extends TypedBaseStore<IAppState> {
   public _resetSidebarWidth(): Promise<void> {
     this.sidebarWidth = { ...this.sidebarWidth, value: defaultSidebarWidth }
     localStorage.removeItem(sidebarWidthConfigKey)
+    this.updateResizableConstraints()
+    this.emitUpdate()
+
+    return Promise.resolve()
+  }
+
+  public _setTerminalHeight(height: number): Promise<void> {
+    this.terminalHeight = { ...this.terminalHeight, value: height }
+    setNumber(terminalHeightConfigKey, height)
+    this.updateResizableConstraints()
+    this.emitUpdate()
+
+    return Promise.resolve()
+  }
+
+  public _resetTerminalHeight(): Promise<void> {
+    this.terminalHeight = {
+      ...this.terminalHeight,
+      value: defaultTerminalHeight,
+    }
+    localStorage.removeItem(terminalHeightConfigKey)
     this.updateResizableConstraints()
     this.emitUpdate()
 

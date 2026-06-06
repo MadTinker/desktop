@@ -31,6 +31,13 @@ import type {
   RemoteHook,
 } from '../main-process/automation-hooks-sync'
 
+export interface ITerminalSpawnOptions {
+  readonly cwd: string
+  readonly shell?: string
+  readonly cols: number
+  readonly rows: number
+}
+
 /**
  * Defines the simplex IPC channel names we use from the renderer
  * process along with their signatures. This type is used from both
@@ -114,6 +121,11 @@ export type RequestChannels = {
   'update-hotkey-bindings': (
     bindings: Record<string, string | null>
   ) => void
+  'terminal-input': (id: string, data: string) => void
+  'terminal-resize': (id: string, cols: number, rows: number) => void
+  'terminal-kill': (id: string) => void
+  'terminal-data': (id: string, data: string) => void
+  'terminal-exit': (id: string, code: number) => void
 }
 
 /**
@@ -177,4 +189,5 @@ export type RequestResponseChannels = {
     script: string,
     env?: Record<string, string>
   ) => Promise<HookExecuteResult>
+  'terminal-spawn': (options: ITerminalSpawnOptions) => Promise<string>
 }

@@ -535,6 +535,8 @@ export class App extends React.Component<IAppProps, IAppState> {
         return this.openIssueCreationOnGitHub()
       case 'open-in-shell':
         return this.openCurrentRepositoryInShell()
+      case 'toggle-integrated-terminal':
+        return this.toggleIntegratedTerminal()
       case 'clone-repository':
         return this.showCloneRepo()
       case 'show-about':
@@ -592,6 +594,10 @@ export class App extends React.Component<IAppProps, IAppState> {
    */
   private toggleChangesFilterVisibility() {
     this.props.dispatcher.toggleChangesFilterVisibility()
+  }
+
+  private toggleIntegratedTerminal() {
+    this.repositoryViewRef.current?.toggleIntegratedTerminal()
   }
 
   /**
@@ -3948,6 +3954,7 @@ export class App extends React.Component<IAppProps, IAppState> {
           dispatcher={this.props.dispatcher}
           emoji={state.emoji}
           sidebarWidth={state.sidebarWidth}
+          terminalHeight={state.terminalHeight}
           commitSummaryWidth={state.commitSummaryWidth}
           stashedFilesWidth={state.stashedFilesWidth}
           issuesStore={this.props.issuesStore}

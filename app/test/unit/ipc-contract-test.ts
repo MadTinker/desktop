@@ -74,6 +74,11 @@ describe('IPC channel contract', () => {
     'omnispindle-refresh',
     'omnispindle-fire-event',
     'update-hotkey-bindings',
+    'terminal-input',
+    'terminal-resize',
+    'terminal-kill',
+    'terminal-data',
+    'terminal-exit',
   ] as const
 
   const expectedResponseChannels = [
@@ -109,6 +114,7 @@ describe('IPC channel contract', () => {
     'automation-hooks-delete',
     'automation-hooks-validate',
     'automation-hooks-execute',
+    'terminal-spawn',
   ] as const
 
   describe('RequestChannels', () => {

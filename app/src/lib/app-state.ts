@@ -211,6 +211,9 @@ export interface IAppState {
    */
   readonly sidebarWidth: IConstrainedValue
 
+  /** The height of the integrated terminal panel in the repository view */
+  readonly terminalHeight: IConstrainedValue
+
   /** The width of the commit summary column in the history view */
   readonly commitSummaryWidth: IConstrainedValue
 
