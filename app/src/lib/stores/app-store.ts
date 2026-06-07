@@ -2182,6 +2182,16 @@ export class AppStore extends TypedBaseStore<IAppState> {
       return Promise.resolve(null)
     }
 
+    // With worktrees disabled the dropdown is hidden, so don't let the user
+    // land on a linked worktree they can't navigate away from — redirect the
+    // selection to the main worktree. (Only runs while the feature is off.)
+    if (!this.worktreesEnabled) {
+      const main = await this.getMainWorktreeIfOnLinked(repository)
+      if (main !== null) {
+        return this._switchWorktree(repository, main)
+      }
+    }
+
     setNumber(LastSelectedRepositoryIDKey, repository.id)
 
     const previousRepositoryId = previouslySelectedRepository
@@ -4351,6 +4361,28 @@ export class AppStore extends TypedBaseStore<IAppState> {
   }
 
   /**
+   * If the repository is checked out on a linked worktree, return its main
+   * worktree entry; otherwise null. Errors resolve to null (treated as "not on
+   * a linked worktree" so callers degrade gracefully).
+   */
+  private async getMainWorktreeIfOnLinked(
+    repository: Repository
+  ): Promise<WorktreeEntry | null> {
+    try {
+      const worktrees = await listWorktrees(repository)
+      const main = worktrees.find(wt => wt.type === 'main')
+      if (main !== undefined && main.path !== repository.path) {
+        return main
+      }
+    } catch (e) {
+      // Swallowed: callers proceed as if not on a linked worktree. Re-enabling
+      // worktrees in preferences always restores navigation.
+      log.error('Could not determine worktree for repository', e)
+    }
+    return null
+  }
+
+  /**
    * If the selected repository is currently checked out on a linked worktree,
    * switch it back to the main worktree. No-op otherwise.
    */
@@ -4360,20 +4392,9 @@ export class AppStore extends TypedBaseStore<IAppState> {
       return
     }
 
-    try {
-      const worktrees = await listWorktrees(repository)
-      const main = worktrees.find(wt => wt.type === 'main')
-      const onLinkedWorktree =
-        main !== undefined && main.path !== repository.path
-
-      if (onLinkedWorktree) {
-        await this._switchWorktree(repository, main)
-      }
-    } catch (e) {
-      // Swallowed: the caller still disables worktrees after this. On the rare
-      // error path that leaves the user on a linked worktree with the dropdown
-      // hidden, re-enabling worktrees in preferences restores navigation.
-      log.error('Could not switch back to main worktree', e)
+    const main = await this.getMainWorktreeIfOnLinked(repository)
+    if (main !== null) {
+      await this._switchWorktree(repository, main)
     }
   }
 
