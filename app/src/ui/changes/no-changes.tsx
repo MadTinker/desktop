@@ -32,6 +32,7 @@ import {
 } from '../../models/pull-request'
 import { KeyboardShortcut } from '../keyboard-shortcut/keyboard-shortcut'
 import { formatNumber } from '../../lib/format-number'
+import { getDesktopStrings } from '../lib/theme-strings-context'
 
 function formatMenuItemLabel(text: string) {
   if (__WIN32__ || __LINUX__) {
@@ -764,12 +765,13 @@ export class NoChanges extends React.Component<
   }
 
   public render() {
+    const s = getDesktopStrings()
     return (
       <div className="changes-interstitial">
         <div className="content">
           <div className="interstitial-header">
             <div className="text">
-              <h1>No local changes</h1>
+              <h1>{s.noLocalChanges}</h1>
               <p>
                 There are no uncommitted changes in this repository. Here are
                 some friendly suggestions for what to do next.
