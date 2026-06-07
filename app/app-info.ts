@@ -17,6 +17,15 @@ export function getReplacements() {
     __OAUTH_SECRET__: s(
       process.env.DESKTOP_OAUTH_CLIENT_SECRET || devClientSecret
     ),
+    __AUTH0_CLIENT_ID__: s(
+      process.env.AUTH0_CLIENT_ID || 'U43kJwbd1xPcCzJsu3kZIIeNV1ygS7x1'
+    ),
+    __AUTH0_DOMAIN__: s(
+      process.env.AUTH0_DOMAIN || 'dev-eoi0koiaujjbib20.us.auth0.com'
+    ),
+    __AUTH0_AUDIENCE__: s(
+      process.env.AUTH0_AUDIENCE || 'https://madnessinteractive.cc/api'
+    ),
     __DARWIN__: process.platform === 'darwin',
     __WIN32__: process.platform === 'win32',
     __LINUX__: process.platform === 'linux',

@@ -14,14 +14,13 @@ import * as crypto from 'crypto'
  * an Omnispindle API key, which is what we actually store.
  */
 
-const AUTH0_DOMAIN = 'dev-eoi0koiaujjbib20.us.auth0.com'
-const AUTH0_AUDIENCE = 'https://madnessinteractive.cc/api'
-
-// NOTE: This must be the clientId of an Auth0 *Native* application whose
-// Allowed Callback URLs include the custom scheme below. The Inventorium SPA
-// clientId will reject a custom-scheme callback. See the plan's "External
-// prerequisite" section.
-const AUTH0_CLIENT_ID = 'U43kJwbd1xPcCzJsu3kZIIeNV1ygS7x1'
+// Injected at build time from AUTH0_DOMAIN / AUTH0_AUDIENCE / AUTH0_CLIENT_ID
+// (see app/app-info.ts). The clientId must belong to an Auth0 application whose
+// Allowed Callback URLs include the custom scheme below, authorized for the
+// audience above.
+const AUTH0_DOMAIN = __AUTH0_DOMAIN__
+const AUTH0_AUDIENCE = __AUTH0_AUDIENCE__
+const AUTH0_CLIENT_ID = __AUTH0_CLIENT_ID__
 
 const REDIRECT_PROTOCOL = __DEV_SECRETS__
   ? 'x-madness-desktop-dev-auth'

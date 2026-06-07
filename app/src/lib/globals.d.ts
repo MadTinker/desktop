@@ -8,6 +8,15 @@ declare const __DEV_SECRETS__: boolean
 /** The OAuth client id the app should use */
 declare const __OAUTH_CLIENT_ID__: string | undefined
 
+/** Auth0 application (client) id for desktop sign-in. */
+declare const __AUTH0_CLIENT_ID__: string
+
+/** Auth0 tenant domain for desktop sign-in. */
+declare const __AUTH0_DOMAIN__: string
+
+/** Auth0 API audience the minted token must target. */
+declare const __AUTH0_AUDIENCE__: string
+
 /** The OAuth secret the app should use. */
 declare const __OAUTH_SECRET__: string | undefined
 
