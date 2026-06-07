@@ -147,6 +147,50 @@ const DEFAULTS = {
   search: 'Search', filter: 'Filter', clear: 'Clear', apply: 'Apply',
 }
 
+// Keys we extract from the `desktop` section of each personality JSON.
+// These cover madnessDesktop's git-client surface (commit/branch/sync/etc.).
+const DESKTOP_KEYS = [
+  'commitTo', 'summaryPlaceholder', 'descriptionPlaceholder', 'amend',
+  'committing', 'generateMessage', 'undoCommit',
+  'push', 'pull', 'fetch', 'publishBranch', 'publishRepository',
+  'fetching', 'pushing', 'pulling',
+  'newBranch', 'createBranch', 'deleteBranch', 'renameBranch', 'switchBranch',
+  'currentBranch', 'branchName', 'noBranches',
+  'changesTitle', 'noLocalChanges', 'discardChanges', 'discardAll',
+  'stashChanges', 'undo',
+  'cloneRepository', 'addRepository', 'removeRepository', 'repositorySettings',
+  'openInTerminal', 'viewOnGitHub',
+  'historyTitle', 'noHistory',
+  'resolveConflicts', 'abortMerge', 'continueRebase', 'abortRebase',
+  'ok', 'cancel', 'discard', 'continue', 'dismiss',
+]
+
+// Fallback English defaults for the desktop section (from standard.json)
+const DESKTOP_DEFAULTS = {
+  commitTo: 'Commit to {branch}', summaryPlaceholder: 'Summary (required)',
+  descriptionPlaceholder: 'Description', amend: 'Amend last commit',
+  committing: 'Committing…', generateMessage: 'Generate commit message',
+  undoCommit: 'Undo',
+  push: 'Push origin', pull: 'Pull origin', fetch: 'Fetch origin',
+  publishBranch: 'Publish branch', publishRepository: 'Publish repository',
+  fetching: 'Fetching…', pushing: 'Pushing…', pulling: 'Pulling…',
+  newBranch: 'New branch', createBranch: 'Create branch',
+  deleteBranch: 'Delete branch', renameBranch: 'Rename branch',
+  switchBranch: 'Switch branch', currentBranch: 'Current branch',
+  branchName: 'Branch name', noBranches: 'No branches',
+  changesTitle: 'Changes', noLocalChanges: 'No local changes',
+  discardChanges: 'Discard changes', discardAll: 'Discard all changes',
+  stashChanges: 'Stash changes', undo: 'Undo',
+  cloneRepository: 'Clone repository', addRepository: 'Add repository',
+  removeRepository: 'Remove repository', repositorySettings: 'Repository settings',
+  openInTerminal: 'Open in terminal', viewOnGitHub: 'View on GitHub',
+  historyTitle: 'History', noHistory: 'No history',
+  resolveConflicts: 'Resolve conflicts', abortMerge: 'Abort merge',
+  continueRebase: 'Continue rebase', abortRebase: 'Abort rebase',
+  ok: 'OK', cancel: 'Cancel', discard: 'Discard',
+  continue: 'Continue', dismiss: 'Dismiss',
+}
+
 function generatePersonalityStrings() {
   // Glob personality JSONs (everything except *-colors.json)
   const allJson = glob.sync(path.join(THEMES_DIR, '*.json'))
@@ -171,13 +215,23 @@ function generatePersonalityStrings() {
     for (const key of STRING_KEYS) {
       strings[key] = data.common[key] || DEFAULTS[key]
     }
+    const desktopSrc = data.desktop || {}
+    const desktop = {}
+    for (const key of DESKTOP_KEYS) {
+      desktop[key] = desktopSrc[key] || DESKTOP_DEFAULTS[key]
+    }
+    strings.desktop = desktop
     entries[name] = strings
   }
 
   const interfaceFields = STRING_KEYS.map(k => `  ${k}: string`).join('\n')
+  const desktopInterfaceFields = DESKTOP_KEYS.map(k => `  ${k}: string`).join('\n')
 
   const defaultLines = STRING_KEYS
     .map(k => `  ${k}: ${JSON.stringify(DEFAULTS[k])}`)
+    .join(',\n')
+  const desktopDefaultLines = DESKTOP_KEYS
+    .map(k => `    ${k}: ${JSON.stringify(DESKTOP_DEFAULTS[k])}`)
     .join(',\n')
 
   const entryBlocks = Object.entries(entries)
@@ -186,18 +240,29 @@ function generatePersonalityStrings() {
       const fields = STRING_KEYS
         .map(k => `    ${k}: ${JSON.stringify(strings[k])}`)
         .join(',\n')
-      return `  ${JSON.stringify(name)}: {\n${fields},\n  }`
+      const desktopFields = DESKTOP_KEYS
+        .map(k => `      ${k}: ${JSON.stringify(strings.desktop[k])}`)
+        .join(',\n')
+      return `  ${JSON.stringify(name)}: {\n${fields},\n    desktop: {\n${desktopFields},\n    },\n  }`
     })
     .join(',\n')
 
   const ts = `// Auto-generated from MadnessThemes personality JSONs — do not edit
 
+export interface DesktopStrings {
+${desktopInterfaceFields}
+}
+
 export interface ThemeStrings {
 ${interfaceFields}
+  desktop: DesktopStrings
 }
 
 export const defaultStrings: ThemeStrings = {
 ${defaultLines},
+  desktop: {
+${desktopDefaultLines},
+  },
 }
 
 export const personalityStrings: Record<string, ThemeStrings> = {
