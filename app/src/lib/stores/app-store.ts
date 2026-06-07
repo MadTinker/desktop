@@ -529,6 +529,7 @@ const shellKey = 'shell'
 
 const repositoryIndicatorsEnabledKey = 'enable-repository-indicators'
 const autoSwitchOnChangesKey = 'enable-auto-switch-on-changes'
+const worktreesEnabledKey = 'worktrees-enabled'
 const showReflogTabKey = 'show-reflog-tab'
 const omnispindleApiKeyKey = 'omnispindle-api-key'
 
@@ -593,6 +594,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
   private chatHistoryArchiveConfig: IChatHistoryArchiveConfig =
     DefaultChatHistoryArchiveConfig
   private autoSwitchOnChangesEnabled = false
+  private worktreesEnabled = true
 
   private showWelcomeFlow = false
   private focusCommitMessage = false
@@ -833,6 +835,8 @@ export class AppStore extends TypedBaseStore<IAppState> {
     this.autoSwitchOnChangesEnabled =
       (getBoolean(autoSwitchOnChangesKey) ?? false) &&
       enableAutoSwitchOnChanges()
+
+    this.worktreesEnabled = getBoolean(worktreesEnabledKey) ?? true
 
     this.showReflogTab = getBoolean(showReflogTabKey, false)
 
@@ -1339,6 +1343,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
       currentOnboardingTutorialStep: this.currentOnboardingTutorialStep,
       repositoryIndicatorsEnabled: this.repositoryIndicatorsEnabled,
       autoSwitchOnChangesEnabled: this.autoSwitchOnChangesEnabled,
+      worktreesEnabled: this.worktreesEnabled,
       showReflogTab: this.showReflogTab,
       commitSpellcheckEnabled: this.commitSpellcheckEnabled,
       currentDragElement: this.currentDragElement,
@@ -4326,6 +4331,50 @@ export class AppStore extends TypedBaseStore<IAppState> {
     }
 
     this.emitUpdate()
+  }
+
+  public async _setWorktreesEnabled(enabled: boolean): Promise<void> {
+    if (this.worktreesEnabled === enabled) {
+      return
+    }
+
+    // When disabling, make sure the user isn't stranded on a linked worktree
+    // they can no longer navigate away from (the dropdown is about to vanish).
+    // Switch the selected repository back to its main worktree first.
+    if (!enabled) {
+      await this.switchSelectedRepositoryToMainWorktree()
+    }
+
+    setBoolean(worktreesEnabledKey, enabled)
+    this.worktreesEnabled = enabled
+    this.emitUpdate()
+  }
+
+  /**
+   * If the selected repository is currently checked out on a linked worktree,
+   * switch it back to the main worktree. No-op otherwise.
+   */
+  private async switchSelectedRepositoryToMainWorktree(): Promise<void> {
+    const repository = this.selectedRepository
+    if (!(repository instanceof Repository)) {
+      return
+    }
+
+    try {
+      const worktrees = await listWorktrees(repository)
+      const main = worktrees.find(wt => wt.type === 'main')
+      const onLinkedWorktree =
+        main !== undefined && main.path !== repository.path
+
+      if (onLinkedWorktree) {
+        await this._switchWorktree(repository, main)
+      }
+    } catch (e) {
+      // Swallowed: the caller still disables worktrees after this. On the rare
+      // error path that leaves the user on a linked worktree with the dropdown
+      // hidden, re-enabling worktrees in preferences restores navigation.
+      log.error('Could not switch back to main worktree', e)
+    }
   }
 
   public _setCommitSpellcheckEnabled(commitSpellcheckEnabled: boolean) {

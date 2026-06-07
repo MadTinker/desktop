@@ -374,6 +374,9 @@ export interface IAppState {
   /** Whether the app should auto-switch to repos with new changes */
   readonly autoSwitchOnChangesEnabled: boolean
 
+  /** Whether the worktree dropdown and worktree actions are available */
+  readonly worktreesEnabled: boolean
+
   /** Whether to show the Reflog tab in the repository sidebar */
   readonly showReflogTab: boolean
 
@@ -439,7 +442,9 @@ export interface IAppState {
   readonly showChangesFilter: boolean
 
   /** Live todos fetched from the Omnispindle MCP server */
-  readonly omnispindleTodos: ReadonlyArray<import('../models/omnispindle').IOmnispindleTodo>
+  readonly omnispindleTodos: ReadonlyArray<
+    import('../models/omnispindle').IOmnispindleTodo
+  >
 
   /** Last known connection status with the Omnispindle MCP server */
   readonly omnispindleStatus: import('../models/omnispindle').OmnispindleConnectionStatus

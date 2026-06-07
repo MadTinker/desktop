@@ -46,6 +46,9 @@ interface IBranchDropdownProps {
   /** Whether or not the branch dropdown is currently open */
   readonly isOpen: boolean
 
+  /** Whether worktree actions (checkout in new worktree) are available */
+  readonly worktreesEnabled: boolean
+
   /**
    * An event handler for when the drop down is opened, or closed, by a pointer
    * event or by pressing the space or enter key while focused.
@@ -113,8 +116,14 @@ export class BranchDropdown extends React.Component<IBranchDropdownProps> {
         emoji={this.props.emoji}
         onDeleteBranch={this.onDeleteBranch}
         onRenameBranch={this.onRenameBranch}
-        onCheckoutInNewWorktree={this.onCheckoutInNewWorktree}
-        onCheckoutPRInNewWorktree={this.onCheckoutPRInNewWorktree}
+        onCheckoutInNewWorktree={
+          this.props.worktreesEnabled ? this.onCheckoutInNewWorktree : undefined
+        }
+        onCheckoutPRInNewWorktree={
+          this.props.worktreesEnabled
+            ? this.onCheckoutPRInNewWorktree
+            : undefined
+        }
         underlineLinks={this.props.underlineLinks}
       />
     )

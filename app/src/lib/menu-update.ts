@@ -267,6 +267,10 @@ function getRepositoryMenuBuilder(state: IAppState): MenuStateBuilder {
       menuStateBuilder.enable(id)
     }
 
+    // Worktree actions follow the user's worktree toggle.
+    menuStateBuilder.setEnabled('show-worktrees-list', state.worktreesEnabled)
+    menuStateBuilder.setEnabled('create-worktree', state.worktreesEnabled)
+
     menuStateBuilder.setEnabled(
       'rename-branch',
       (onNonDefaultBranch || !hasPublishedBranch) &&

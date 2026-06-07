@@ -66,7 +66,12 @@ import {
   WorktreeDropdown,
   RevertProgress,
 } from './toolbar'
-import { iconForRepository, Octicon, OcticonSymbol, syncClockwise } from './octicons'
+import {
+  iconForRepository,
+  Octicon,
+  OcticonSymbol,
+  syncClockwise,
+} from './octicons'
 import * as octicons from './octicons/octicons.generated'
 import {
   showCertificateTrustDialog,
@@ -1116,7 +1121,9 @@ export class App extends React.Component<IAppProps, IAppState> {
 
     this.hotkeyStoreDispose = this.hotkeyStore.onDidChange(() => {
       if (this.hotkeyListener) {
-        this.hotkeyListener.updateBindings(this.hotkeyStore.getNonMenuBindings())
+        this.hotkeyListener.updateBindings(
+          this.hotkeyStore.getNonMenuBindings()
+        )
       }
       sendHotkeyBindings(this.hotkeyStore.getMenuAccelerators())
     })
@@ -1766,6 +1773,7 @@ export class App extends React.Component<IAppProps, IAppState> {
             customShell={this.state.customShell}
             repositoryIndicatorsEnabled={this.state.repositoryIndicatorsEnabled}
             autoSwitchOnChangesEnabled={this.state.autoSwitchOnChangesEnabled}
+            worktreesEnabled={this.state.worktreesEnabled}
             showReflogTab={this.state.showReflogTab}
             omnispindleApiKey={this.state.omnispindleApiKey}
             mqttConfig={this.state.mqttConfig}
@@ -3459,8 +3467,10 @@ export class App extends React.Component<IAppProps, IAppState> {
       onChangeRepositoryAlias: onChangeRepositoryAlias,
       onRemoveRepositoryAlias: onRemoveRepositoryAlias,
       onViewOnGitHub: this.viewOnGitHub,
-      onCreateWorktree: onCreateWorktree,
-      onShowWorktrees: onShowWorktrees,
+      onCreateWorktree: this.state.worktreesEnabled
+        ? onCreateWorktree
+        : undefined,
+      onShowWorktrees: this.state.worktreesEnabled ? onShowWorktrees : undefined,
       repository: repository,
       shellLabel: this.state.useCustomShell
         ? undefined
@@ -3606,7 +3616,9 @@ export class App extends React.Component<IAppProps, IAppState> {
           <Octicon symbol={octicons.arrowUp} />
           <div className="text-container">
             <div className="title">Push All Submodules</div>
-            <div className="detail">Push each active submodule to its remote</div>
+            <div className="detail">
+              Push each active submodule to its remote
+            </div>
           </div>
         </button>
         <button
@@ -3619,7 +3631,9 @@ export class App extends React.Component<IAppProps, IAppState> {
           <Octicon symbol={octicons.plus} />
           <div className="text-container">
             <div className="title">Init Uninitialized</div>
-            <div className="detail">Initialize all uninitialized submodules</div>
+            <div className="detail">
+              Initialize all uninitialized submodules
+            </div>
           </div>
         </button>
         <button
@@ -3775,6 +3789,7 @@ export class App extends React.Component<IAppProps, IAppState> {
       <BranchDropdown
         dispatcher={this.props.dispatcher}
         isOpen={isOpen}
+        worktreesEnabled={this.state.worktreesEnabled}
         branchDropdownWidth={this.state.branchDropdownWidth}
         onDropDownStateChanged={this.onBranchDropdownStateChanged}
         repository={repository}
@@ -3795,6 +3810,10 @@ export class App extends React.Component<IAppProps, IAppState> {
   }
 
   private renderWorktreeToolbarButton(): JSX.Element | null {
+    if (!this.state.worktreesEnabled) {
+      return null
+    }
+
     const selection = this.state.selectedState
 
     if (selection == null || selection.type !== SelectionType.Repository) {

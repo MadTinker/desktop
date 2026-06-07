@@ -126,6 +126,7 @@ interface IPreferencesProps {
   readonly customShell: ICustomIntegration | null
   readonly repositoryIndicatorsEnabled: boolean
   readonly autoSwitchOnChangesEnabled: boolean
+  readonly worktreesEnabled: boolean
   readonly showReflogTab: boolean
   readonly omnispindleApiKey: string
   readonly mqttConfig: IMqttConfig
@@ -184,6 +185,7 @@ interface IPreferencesState {
   readonly existingLockFilePath?: string
   readonly repositoryIndicatorsEnabled: boolean
   readonly autoSwitchOnChangesEnabled: boolean
+  readonly worktreesEnabled: boolean
   readonly showReflogTab: boolean
   readonly omnispindleApiKey: string
   readonly mqttConfig: IMqttConfig
@@ -265,6 +267,7 @@ export class Preferences extends React.Component<
       selectedShell: this.props.selectedShell,
       repositoryIndicatorsEnabled: this.props.repositoryIndicatorsEnabled,
       autoSwitchOnChangesEnabled: this.props.autoSwitchOnChangesEnabled,
+      worktreesEnabled: this.props.worktreesEnabled,
       showReflogTab: this.props.showReflogTab,
       omnispindleApiKey: this.props.omnispindleApiKey,
       mqttConfig: this.props.mqttConfig ?? DefaultMqttConfig,
@@ -730,9 +733,7 @@ export class Preferences extends React.Component<
         )
         break
       case PreferencesTab.Keybindings:
-        View = (
-          <Keybindings hotkeyStore={this.props.hotkeyStore} />
-        )
+        View = <Keybindings hotkeyStore={this.props.hotkeyStore} />
         break
       case PreferencesTab.Advanced: {
         View = (
@@ -742,6 +743,7 @@ export class Preferences extends React.Component<
             useExternalCredentialHelper={this.state.useExternalCredentialHelper}
             repositoryIndicatorsEnabled={this.state.repositoryIndicatorsEnabled}
             autoSwitchOnChangesEnabled={this.state.autoSwitchOnChangesEnabled}
+            worktreesEnabled={this.state.worktreesEnabled}
             showReflogTab={this.state.showReflogTab}
             onUseWindowsOpenSSHChanged={this.onUseWindowsOpenSSHChanged}
             onOptOutofReportingChanged={this.onOptOutofReportingChanged}
@@ -754,6 +756,7 @@ export class Preferences extends React.Component<
             onAutoSwitchOnChangesEnabledChanged={
               this.onAutoSwitchOnChangesEnabledChanged
             }
+            onWorktreesEnabledChanged={this.onWorktreesEnabledChanged}
             onShowReflogTabChanged={this.onShowReflogTabChanged}
             chatHistoryArchiveConfig={this.state.chatHistoryArchiveConfig}
             onChatHistoryArchiveConfigChanged={
@@ -788,6 +791,10 @@ export class Preferences extends React.Component<
     autoSwitchOnChangesEnabled: boolean
   ) => {
     this.setState({ autoSwitchOnChangesEnabled })
+  }
+
+  private onWorktreesEnabledChanged = (worktreesEnabled: boolean) => {
+    this.setState({ worktreesEnabled })
   }
 
   private onShowReflogTabChanged = (showReflogTab: boolean) => {
@@ -1071,6 +1078,10 @@ export class Preferences extends React.Component<
         dispatcher.setAutoSwitchOnChangesEnabled(
           this.state.autoSwitchOnChangesEnabled
         )
+      }
+
+      if (this.props.worktreesEnabled !== this.state.worktreesEnabled) {
+        await dispatcher.setWorktreesEnabled(this.state.worktreesEnabled)
       }
 
       if (this.props.showReflogTab !== this.state.showReflogTab) {

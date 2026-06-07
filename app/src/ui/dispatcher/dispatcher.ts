@@ -1209,7 +1209,10 @@ export class Dispatcher {
     repository: Repository,
     filesSelected: ReadonlyArray<WorkingDirectoryFileChange>
   ) {
-    return this.appStore._generateLocalAICommitMessage(repository, filesSelected)
+    return this.appStore._generateLocalAICommitMessage(
+      repository,
+      filesSelected
+    )
   }
 
   public promptOverrideWithLocalAICommitMessage(
@@ -2934,6 +2937,10 @@ export class Dispatcher {
 
   public setAutoSwitchOnChangesEnabled(enabled: boolean) {
     this.appStore._setAutoSwitchOnChangesEnabled(enabled)
+  }
+
+  public setWorktreesEnabled(enabled: boolean): Promise<void> {
+    return this.appStore._setWorktreesEnabled(enabled)
   }
 
   public setShowReflogTab(value: boolean) {

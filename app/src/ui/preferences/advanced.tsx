@@ -11,10 +11,7 @@ import {
   IChatHistoryArchiveConfig,
   IChatHistoryArchiveLogEntry,
 } from '../../models/chat-history-archive'
-import {
-  loadArchiveLog,
-  clearArchiveLog,
-} from '../../lib/chat-history-archive'
+import { loadArchiveLog, clearArchiveLog } from '../../lib/chat-history-archive'
 
 interface IAdvancedPreferencesProps {
   readonly useWindowsOpenSSH: boolean
@@ -22,12 +19,14 @@ interface IAdvancedPreferencesProps {
   readonly useExternalCredentialHelper: boolean
   readonly repositoryIndicatorsEnabled: boolean
   readonly autoSwitchOnChangesEnabled: boolean
+  readonly worktreesEnabled: boolean
   readonly showReflogTab: boolean
   readonly onUseWindowsOpenSSHChanged: (checked: boolean) => void
   readonly onOptOutofReportingChanged: (checked: boolean) => void
   readonly onUseExternalCredentialHelperChanged: (checked: boolean) => void
   readonly onRepositoryIndicatorsEnabledChanged: (enabled: boolean) => void
   readonly onAutoSwitchOnChangesEnabledChanged: (enabled: boolean) => void
+  readonly onWorktreesEnabledChanged: (enabled: boolean) => void
   readonly onShowReflogTabChanged: (value: boolean) => void
   // Chat History Archive (merged)
   readonly chatHistoryArchiveConfig: IChatHistoryArchiveConfig
@@ -101,6 +100,12 @@ export class Advanced extends React.Component<
     event: React.FormEvent<HTMLInputElement>
   ) => {
     this.props.onShowReflogTabChanged(event.currentTarget.checked)
+  }
+
+  private onWorktreesEnabledChanged = (
+    event: React.FormEvent<HTMLInputElement>
+  ) => {
+    this.props.onWorktreesEnabledChanged(event.currentTarget.checked)
   }
 
   private onUseWindowsOpenSSHChanged = (
@@ -179,6 +184,25 @@ export class Advanced extends React.Component<
             }
             onChange={this.onShowReflogTabChanged}
           />
+          <Checkbox
+            label="Enable worktrees"
+            value={
+              this.props.worktreesEnabled ? CheckboxValue.On : CheckboxValue.Off
+            }
+            onChange={this.onWorktreesEnabledChanged}
+            ariaDescribedBy="worktrees-enabled-description"
+          />
+          <div
+            id="worktrees-enabled-description"
+            className="git-settings-description"
+          >
+            <p>
+              Shows the worktree dropdown in the toolbar and worktree actions in
+              the menu. Turning this off switches the current repository back to
+              its main worktree first, so you won't be stranded on a linked
+              worktree.
+            </p>
+          </div>
         </div>
         <div className="advanced-section">
           <h2>Usage</h2>
@@ -226,9 +250,7 @@ export class Advanced extends React.Component<
 
   // ─── Chat History Archive ──────────────────────────────────────────────────
 
-  private onArchiveEnabledChanged = (
-    e: React.FormEvent<HTMLInputElement>
-  ) => {
+  private onArchiveEnabledChanged = (e: React.FormEvent<HTMLInputElement>) => {
     this.props.onChatHistoryArchiveConfigChanged({
       ...this.props.chatHistoryArchiveConfig,
       enabled: (e.currentTarget as HTMLInputElement).checked,
