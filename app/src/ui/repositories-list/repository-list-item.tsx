@@ -3,7 +3,7 @@ import * as React from 'react'
 import { Repository } from '../../models/repository'
 import { Octicon, iconForRepository } from '../octicons'
 import * as octicons from '../octicons/octicons.generated'
-import { Repositoryish } from './group-repositories'
+import { Repositoryish, IGhostSubmodule } from './group-repositories'
 import { HighlightText } from '../lib/highlight-text'
 import { IMatches } from '../../lib/fuzzy-find'
 import { IAheadBehind } from '../../models/branch'
@@ -256,3 +256,54 @@ const renderChangesIndicator = () => {
 
 export const commitGrammar = (commitNum: number) =>
   `${commitNum} commit${commitNum > 1 ? 's' : ''}` // english is hard
+
+interface IGhostSubmoduleListItemProps {
+  readonly ghost: IGhostSubmodule
+  readonly nestingLevel: number
+  readonly onAdd: (ghost: IGhostSubmodule) => void
+}
+
+/**
+ * A dimmed placeholder row for a submodule declared in a monorepo's
+ * .gitmodules that hasn't been added to the app yet. Clicking the row (or the
+ * Add affordance) registers it as a repository.
+ */
+export class GhostSubmoduleListItem extends React.Component<
+  IGhostSubmoduleListItemProps,
+  {}
+> {
+  private onAddClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation()
+    e.preventDefault()
+    this.props.onAdd(this.props.ghost)
+  }
+
+  public render() {
+    const { ghost, nestingLevel } = this.props
+    const indentStyle = {
+      paddingInlineStart: `calc(var(--spacing) + ${nestingLevel * 16}px)`,
+    }
+
+    return (
+      <div
+        className="repository-list-item is-subrepo ghost-submodule"
+        style={indentStyle}
+        title={`${ghost.path} — not added yet`}
+      >
+        <span className="subrepo-spacer" />
+        <Octicon
+          className="icon-for-repository"
+          symbol={octicons.fileSubmodule}
+        />
+        <div className="name">{ghost.name}</div>
+        <button
+          type="button"
+          className="ghost-submodule-add"
+          onClick={this.onAddClick}
+        >
+          Add
+        </button>
+      </div>
+    )
+  }
+}

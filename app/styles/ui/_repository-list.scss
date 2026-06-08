@@ -68,6 +68,34 @@
       margin-right: var(--spacing-quarter, 2px);
     }
 
+    // A declared-but-not-added submodule placeholder.
+    &.ghost-submodule {
+      color: var(--text-secondary-color);
+      font-style: italic;
+
+      .icon-for-repository {
+        opacity: 0.7;
+      }
+
+      .ghost-submodule-add {
+        flex-shrink: 0;
+        margin-left: auto;
+        padding: 0 var(--spacing-half);
+        border: 1px solid var(--box-border-color);
+        border-radius: var(--border-radius);
+        background: transparent;
+        color: var(--text-secondary-color);
+        font-size: var(--font-size-sm);
+        font-style: normal;
+        cursor: pointer;
+
+        &:hover {
+          color: var(--text-color);
+          border-color: var(--text-color);
+        }
+      }
+    }
+
     .favorite-indicator {
       flex-shrink: 0;
       width: 12px;

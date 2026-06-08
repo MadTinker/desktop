@@ -1,9 +1,15 @@
 import * as React from 'react'
 
-import { commitGrammar, RepositoryListItem } from './repository-list-item'
+import {
+  commitGrammar,
+  RepositoryListItem,
+  GhostSubmoduleListItem,
+} from './repository-list-item'
 import {
   groupRepositories,
   IRepositoryListItem,
+  IGhostSubmodule,
+  IDeclaredSubmodule,
   Repositoryish,
   RepositoryListGroup,
   getGroupKey,
@@ -11,6 +17,8 @@ import {
   getCustomOrderMap,
   setCustomOrderMap,
 } from './group-repositories'
+import { basename, join } from 'path'
+import { listSubmodules } from '../../lib/git'
 import { IFilterListGroup } from '../lib/filter-list'
 import { IMatches } from '../../lib/fuzzy-find'
 import { ILocalRepositoryState, Repository } from '../../models/repository'
@@ -101,6 +109,8 @@ interface IRepositoriesListState {
   readonly dragTargetId: number | null
   /** Counter to force re-render after reorder */
   readonly reorderVersion: number
+  /** Submodules declared in each repo's .gitmodules, keyed by repo id. */
+  readonly submoduleMap: ReadonlyMap<number, ReadonlyArray<IDeclaredSubmodule>>
 }
 
 const RowHeight = 29
@@ -142,7 +152,9 @@ function findMatchingListItem(
   if (selectedRepository !== null) {
     for (const group of groups) {
       for (const item of group.items) {
-        if (item.repository.id === selectedRepository.id) {
+        // Ghost rows borrow their parent's repository as a placeholder — never
+        // treat them as the selected repo.
+        if (item.ghost === undefined && item.repository.id === selectedRepository.id) {
           return item
         }
       }
@@ -170,17 +182,27 @@ export class RepositoriesList extends React.Component<
       recentRepositories: ReadonlyArray<number>,
       favoriteRepositories: ReadonlyArray<number>,
       customRepositoryGroups: ReadonlyArray<ICustomRepositoryGroup>,
+      submoduleMap: ReadonlyMap<number, ReadonlyArray<IDeclaredSubmodule>>,
       _reorderVersion?: number
-    ) =>
-      repositories === null
-        ? []
-        : groupRepositories(
-            repositories,
-            localRepositoryStateLookup,
-            recentRepositories,
-            favoriteRepositories,
-            customRepositoryGroups
-          )
+    ) => {
+      if (repositories === null) {
+        return []
+      }
+      const existingRepoPaths = new Set(
+        repositories
+          .filter((r): r is Repository => r instanceof Repository)
+          .map(r => r.path)
+      )
+      return groupRepositories(
+        repositories,
+        localRepositoryStateLookup,
+        recentRepositories,
+        favoriteRepositories,
+        customRepositoryGroups,
+        submoduleMap,
+        existingRepoPaths
+      )
+    }
   )
 
   /**
@@ -206,10 +228,73 @@ export class RepositoriesList extends React.Component<
       dragGroupKey: null,
       dragTargetId: null,
       reorderVersion: 0,
+      submoduleMap: new Map(),
     }
   }
 
+  private submodulesUnmounted = false
+
+  public componentDidMount() {
+    this.loadSubmodules()
+  }
+
+  public componentDidUpdate(prevProps: IRepositoriesListProps) {
+    if (prevProps.repositories !== this.props.repositories) {
+      this.loadSubmodules()
+    }
+  }
+
+  public componentWillUnmount() {
+    this.submodulesUnmounted = true
+  }
+
+  /**
+   * Read each added repository's .gitmodules so we can surface declared-but-not
+   * -added submodules as ghost rows nested under their monorepo.
+   */
+  private async loadSubmodules() {
+    const repos = (this.props.repositories ?? []).filter(
+      (r): r is Repository => r instanceof Repository
+    )
+
+    const map = new Map<number, ReadonlyArray<IDeclaredSubmodule>>()
+    await Promise.all(
+      repos.map(async repo => {
+        try {
+          const entries = await listSubmodules(repo)
+          if (entries.length === 0) {
+            return
+          }
+          map.set(
+            repo.id,
+            entries.map(e => ({
+              path: join(repo.path, e.path),
+              name: basename(e.path),
+            }))
+          )
+        } catch {
+          // A repo we can't read submodules for simply contributes no ghosts.
+        }
+      })
+    )
+
+    if (this.submodulesUnmounted) {
+      return
+    }
+    this.setState({ submoduleMap: map })
+  }
+
   private renderItem = (item: IRepositoryListItem, matches: IMatches) => {
+    if (item.ghost !== undefined) {
+      return (
+        <GhostSubmoduleListItem
+          ghost={item.ghost}
+          nestingLevel={item.nestingLevel}
+          onAdd={this.onAddSubmodule}
+        />
+      )
+    }
+
     const repository = item.repository
     const draggable = isReorderableGroup(
       item.groupKey.startsWith('0:')
@@ -396,6 +481,10 @@ export class RepositoriesList extends React.Component<
   }
 
   private onItemClick = (item: IRepositoryListItem) => {
+    if (item.ghost !== undefined) {
+      this.onAddSubmodule(item.ghost)
+      return
+    }
     const hasIndicator =
       item.changedFilesCount > 0 ||
       (item.aheadBehind !== null
@@ -405,11 +494,25 @@ export class RepositoriesList extends React.Component<
     this.props.onSelectionChanged(item.repository)
   }
 
+  /** Add an un-added declared submodule to the app and switch to it. */
+  private onAddSubmodule = async (ghost: IGhostSubmodule) => {
+    const added = await this.props.dispatcher.addRepositories([ghost.path])
+    const repo = added[0]
+    if (repo !== undefined) {
+      this.props.onSelectionChanged(repo)
+    }
+  }
+
   private onItemContextMenu = (
     item: IRepositoryListItem,
     event: React.MouseEvent<HTMLDivElement>
   ) => {
     event.preventDefault()
+
+    if (item.ghost !== undefined) {
+      // Ghost rows aren't real repos yet — no repo context menu.
+      return
+    }
 
     const items = generateRepositoryListContextMenu({
       onRemoveRepository: this.props.onRemoveRepository,
@@ -437,7 +540,10 @@ export class RepositoriesList extends React.Component<
     showContextualMenu(items)
   }
 
-  private getItemAriaLabel = (item: IRepositoryListItem) => item.repository.name
+  private getItemAriaLabel = (item: IRepositoryListItem) =>
+    item.ghost !== undefined
+      ? `Add submodule ${item.ghost.name}`
+      : item.repository.name
   private getGroupAriaLabelGetter =
     (
       groups: ReadonlyArray<
@@ -454,6 +560,7 @@ export class RepositoriesList extends React.Component<
       this.props.recentRepositories,
       this.props.favoriteRepositories,
       this.props.customRepositoryGroups,
+      this.state.submoduleMap,
       this.state.reorderVersion
     )
 
@@ -494,6 +601,7 @@ export class RepositoriesList extends React.Component<
             filterText: this.props.filterText,
             collapsedGroups: this.state.collapsedGroups,
             collapsedParents: this.state.collapsedParents,
+            submoduleMap: this.state.submoduleMap,
             reorderVersion: this.state.reorderVersion,
           }}
           onItemContextMenu={this.onItemContextMenu}
@@ -658,6 +766,7 @@ export class RepositoriesList extends React.Component<
       this.props.recentRepositories,
       this.props.favoriteRepositories,
       this.props.customRepositoryGroups,
+      this.state.submoduleMap,
       this.state.reorderVersion
     )
 
@@ -669,8 +778,11 @@ export class RepositoriesList extends React.Component<
       return
     }
 
-    // Build new order: current item IDs in display order
-    const ids = group.items.map(i => i.repository.id)
+    // Build new order: current item IDs in display order (excluding ghost
+    // submodule placeholders, which aren't reorderable repositories).
+    const ids = group.items
+      .filter(i => i.ghost === undefined)
+      .map(i => i.repository.id)
     const fromIdx = ids.indexOf(dragSourceId)
     const toIdx = ids.indexOf(targetRepoId)
 

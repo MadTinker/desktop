@@ -79,6 +79,28 @@ export interface IRepositoryListItem extends IFilterListItem {
   readonly parentRepoId: number | null
   /** Whether this item has nested subrepos beneath it. */
   readonly hasChildren: boolean
+  /**
+   * When set, this row is a placeholder for a submodule declared in the parent
+   * monorepo's .gitmodules that hasn't been added to the app yet. Its
+   * `repository` field points at the parent repo purely as a placeholder.
+   */
+  readonly ghost?: IGhostSubmodule
+}
+
+/** A submodule declared in .gitmodules but not yet added to the app. */
+export interface IGhostSubmodule {
+  /** Absolute on-disk path of the submodule working tree. */
+  readonly path: string
+  /** Display name (the submodule's directory leaf). */
+  readonly name: string
+  /** Repository id of the enclosing monorepo. */
+  readonly parentRepoId: number
+}
+
+/** A declared submodule of a repo: absolute path + display name. */
+export interface IDeclaredSubmodule {
+  readonly path: string
+  readonly name: string
 }
 
 const recentRepositoriesThreshold = 7
@@ -102,7 +124,12 @@ export function groupRepositories(
   localRepositoryStateLookup: ReadonlyMap<number, ILocalRepositoryState>,
   recentRepositories: ReadonlyArray<number>,
   favoriteRepositories: ReadonlyArray<number> = [],
-  customGroups: ReadonlyArray<ICustomRepositoryGroup> = []
+  customGroups: ReadonlyArray<ICustomRepositoryGroup> = [],
+  submoduleMap: ReadonlyMap<
+    number,
+    ReadonlyArray<IDeclaredSubmodule>
+  > = new Map(),
+  existingRepoPaths: ReadonlySet<string> = new Set()
 ): ReadonlyArray<IFilterListGroup<IRepositoryListItem, RepositoryListGroup>> {
   const includeRecentGroup = repositories.length > recentRepositoriesThreshold
   const recentSet = includeRecentGroup ? new Set(recentRepositories) : undefined
@@ -168,7 +195,9 @@ export function groupRepositories(
         repos,
         localRepositoryStateLookup,
         groups,
-        favoriteSet
+        favoriteSet,
+        submoduleMap,
+        existingRepoPaths
       ),
     }))
 }
@@ -208,7 +237,9 @@ const toSortedListItems = (
   repositories: ReadonlyArray<Repositoryish>,
   localRepositoryStateLookup: ReadonlyMap<number, ILocalRepositoryState>,
   groups: Map<string, RepoGroupItem>,
-  favoriteSet: ReadonlySet<number>
+  favoriteSet: ReadonlySet<number>,
+  submoduleMap: ReadonlyMap<number, ReadonlyArray<IDeclaredSubmodule>>,
+  existingRepoPaths: ReadonlySet<string>
 ): IRepositoryListItem[] => {
   const key = getGroupKey(group)
   const groupNames = new Map<string, number>()
@@ -257,6 +288,8 @@ const toSortedListItems = (
     if (customOrder && customOrder.length > 0) {
       const orderIndex = new Map(customOrder.map((id, idx) => [id, idx]))
       return applyNesting(
+        submoduleMap,
+        existingRepoPaths,
         items.sort((a, b) => {
           const ai = orderIndex.get(a.repository.id)
           const bi = orderIndex.get(b.repository.id)
@@ -280,6 +313,8 @@ const toSortedListItems = (
   }
 
   return applyNesting(
+    submoduleMap,
+    existingRepoPaths,
     items.sort(({ repository: x }, { repository: y }) =>
       caseInsensitiveCompare(getDisplayTitle(x), getDisplayTitle(y))
     )
@@ -303,11 +338,47 @@ const isPathInside = (child: string, parent: string): boolean => {
  * children inherit their parent's relative sibling order.
  */
 const applyNesting = (
+  submoduleMap: ReadonlyMap<number, ReadonlyArray<IDeclaredSubmodule>>,
+  existingRepoPaths: ReadonlySet<string>,
   items: ReadonlyArray<IRepositoryListItem>
 ): IRepositoryListItem[] => {
   // Only real (non-cloning) repositories have stable on-disk paths to nest by.
   const pathItems = items.filter(i => i.repository instanceof Repository)
-  if (pathItems.length < 2) {
+
+  // Build ghost rows for submodules declared in a repo's .gitmodules that
+  // haven't been added to the app yet (so they're not already nested).
+  const ghostChildrenOf = new Map<string, IRepositoryListItem[]>()
+  for (const item of pathItems) {
+    const repo = item.repository as Repository
+    const declared = submoduleMap.get(repo.id)
+    if (declared === undefined || declared.length === 0) {
+      continue
+    }
+    for (const sub of declared) {
+      if (existingRepoPaths.has(sub.path)) {
+        continue // already added → it's a real nested child, skip the ghost
+      }
+      const ghosts = ghostChildrenOf.get(item.id) ?? []
+      ghosts.push({
+        text: [sub.name],
+        id: `ghost:${sub.path}`,
+        repository: repo, // placeholder; ghosts are never selected as a repo
+        needsDisambiguation: false,
+        isFavorite: false,
+        aheadBehind: null,
+        changedFilesCount: 0,
+        groupKey: item.groupKey,
+        nestingLevel: 0, // assigned during emit
+        parentRepoId: repo.id,
+        hasChildren: false,
+        ghost: { path: sub.path, name: sub.name, parentRepoId: repo.id },
+      })
+      ghostChildrenOf.set(item.id, ghosts)
+    }
+  }
+
+  const hasGhosts = ghostChildrenOf.size > 0
+  if (pathItems.length < 2 && !hasGhosts) {
     return [...items]
   }
 
@@ -349,15 +420,20 @@ const applyNesting = (
   const out: IRepositoryListItem[] = []
   const emit = (item: IRepositoryListItem, level: number) => {
     const kids = childrenOf.get(item.id) ?? []
+    const ghostKids = ghostChildrenOf.get(item.id) ?? []
     const parentId = parentOf.get(item.id) ?? null
     out.push({
       ...item,
       nestingLevel: level,
       parentRepoId: parentId !== null ? parseInt(parentId, 10) : null,
-      hasChildren: kids.length > 0,
+      hasChildren: kids.length > 0 || ghostKids.length > 0,
     })
     for (const kid of kids) {
       emit(kid, level + 1)
+    }
+    // Un-added declared submodules render after the real nested subrepos.
+    for (const ghost of ghostKids) {
+      out.push({ ...ghost, nestingLevel: level + 1 })
     }
   }
   for (const root of roots) {
