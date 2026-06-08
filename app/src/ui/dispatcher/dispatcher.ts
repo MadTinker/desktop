@@ -2955,6 +2955,22 @@ export class Dispatcher {
     this.appStore._setShowReflogTab(value)
   }
 
+  public setTerminalOpenOnStartup(value: boolean) {
+    this.appStore._setTerminalOpenOnStartup(value)
+  }
+
+  public setTerminalFontSize(value: number) {
+    this.appStore._setTerminalFontSize(value)
+  }
+
+  public setTerminalCursorBlink(value: boolean) {
+    this.appStore._setTerminalCursorBlink(value)
+  }
+
+  public setTerminalScrollback(value: number) {
+    this.appStore._setTerminalScrollback(value)
+  }
+
   public setOmnispindleApiKey(apiKey: string) {
     this.appStore._setOmnispindleApiKey(apiKey)
   }

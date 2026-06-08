@@ -531,6 +531,10 @@ const repositoryIndicatorsEnabledKey = 'enable-repository-indicators'
 const autoSwitchOnChangesKey = 'enable-auto-switch-on-changes'
 const worktreesEnabledKey = 'worktrees-enabled'
 const showReflogTabKey = 'show-reflog-tab'
+const terminalOpenOnStartupKey = 'terminal-open-on-startup'
+const terminalFontSizeKey = 'terminal-font-size'
+const terminalCursorBlinkKey = 'terminal-cursor-blink'
+const terminalScrollbackKey = 'terminal-scrollback'
 const omnispindleApiKeyKey = 'omnispindle-api-key'
 
 // background fetching should occur hourly when Desktop is active, but this
@@ -709,6 +713,10 @@ export class AppStore extends TypedBaseStore<IAppState> {
   private repositoryIndicatorsEnabled: boolean
 
   private showReflogTab: boolean = false
+  private terminalOpenOnStartup: boolean = false
+  private terminalFontSize: number = 12
+  private terminalCursorBlink: boolean = true
+  private terminalScrollback: number = 5000
 
   /** Which step the user needs to complete next in the onboarding tutorial */
   private currentOnboardingTutorialStep = TutorialStep.NotApplicable
@@ -839,6 +847,10 @@ export class AppStore extends TypedBaseStore<IAppState> {
     this.worktreesEnabled = getBoolean(worktreesEnabledKey) ?? true
 
     this.showReflogTab = getBoolean(showReflogTabKey, false)
+    this.terminalOpenOnStartup = getBoolean(terminalOpenOnStartupKey, false)
+    this.terminalFontSize = getNumber(terminalFontSizeKey, 12)
+    this.terminalCursorBlink = getBoolean(terminalCursorBlinkKey, true)
+    this.terminalScrollback = getNumber(terminalScrollbackKey, 5000)
 
     this.omnispindleApiKey = localStorage.getItem(omnispindleApiKeyKey) ?? ''
     this.mqttConfig = getMqttConfig()
@@ -1345,6 +1357,10 @@ export class AppStore extends TypedBaseStore<IAppState> {
       autoSwitchOnChangesEnabled: this.autoSwitchOnChangesEnabled,
       worktreesEnabled: this.worktreesEnabled,
       showReflogTab: this.showReflogTab,
+      terminalOpenOnStartup: this.terminalOpenOnStartup,
+      terminalFontSize: this.terminalFontSize,
+      terminalCursorBlink: this.terminalCursorBlink,
+      terminalScrollback: this.terminalScrollback,
       commitSpellcheckEnabled: this.commitSpellcheckEnabled,
       currentDragElement: this.currentDragElement,
       lastThankYou: this.lastThankYou,
@@ -3469,6 +3485,30 @@ export class AppStore extends TypedBaseStore<IAppState> {
       }
     }
 
+    this.emitUpdate()
+  }
+
+  public _setTerminalOpenOnStartup(value: boolean): void {
+    setBoolean(terminalOpenOnStartupKey, value)
+    this.terminalOpenOnStartup = value
+    this.emitUpdate()
+  }
+
+  public _setTerminalFontSize(value: number): void {
+    setNumber(terminalFontSizeKey, value)
+    this.terminalFontSize = value
+    this.emitUpdate()
+  }
+
+  public _setTerminalCursorBlink(value: boolean): void {
+    setBoolean(terminalCursorBlinkKey, value)
+    this.terminalCursorBlink = value
+    this.emitUpdate()
+  }
+
+  public _setTerminalScrollback(value: number): void {
+    setNumber(terminalScrollbackKey, value)
+    this.terminalScrollback = value
     this.emitUpdate()
   }
 

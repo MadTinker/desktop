@@ -380,6 +380,18 @@ export interface IAppState {
   /** Whether to show the Reflog tab in the repository sidebar */
   readonly showReflogTab: boolean
 
+  /** Whether to show the integrated terminal on startup */
+  readonly terminalOpenOnStartup: boolean
+
+  /** Terminal font size in pixels */
+  readonly terminalFontSize: number
+
+  /** Whether the terminal cursor should blink */
+  readonly terminalCursorBlink: boolean
+
+  /** Number of lines to keep in terminal scrollback buffer */
+  readonly terminalScrollback: number
+
   /**
    * Whether or not the app should use spell check on commit summary and description
    */

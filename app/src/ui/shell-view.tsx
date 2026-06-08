@@ -10,6 +10,9 @@ import { getMonospaceFontFamily } from './get-monospace-font-family'
 
 interface IShellViewProps {
   readonly cwd: string
+  readonly fontSize?: number
+  readonly cursorBlink?: boolean
+  readonly scrollback?: number
 }
 
 interface IShellViewState {
@@ -19,15 +22,17 @@ interface IShellViewState {
 const defaultCols = 80
 const defaultRows = 24
 
-const terminalOptions: Readonly<ITerminalOptions> = {
-  cursorBlink: true,
-  fontFamily: getMonospaceFontFamily(),
-  fontSize: 12,
-  screenReaderMode: true,
-  scrollback: 5000,
-  theme: {
-    background: '#00000000',
-  },
+function buildTerminalOptions(props: IShellViewProps): ITerminalOptions {
+  return {
+    cursorBlink: props.cursorBlink ?? true,
+    fontFamily: getMonospaceFontFamily(),
+    fontSize: props.fontSize ?? 12,
+    screenReaderMode: true,
+    scrollback: props.scrollback ?? 5000,
+    theme: {
+      background: '#00000000',
+    },
+  }
 }
 
 export class ShellView extends React.Component<
@@ -49,7 +54,7 @@ export class ShellView extends React.Component<
   }
 
   public componentDidMount() {
-    this.terminal = new XTermTerminal(terminalOptions)
+    this.terminal = new XTermTerminal(buildTerminalOptions(this.props))
     this.fitAddon = new FitAddon()
     this.terminal.loadAddon(this.fitAddon)
 

@@ -128,6 +128,10 @@ interface IPreferencesProps {
   readonly autoSwitchOnChangesEnabled: boolean
   readonly worktreesEnabled: boolean
   readonly showReflogTab: boolean
+  readonly terminalOpenOnStartup: boolean
+  readonly terminalFontSize: number
+  readonly terminalCursorBlink: boolean
+  readonly terminalScrollback: number
   readonly omnispindleApiKey: string
   readonly mqttConfig: IMqttConfig
   readonly localAIConfig: ILocalAIConfig
@@ -187,6 +191,10 @@ interface IPreferencesState {
   readonly autoSwitchOnChangesEnabled: boolean
   readonly worktreesEnabled: boolean
   readonly showReflogTab: boolean
+  readonly terminalOpenOnStartup: boolean
+  readonly terminalFontSize: number
+  readonly terminalCursorBlink: boolean
+  readonly terminalScrollback: number
   readonly omnispindleApiKey: string
   readonly mqttConfig: IMqttConfig
   readonly localAIConfig: ILocalAIConfig
@@ -269,6 +277,10 @@ export class Preferences extends React.Component<
       autoSwitchOnChangesEnabled: this.props.autoSwitchOnChangesEnabled,
       worktreesEnabled: this.props.worktreesEnabled,
       showReflogTab: this.props.showReflogTab,
+      terminalOpenOnStartup: this.props.terminalOpenOnStartup,
+      terminalFontSize: this.props.terminalFontSize,
+      terminalCursorBlink: this.props.terminalCursorBlink,
+      terminalScrollback: this.props.terminalScrollback,
       omnispindleApiKey: this.props.omnispindleApiKey,
       mqttConfig: this.props.mqttConfig ?? DefaultMqttConfig,
       localAIConfig: this.props.localAIConfig ?? DefaultLocalAIConfig,
@@ -745,6 +757,10 @@ export class Preferences extends React.Component<
             autoSwitchOnChangesEnabled={this.state.autoSwitchOnChangesEnabled}
             worktreesEnabled={this.state.worktreesEnabled}
             showReflogTab={this.state.showReflogTab}
+            terminalOpenOnStartup={this.state.terminalOpenOnStartup}
+            terminalFontSize={this.state.terminalFontSize}
+            terminalCursorBlink={this.state.terminalCursorBlink}
+            terminalScrollback={this.state.terminalScrollback}
             onUseWindowsOpenSSHChanged={this.onUseWindowsOpenSSHChanged}
             onOptOutofReportingChanged={this.onOptOutofReportingChanged}
             onUseExternalCredentialHelperChanged={
@@ -758,6 +774,10 @@ export class Preferences extends React.Component<
             }
             onWorktreesEnabledChanged={this.onWorktreesEnabledChanged}
             onShowReflogTabChanged={this.onShowReflogTabChanged}
+            onTerminalOpenOnStartupChanged={this.onTerminalOpenOnStartupChanged}
+            onTerminalFontSizeChanged={this.onTerminalFontSizeChanged}
+            onTerminalCursorBlinkChanged={this.onTerminalCursorBlinkChanged}
+            onTerminalScrollbackChanged={this.onTerminalScrollbackChanged}
             chatHistoryArchiveConfig={this.state.chatHistoryArchiveConfig}
             onChatHistoryArchiveConfigChanged={
               this.onChatHistoryArchiveConfigChanged
@@ -799,6 +819,22 @@ export class Preferences extends React.Component<
 
   private onShowReflogTabChanged = (showReflogTab: boolean) => {
     this.setState({ showReflogTab })
+  }
+
+  private onTerminalOpenOnStartupChanged = (terminalOpenOnStartup: boolean) => {
+    this.setState({ terminalOpenOnStartup })
+  }
+
+  private onTerminalFontSizeChanged = (terminalFontSize: number) => {
+    this.setState({ terminalFontSize })
+  }
+
+  private onTerminalCursorBlinkChanged = (terminalCursorBlink: boolean) => {
+    this.setState({ terminalCursorBlink })
+  }
+
+  private onTerminalScrollbackChanged = (terminalScrollback: number) => {
+    this.setState({ terminalScrollback })
   }
 
   private onOmnispindleApiKeyChanged = (omnispindleApiKey: string) => {
@@ -1086,6 +1122,22 @@ export class Preferences extends React.Component<
 
       if (this.props.showReflogTab !== this.state.showReflogTab) {
         dispatcher.setShowReflogTab(this.state.showReflogTab)
+      }
+
+      if (this.props.terminalOpenOnStartup !== this.state.terminalOpenOnStartup) {
+        dispatcher.setTerminalOpenOnStartup(this.state.terminalOpenOnStartup)
+      }
+
+      if (this.props.terminalFontSize !== this.state.terminalFontSize) {
+        dispatcher.setTerminalFontSize(this.state.terminalFontSize)
+      }
+
+      if (this.props.terminalCursorBlink !== this.state.terminalCursorBlink) {
+        dispatcher.setTerminalCursorBlink(this.state.terminalCursorBlink)
+      }
+
+      if (this.props.terminalScrollback !== this.state.terminalScrollback) {
+        dispatcher.setTerminalScrollback(this.state.terminalScrollback)
       }
 
       if (this.props.omnispindleApiKey !== this.state.omnispindleApiKey) {

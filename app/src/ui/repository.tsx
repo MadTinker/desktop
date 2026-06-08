@@ -53,6 +53,10 @@ interface IRepositoryViewProps {
   readonly emoji: Map<string, Emoji>
   readonly sidebarWidth: IConstrainedValue
   readonly terminalHeight: IConstrainedValue
+  readonly terminalOpenOnStartup: boolean
+  readonly terminalFontSize: number
+  readonly terminalCursorBlink: boolean
+  readonly terminalScrollback: number
   readonly commitSummaryWidth: IConstrainedValue
   readonly stashedFilesWidth: IConstrainedValue
   readonly issuesStore: IssuesStore
@@ -197,7 +201,7 @@ export class RepositoryView extends React.Component<
     this.state = {
       changesListScrollTop: 0,
       compareListScrollTop: 0,
-      terminalVisible: false,
+      terminalVisible: props.terminalOpenOnStartup,
     }
   }
 
@@ -798,7 +802,12 @@ export class RepositoryView extends React.Component<
             <Octicon symbol={octicons.x} />
           </button>
         </div>
-        <ShellView cwd={this.props.repository.path} />
+        <ShellView
+          cwd={this.props.repository.path}
+          fontSize={this.props.terminalFontSize}
+          cursorBlink={this.props.terminalCursorBlink}
+          scrollback={this.props.terminalScrollback}
+        />
       </VerticalResizable>
     )
   }

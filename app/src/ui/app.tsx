@@ -1775,6 +1775,10 @@ export class App extends React.Component<IAppProps, IAppState> {
             autoSwitchOnChangesEnabled={this.state.autoSwitchOnChangesEnabled}
             worktreesEnabled={this.state.worktreesEnabled}
             showReflogTab={this.state.showReflogTab}
+            terminalOpenOnStartup={this.state.terminalOpenOnStartup}
+            terminalFontSize={this.state.terminalFontSize}
+            terminalCursorBlink={this.state.terminalCursorBlink}
+            terminalScrollback={this.state.terminalScrollback}
             omnispindleApiKey={this.state.omnispindleApiKey}
             mqttConfig={this.state.mqttConfig}
             localAIConfig={this.state.localAIConfig}
@@ -3974,6 +3978,10 @@ export class App extends React.Component<IAppProps, IAppState> {
           emoji={state.emoji}
           sidebarWidth={state.sidebarWidth}
           terminalHeight={state.terminalHeight}
+          terminalOpenOnStartup={state.terminalOpenOnStartup}
+          terminalFontSize={state.terminalFontSize}
+          terminalCursorBlink={state.terminalCursorBlink}
+          terminalScrollback={state.terminalScrollback}
           commitSummaryWidth={state.commitSummaryWidth}
           stashedFilesWidth={state.stashedFilesWidth}
           issuesStore={this.props.issuesStore}
