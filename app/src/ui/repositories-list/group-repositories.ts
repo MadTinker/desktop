@@ -1,3 +1,4 @@
+import { sep } from 'path'
 import {
   Repository,
   ILocalRepositoryState,
@@ -72,6 +73,12 @@ export interface IRepositoryListItem extends IFilterListItem {
   readonly changedFilesCount: number
   /** The group key this item belongs to (for drag-reorder scoping) */
   readonly groupKey: string
+  /** Depth in the monorepo→subrepo tree (0 = top-level). */
+  readonly nestingLevel: number
+  /** The repository id this item is nested under, or null if top-level. */
+  readonly parentRepoId: number | null
+  /** Whether this item has nested subrepos beneath it. */
+  readonly hasChildren: boolean
 }
 
 const recentRepositoriesThreshold = 7
@@ -237,6 +244,9 @@ const toSortedListItems = (
       aheadBehind: repoState?.aheadBehind ?? null,
       changedFilesCount: repoState?.changedFilesCount ?? 0,
       groupKey: key,
+      nestingLevel: 0,
+      parentRepoId: null,
+      hasChildren: false,
     }
   })
 
@@ -246,28 +256,112 @@ const toSortedListItems = (
     const customOrder = orderMap[key]
     if (customOrder && customOrder.length > 0) {
       const orderIndex = new Map(customOrder.map((id, idx) => [id, idx]))
-      return items.sort((a, b) => {
-        const ai = orderIndex.get(a.repository.id)
-        const bi = orderIndex.get(b.repository.id)
-        // Items with custom order come first, in order; rest alphabetical after
-        if (ai !== undefined && bi !== undefined) {
-          return ai - bi
-        }
-        if (ai !== undefined) {
-          return -1
-        }
-        if (bi !== undefined) {
-          return 1
-        }
-        return caseInsensitiveCompare(
-          getDisplayTitle(a.repository),
-          getDisplayTitle(b.repository)
-        )
-      })
+      return applyNesting(
+        items.sort((a, b) => {
+          const ai = orderIndex.get(a.repository.id)
+          const bi = orderIndex.get(b.repository.id)
+          // Items with custom order come first, in order; rest alphabetical after
+          if (ai !== undefined && bi !== undefined) {
+            return ai - bi
+          }
+          if (ai !== undefined) {
+            return -1
+          }
+          if (bi !== undefined) {
+            return 1
+          }
+          return caseInsensitiveCompare(
+            getDisplayTitle(a.repository),
+            getDisplayTitle(b.repository)
+          )
+        })
+      )
     }
   }
 
-  return items.sort(({ repository: x }, { repository: y }) =>
-    caseInsensitiveCompare(getDisplayTitle(x), getDisplayTitle(y))
+  return applyNesting(
+    items.sort(({ repository: x }, { repository: y }) =>
+      caseInsensitiveCompare(getDisplayTitle(x), getDisplayTitle(y))
+    )
   )
+}
+
+/**
+ * Whether `child` lives on disk inside `parent` (a strict descendant path).
+ * Used to detect monorepo→subrepo relationships from absolute repo paths.
+ */
+const isPathInside = (child: string, parent: string): boolean => {
+  const base = parent.endsWith(sep) ? parent : parent + sep
+  return child.length > base.length && child.startsWith(base)
+}
+
+/**
+ * Re-order a flat, already-sorted list of repository items into a monorepo
+ * tree: each subrepo (a repo whose on-disk path sits inside another in-group
+ * repo) is pulled directly beneath its closest enclosing repo and tagged with a
+ * nesting level. Root ordering (alphabetical or user drag-order) is preserved;
+ * children inherit their parent's relative sibling order.
+ */
+const applyNesting = (
+  items: ReadonlyArray<IRepositoryListItem>
+): IRepositoryListItem[] => {
+  // Only real (non-cloning) repositories have stable on-disk paths to nest by.
+  const pathItems = items.filter(i => i.repository instanceof Repository)
+  if (pathItems.length < 2) {
+    return [...items]
+  }
+
+  const parentOf = new Map<string, string | null>()
+  for (const item of items) {
+    const repo = item.repository
+    if (!(repo instanceof Repository)) {
+      parentOf.set(item.id, null)
+      continue
+    }
+    let best: IRepositoryListItem | null = null
+    let bestLen = -1
+    for (const other of pathItems) {
+      if (other === item) {
+        continue
+      }
+      const otherPath = (other.repository as Repository).path
+      if (isPathInside(repo.path, otherPath) && otherPath.length > bestLen) {
+        best = other
+        bestLen = otherPath.length
+      }
+    }
+    parentOf.set(item.id, best ? best.id : null)
+  }
+
+  const childrenOf = new Map<string, IRepositoryListItem[]>()
+  const roots: IRepositoryListItem[] = []
+  for (const item of items) {
+    const parentId = parentOf.get(item.id) ?? null
+    if (parentId === null) {
+      roots.push(item)
+    } else {
+      const arr = childrenOf.get(parentId) ?? []
+      arr.push(item)
+      childrenOf.set(parentId, arr)
+    }
+  }
+
+  const out: IRepositoryListItem[] = []
+  const emit = (item: IRepositoryListItem, level: number) => {
+    const kids = childrenOf.get(item.id) ?? []
+    const parentId = parentOf.get(item.id) ?? null
+    out.push({
+      ...item,
+      nestingLevel: level,
+      parentRepoId: parentId !== null ? parseInt(parentId, 10) : null,
+      hasChildren: kids.length > 0,
+    })
+    for (const kid of kids) {
+      emit(kid, level + 1)
+    }
+  }
+  for (const root of roots) {
+    emit(root, 0)
+  }
+  return out
 }

@@ -45,6 +45,29 @@
       width: 16px;
     }
 
+    // Chevron that folds/unfolds a monorepo's nested subrepos.
+    .subrepo-collapse-toggle {
+      flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 14px;
+      margin-right: var(--spacing-quarter, 2px);
+      cursor: pointer;
+      color: var(--text-secondary-color);
+
+      &:hover {
+        color: var(--text-color);
+      }
+    }
+
+    // Keeps childless subrepos aligned with their siblings that have a chevron.
+    .subrepo-spacer {
+      flex-shrink: 0;
+      width: 14px;
+      margin-right: var(--spacing-quarter, 2px);
+    }
+
     .favorite-indicator {
       flex-shrink: 0;
       width: 12px;

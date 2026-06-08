@@ -32,6 +32,7 @@ import { IAheadBehind } from '../../models/branch'
 import {
   ICustomRepositoryGroup,
   CollapsedRepositoryGroupsKey,
+  CollapsedRepositoryParentsKey,
 } from './repository-group-types'
 import { getStringArray, setStringArray } from '../../lib/local-storage'
 
@@ -90,6 +91,8 @@ interface IRepositoriesListState {
   readonly newRepositoryMenuExpanded: boolean
   readonly selectedItem: IRepositoryListItem | null
   readonly collapsedGroups: ReadonlySet<string>
+  /** Repo IDs (as strings) whose nested subrepos are collapsed */
+  readonly collapsedParents: ReadonlySet<string>
   /** Repository ID currently being dragged */
   readonly dragSourceId: number | null
   /** Group key of the drag source */
@@ -101,6 +104,30 @@ interface IRepositoriesListState {
 }
 
 const RowHeight = 29
+
+/**
+ * Drop any subrepo whose monorepo parent (or any ancestor) is collapsed, so a
+ * collapsed folder hides its entire nested subtree.
+ */
+function hideCollapsedSubrepos(
+  items: ReadonlyArray<IRepositoryListItem>,
+  collapsedParents: ReadonlySet<string>
+): IRepositoryListItem[] {
+  const parentById = new Map(
+    items.map(i => [i.id, i.parentRepoId] as const)
+  )
+  return items.filter(item => {
+    let parentId = item.parentRepoId
+    while (parentId !== null) {
+      const key = parentId.toString()
+      if (collapsedParents.has(key)) {
+        return false
+      }
+      parentId = parentById.get(key) ?? null
+    }
+    return true
+  })
+}
 
 /**
  * Iterate over all groups until a list item is found that matches
@@ -174,6 +201,7 @@ export class RepositoriesList extends React.Component<
       newRepositoryMenuExpanded: false,
       selectedItem: null,
       collapsedGroups: new Set(getStringArray(CollapsedRepositoryGroupsKey)),
+      collapsedParents: new Set(getStringArray(CollapsedRepositoryParentsKey)),
       dragSourceId: null,
       dragGroupKey: null,
       dragTargetId: null,
@@ -215,8 +243,25 @@ export class RepositoriesList extends React.Component<
           draggable ? e => this.onRepoDrop(e, repository.id) : undefined
         }
         onDragEnd={this.onRepoDragEnd}
+        nestingLevel={item.nestingLevel}
+        hasChildren={item.hasChildren}
+        isCollapsed={this.state.collapsedParents.has(item.id)}
+        onToggleCollapsed={() => this.toggleParentCollapsed(item.id)}
       />
     )
+  }
+
+  private toggleParentCollapsed(repoItemId: string) {
+    this.setState(prev => {
+      const next = new Set(prev.collapsedParents)
+      if (next.has(repoItemId)) {
+        next.delete(repoItemId)
+      } else {
+        next.add(repoItemId)
+      }
+      setStringArray(CollapsedRepositoryParentsKey, [...next])
+      return { collapsedParents: next }
+    })
   }
 
   private getAheadBehindTooltip = (aheadBehind: IAheadBehind | null) => {
@@ -413,16 +458,18 @@ export class RepositoriesList extends React.Component<
     )
 
     // Hide items in collapsed groups — header-only groups are supported
-    // by the SectionFilterList when renderGroupHeader is provided.
-    const { collapsedGroups } = this.state
-    const groups =
-      collapsedGroups.size === 0
-        ? allGroups
-        : allGroups.map(g =>
-            collapsedGroups.has(getGroupKey(g.identifier))
-              ? { ...g, items: [] as IRepositoryListItem[] }
-              : g
-          )
+    // by the SectionFilterList when renderGroupHeader is provided. Also hide
+    // subrepos nested under a collapsed monorepo parent.
+    const { collapsedGroups, collapsedParents } = this.state
+    const groups = allGroups.map(g => {
+      if (collapsedGroups.has(getGroupKey(g.identifier))) {
+        return { ...g, items: [] as IRepositoryListItem[] }
+      }
+      if (collapsedParents.size === 0) {
+        return g
+      }
+      return { ...g, items: hideCollapsedSubrepos(g.items, collapsedParents) }
+    })
 
     const selectedItem =
       this.state.selectedItem ??
@@ -446,6 +493,7 @@ export class RepositoriesList extends React.Component<
             repositories: this.props.repositories,
             filterText: this.props.filterText,
             collapsedGroups: this.state.collapsedGroups,
+            collapsedParents: this.state.collapsedParents,
             reorderVersion: this.state.reorderVersion,
           }}
           onItemContextMenu={this.onItemContextMenu}

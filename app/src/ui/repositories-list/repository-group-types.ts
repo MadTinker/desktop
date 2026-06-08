@@ -12,4 +12,5 @@ export interface ICustomRepositoryGroup {
 export const FavoriteRepositoriesKey = 'favorite-repositories'
 export const CustomRepositoryGroupsKey = 'custom-repository-groups'
 export const CollapsedRepositoryGroupsKey = 'collapsed-repository-groups'
+export const CollapsedRepositoryParentsKey = 'collapsed-repository-parents'
 export const RepositoryCustomOrderKey = 'repository-custom-order'

@@ -44,6 +44,18 @@ interface IRepositoryListItemProps {
   readonly onDragOver?: (e: React.DragEvent<HTMLDivElement>) => void
   readonly onDragEnd?: (e: React.DragEvent<HTMLDivElement>) => void
   readonly onDrop?: (e: React.DragEvent<HTMLDivElement>) => void
+
+  /** Depth in the monorepo→subrepo tree (0 = top-level). */
+  readonly nestingLevel?: number
+
+  /** Whether this repo has nested subrepos beneath it. */
+  readonly hasChildren?: boolean
+
+  /** Whether this repo's subrepos are currently collapsed. */
+  readonly isCollapsed?: boolean
+
+  /** Toggle the collapsed state of this repo's subrepos. */
+  readonly onToggleCollapsed?: () => void
 }
 
 /** A repository item. */
@@ -71,10 +83,19 @@ export class RepositoryListItem extends React.Component<
       alias: alias !== null,
     })
 
+    const nestingLevel = this.props.nestingLevel ?? 0
+
     const itemClass = classNames('repository-list-item', {
       'drag-source': this.props.isDragSource,
       'drag-target': this.props.isDragTarget,
+      'is-subrepo': nestingLevel > 0,
     })
+
+    // Indent nested subrepos so the monorepo hierarchy reads like a folder tree.
+    const indentStyle =
+      nestingLevel > 0
+        ? { paddingInlineStart: `calc(var(--spacing) + ${nestingLevel * 16}px)` }
+        : undefined
 
     return (
       <div
@@ -85,6 +106,7 @@ export class RepositoryListItem extends React.Component<
         onDragOver={this.props.onDragOver}
         onDragEnd={this.props.onDragEnd}
         onDrop={this.props.onDrop}
+        style={indentStyle}
       >
         <Tooltip
           target={this.listItemRef}
@@ -92,6 +114,24 @@ export class RepositoryListItem extends React.Component<
         >
           {this.renderTooltip()}
         </Tooltip>
+
+        {this.props.hasChildren ? (
+          <span
+            className="subrepo-collapse-toggle"
+            role="button"
+            onClick={this.onToggleCollapsedClick}
+          >
+            <Octicon
+              symbol={
+                this.props.isCollapsed
+                  ? octicons.chevronRight
+                  : octicons.chevronDown
+              }
+            />
+          </span>
+        ) : (
+          nestingLevel > 0 && <span className="subrepo-spacer" />
+        )}
 
         <Octicon
           className="icon-for-repository"
@@ -117,6 +157,13 @@ export class RepositoryListItem extends React.Component<
           })}
       </div>
     )
+  }
+
+  private onToggleCollapsedClick = (e: React.MouseEvent<HTMLSpanElement>) => {
+    // Don't let the chevron click bubble up and select the repository.
+    e.stopPropagation()
+    e.preventDefault()
+    this.props.onToggleCollapsed?.()
   }
 
   private renderTooltip() {
@@ -146,7 +193,10 @@ export class RepositoryListItem extends React.Component<
         nextProps.matches !== this.props.matches ||
         nextProps.isFavorite !== this.props.isFavorite ||
         nextProps.isDragSource !== this.props.isDragSource ||
-        nextProps.isDragTarget !== this.props.isDragTarget
+        nextProps.isDragTarget !== this.props.isDragTarget ||
+        nextProps.nestingLevel !== this.props.nestingLevel ||
+        nextProps.hasChildren !== this.props.hasChildren ||
+        nextProps.isCollapsed !== this.props.isCollapsed
       )
     } else {
       return true
