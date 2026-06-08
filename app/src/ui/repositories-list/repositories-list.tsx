@@ -233,15 +233,14 @@ export class RepositoriesList extends React.Component<
   }
 
   private submodulesUnmounted = false
+  private lastSubmoduleLoadSignature = ''
 
   public componentDidMount() {
     this.loadSubmodules()
   }
 
-  public componentDidUpdate(prevProps: IRepositoriesListProps) {
-    if (prevProps.repositories !== this.props.repositories) {
-      this.loadSubmodules()
-    }
+  public componentDidUpdate() {
+    this.loadSubmodules()
   }
 
   public componentWillUnmount() {
@@ -249,10 +248,28 @@ export class RepositoriesList extends React.Component<
   }
 
   /**
+   * A stable signature of the added repositories (ids + paths) so we only spawn
+   * `git submodule status` when the set of repos actually changes, not on every
+   * render or unrelated prop update.
+   */
+  private repositoriesSignature(): string {
+    return (this.props.repositories ?? [])
+      .map(r => `${r.id}:${r instanceof Repository ? r.path : ''}`)
+      .sort()
+      .join('|')
+  }
+
+  /**
    * Read each added repository's .gitmodules so we can surface declared-but-not
    * -added submodules as ghost rows nested under their monorepo.
    */
   private async loadSubmodules() {
+    const signature = this.repositoriesSignature()
+    if (signature === this.lastSubmoduleLoadSignature) {
+      return
+    }
+    this.lastSubmoduleLoadSignature = signature
+
     const repos = (this.props.repositories ?? []).filter(
       (r): r is Repository => r instanceof Repository
     )
@@ -262,12 +279,15 @@ export class RepositoriesList extends React.Component<
       repos.map(async repo => {
         try {
           const entries = await listSubmodules(repo)
-          if (entries.length === 0) {
+          // Uninitialized submodules have no working tree on disk yet, so
+          // there's nothing to add — only surface checked-out ones as ghosts.
+          const usable = entries.filter(e => e.status !== 'uninitialized')
+          if (usable.length === 0) {
             return
           }
           map.set(
             repo.id,
-            entries.map(e => ({
+            usable.map(e => ({
               path: join(repo.path, e.path),
               name: basename(e.path),
             }))
@@ -288,6 +308,7 @@ export class RepositoriesList extends React.Component<
     if (item.ghost !== undefined) {
       return (
         <GhostSubmoduleListItem
+          key={item.id}
           ghost={item.ghost}
           nestingLevel={item.nestingLevel}
           onAdd={this.onAddSubmodule}
