@@ -1754,6 +1754,24 @@ export class AppStore extends TypedBaseStore<IAppState> {
     await this._loadChangedFilesForCurrentSelection(repository)
   }
 
+  /**
+   * Reset to a commit identified by a reflog entry. The reflog only carries a
+   * SHA, so resolve the full commit (loading it if needed) before delegating to
+   * the shared reset flow, which handles the dirty-working-directory warning.
+   */
+  public async _resetReflogCommit(
+    repository: Repository,
+    sha: string
+  ): Promise<void> {
+    const gitStore = this.gitStoreCache.get(repository)
+    await gitStore.ensureCommit(sha)
+    const commit = gitStore.commitLookup.get(sha)
+    if (commit === undefined) {
+      return
+    }
+    return this._resetToCommit(repository, commit, true)
+  }
+
   /** This shouldn't be called directly. See `Dispatcher`. */
   public async _initializeCompare(
     repository: Repository,

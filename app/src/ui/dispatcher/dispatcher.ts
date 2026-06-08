@@ -276,6 +276,14 @@ export class Dispatcher {
     return this.appStore._selectReflogCommit(repository, sha)
   }
 
+  /** Reset the current branch to a commit identified by a reflog entry. */
+  public resetReflogCommit(
+    repository: Repository,
+    sha: string
+  ): Promise<void> {
+    return this.appStore._resetReflogCommit(repository, sha)
+  }
+
   /** Update the shas that should be highlighted */
   public updateShasToHighlight(
     repository: Repository,

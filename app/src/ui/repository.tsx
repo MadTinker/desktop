@@ -5,6 +5,7 @@ import { TipState } from '../models/tip'
 import { UiView } from './ui-view'
 import { Changes, ChangesSidebar } from './changes'
 import { ReflogSidebar } from './reflog'
+import { IReflogEntry } from '../models/reflog-entry'
 import { NoChanges } from './changes/no-changes'
 import { MultipleSelection } from './changes/multiple-selection'
 import { FilesChangedBadge } from './changes/files-changed-badge'
@@ -434,12 +435,34 @@ export class RepositoryView extends React.Component<
         entries={this.props.state.reflogEntries}
         selectedSha={selectedSha}
         onEntrySelected={this.onReflogEntrySelected}
+        onCheckoutEntry={this.onReflogCheckout}
+        onCreateBranchFromEntry={this.onReflogCreateBranch}
+        onResetToEntry={this.onReflogReset}
       />
     )
   }
 
   private onReflogEntrySelected = (sha: string) => {
     this.props.dispatcher.selectReflogCommit(this.props.repository, sha)
+  }
+
+  private onReflogCheckout = (entry: IReflogEntry) => {
+    this.props.dispatcher.checkoutCommit(this.props.repository, {
+      sha: entry.sha,
+      summary: entry.description,
+    })
+  }
+
+  private onReflogCreateBranch = (entry: IReflogEntry) => {
+    this.props.dispatcher.showPopup({
+      type: PopupType.CreateBranch,
+      repository: this.props.repository,
+      targetCommit: { sha: entry.sha, summary: entry.description },
+    })
+  }
+
+  private onReflogReset = (entry: IReflogEntry) => {
+    this.props.dispatcher.resetReflogCommit(this.props.repository, entry.sha)
   }
 
   private renderSidebarContents(): JSX.Element {

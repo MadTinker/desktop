@@ -1,7 +1,9 @@
 import * as React from 'react'
+import { clipboard } from 'electron'
 import { IReflogEntry } from '../../models/reflog-entry'
 import { IActivityLogEntry } from '../../models/activity-log'
 import { loadActivityLog, clearActivityLog } from '../../lib/activity-log'
+import { IMenuItem, showContextualMenu } from '../../lib/menu-item'
 import { RelativeTime } from '../relative-time'
 import { Button } from '../lib/button'
 
@@ -9,6 +11,9 @@ interface IReflogSidebarProps {
   readonly entries: ReadonlyArray<IReflogEntry>
   readonly selectedSha: string | null
   readonly onEntrySelected: (sha: string) => void
+  readonly onCheckoutEntry: (entry: IReflogEntry) => void
+  readonly onCreateBranchFromEntry: (entry: IReflogEntry) => void
+  readonly onResetToEntry: (entry: IReflogEntry) => void
 }
 
 interface IReflogSidebarState {
@@ -113,6 +118,31 @@ export class ReflogSidebar extends React.Component<
     this.props.onEntrySelected(sha)
   }
 
+  private onEntryContextMenu =
+    (entry: IReflogEntry) => (event: React.MouseEvent<HTMLDivElement>) => {
+      event.preventDefault()
+      const items: ReadonlyArray<IMenuItem> = [
+        {
+          label: 'Checkout Commit',
+          action: () => this.props.onCheckoutEntry(entry),
+        },
+        {
+          label: 'Create Branch Here…',
+          action: () => this.props.onCreateBranchFromEntry(entry),
+        },
+        {
+          label: 'Reset to Commit…',
+          action: () => this.props.onResetToEntry(entry),
+        },
+        { type: 'separator' },
+        {
+          label: 'Copy SHA',
+          action: () => clipboard.writeText(entry.sha),
+        },
+      ]
+      showContextualMenu(items)
+    }
+
   public render() {
     const { entries, selectedSha } = this.props
 
@@ -128,6 +158,7 @@ export class ReflogSidebar extends React.Component<
                 key={entry.selector}
                 className={`reflog-entry${isSelected ? ' selected' : ''}`}
                 onClick={this.onEntryClick(entry.sha)}
+                onContextMenu={this.onEntryContextMenu(entry)}
               >
                 <div className="reflog-entry-info">
                   <div className="reflog-summary">{entry.description}</div>
