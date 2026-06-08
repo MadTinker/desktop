@@ -18,6 +18,7 @@ import { AuthorInput } from '../lib/author-input/author-input'
 import { FocusContainer } from '../lib/focus-container'
 import { Octicon, OcticonSymbolVariant } from '../octicons'
 import * as octicons from '../octicons/octicons.generated'
+import { getDesktopStrings } from '../lib/theme-strings-context'
 import { Author, UnknownAuthor, isKnownAuthor } from '../../models/author'
 import { IMenuItem } from '../../lib/menu-item'
 import { Commit, ICommitContext } from '../../models/commit'
@@ -33,10 +34,7 @@ import {
   CommitMessageAvatar,
   CommitMessageAvatarWarningType,
 } from './commit-message-avatar'
-import {
-  getStealthEmailForUser,
-  lookupPreferredEmail,
-} from '../../lib/email'
+import { getStealthEmailForUser, lookupPreferredEmail } from '../../lib/email'
 import { setGlobalConfigValue } from '../../lib/git/config'
 import { Popup, PopupType } from '../../models/popup'
 import { RepositorySettingsTab } from '../repository-settings/repository-settings'
@@ -1076,15 +1074,14 @@ export class CommitMessage extends React.Component<
       localAIConfig.provider === 'lmstudio'
         ? 'LM Studio'
         : localAIConfig.provider === 'ollama'
-          ? 'Ollama'
-          : 'Local AI'
-    const ariaLabel =
-      isGeneratingCommitMessage
-        ? 'Generating commit details…'
-        : `Generate commit message with ${providerLabel}` +
-          (noChangesAvailable
-            ? '. Files must be selected to generate a commit message.'
-            : '')
+        ? 'Ollama'
+        : 'Local AI'
+    const ariaLabel = isGeneratingCommitMessage
+      ? 'Generating commit details…'
+      : `Generate commit message with ${providerLabel}` +
+        (noChangesAvailable
+          ? '. Files must be selected to generate a commit message.'
+          : '')
 
     return (
       <>
@@ -1552,11 +1549,30 @@ export class CommitMessage extends React.Component<
   }
 
   private getCommittingButtonText() {
-    const { branch } = this.props
+    const { branch, isCommitting, commitToAmend } = this.props
     const verb = this.getButtonVerb()
 
     if (branch === null) {
       return verb
+    }
+
+    const filesText = this.getFilesToBeCommittedButtonText()
+    const isAmending = commitToAmend !== null
+
+    // Voiced caption for the common resting case (no file-count prefix, not
+    // amending, not mid-commit). The personality template bakes in its own verb
+    // (e.g. dwarf "Chisel into {branch}"), so we only use it where the English
+    // structure ("Commit N files to <branch>") isn't needed. The branch stays in
+    // a <strong> so the screen-reader concatenation note below still holds.
+    if (!filesText && !isAmending && !isCommitting) {
+      const [pre, post] = getDesktopStrings().commitTo.split('{branch}')
+      return (
+        <>
+          {pre}
+          <strong>{branch}</strong>
+          {post}
+        </>
+      )
     }
 
     /** N.B. For screen reader users, this string literal is important! This was
@@ -1564,7 +1580,7 @@ export class CommitMessage extends React.Component<
      * as three separate strings "Verb" and "Count" and "to" and even tho
      * visually it was correctly adding spacings, for screen reader users it was
      * not and putting them all to together as one word. */
-    const action = `${verb} ${this.getFilesToBeCommittedButtonText()}to `
+    const action = `${verb} ${filesText}to `
 
     return (
       <>
@@ -1590,14 +1606,20 @@ export class CommitMessage extends React.Component<
   }
 
   private getCommittingButtonTitle() {
-    const { branch } = this.props
+    const { branch, isCommitting } = this.props
     const verb = this.getButtonVerb()
 
     if (branch === null) {
       return verb
     }
 
-    return `${verb} to ${branch}`
+    // Keep the plain English progress wording while committing; voice the
+    // resting tooltip to match the button caption.
+    if (isCommitting) {
+      return `${verb} to ${branch}`
+    }
+
+    return getDesktopStrings().commitTo.replace('{branch}', branch)
   }
 
   private getButtonText() {
@@ -1874,7 +1896,7 @@ export class CommitMessage extends React.Component<
                 ? 'Commit description'
                 : undefined
             }
-            placeholder="Description"
+            placeholder={getDesktopStrings().descriptionPlaceholder}
             value={this.state.commitMessage.description || ''}
             onValueChanged={this.onDescriptionChanged}
             autocompletionProviders={

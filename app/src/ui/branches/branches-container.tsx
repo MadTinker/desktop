@@ -38,6 +38,7 @@ import {
 import { PullRequestQuickView } from '../pull-request-quick-view'
 import { Emoji } from '../../lib/emoji'
 import classNames from 'classnames'
+import { getDesktopStrings } from '../lib/theme-strings-context'
 
 interface IBranchesContainerProps {
   readonly dispatcher: Dispatcher
@@ -309,7 +310,7 @@ export class BranchesContainer extends React.Component<
       return null
     }
 
-    const label = __DARWIN__ ? 'New Branch' : 'New branch'
+    const label = getDesktopStrings().newBranch
 
     return (
       /**

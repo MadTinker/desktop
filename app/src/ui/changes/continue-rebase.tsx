@@ -7,6 +7,7 @@ import { Repository } from '../../models/repository'
 import { WorkingDirectoryStatus } from '../../models/status'
 import { getConflictedFiles } from '../../lib/status'
 import { MultiCommitOperationKind } from '../../models/multi-commit-operation'
+import { getDesktopStrings } from '../lib/theme-strings-context'
 
 interface IContinueRebaseProps {
   readonly dispatcher: Dispatcher
@@ -30,10 +31,11 @@ export class ContinueRebase extends React.Component<IContinueRebaseProps, {}> {
   }
 
   public render() {
+    const s = getDesktopStrings()
     const { manualResolutions } = this.props.rebaseConflictState
 
     let canCommit = true
-    let tooltip = 'Continue rebase'
+    let tooltip = s.continueRebase
 
     const conflictedFilesCount = getConflictedFiles(
       this.props.workingDirectory,
@@ -65,7 +67,7 @@ export class ContinueRebase extends React.Component<IContinueRebaseProps, {}> {
           tooltip={tooltip}
         >
           {loading}
-          <span>{loading !== undefined ? 'Rebasing' : 'Continue rebase'}</span>
+          <span>{loading !== undefined ? 'Rebasing' : s.continueRebase}</span>
         </Button>
 
         {warnAboutUntrackedFiles}

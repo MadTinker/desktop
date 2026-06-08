@@ -1,6 +1,7 @@
 import * as React from 'react'
 import classNames from 'classnames'
 import { Button } from '../lib/button'
+import { getDesktopStrings } from '../lib/theme-strings-context'
 
 interface IOkCancelButtonGroupProps {
   /**
@@ -142,6 +143,7 @@ export class OkCancelButtonGroup extends React.Component<
   }
 
   private renderOkButton() {
+    const s = getDesktopStrings()
     return (
       <Button
         onClick={this.onOkButtonClick}
@@ -150,7 +152,7 @@ export class OkCancelButtonGroup extends React.Component<
         type={this.props.destructive === true ? 'button' : 'submit'}
         ariaDescribedBy={this.props.okButtonAriaDescribedBy}
       >
-        {this.props.okButtonText || 'Ok'}
+        {this.props.okButtonText || s.ok}
       </Button>
     )
   }
@@ -160,6 +162,7 @@ export class OkCancelButtonGroup extends React.Component<
       return null
     }
 
+    const s = getDesktopStrings()
     return (
       <Button
         onClick={this.onCancelButtonClick}
@@ -167,7 +170,7 @@ export class OkCancelButtonGroup extends React.Component<
         tooltip={this.props.cancelButtonTitle}
         type={this.props.destructive === true ? 'submit' : 'reset'}
       >
-        {this.props.cancelButtonText || 'Cancel'}
+        {this.props.cancelButtonText || s.cancel}
       </Button>
     )
   }

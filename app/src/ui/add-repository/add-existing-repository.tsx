@@ -2,6 +2,7 @@ import * as React from 'react'
 import * as Path from 'path'
 import { Dispatcher } from '../dispatcher'
 import { addSafeDirectory, getRepositoryType } from '../../lib/git'
+import { getDesktopStrings } from '../lib/theme-strings-context'
 import { Button } from '../lib/button'
 import { TextBox } from '../lib/text-box'
 import { Row } from '../lib/row'
@@ -247,7 +248,7 @@ export class AddExistingRepository extends React.Component<
 
         <DialogFooter>
           <OkCancelButtonGroup
-            okButtonText={__DARWIN__ ? 'Add Repository' : 'Add repository'}
+            okButtonText={getDesktopStrings().addRepository}
           />
         </DialogFooter>
       </Dialog>

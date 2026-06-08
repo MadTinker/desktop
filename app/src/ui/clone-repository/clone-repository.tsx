@@ -2,6 +2,7 @@ import * as Path from 'path'
 import * as React from 'react'
 import { Dispatcher } from '../dispatcher'
 import { getDefaultDir, setDefaultDir } from '../lib/default-dir'
+import { getDesktopStrings } from '../lib/theme-strings-context'
 import {
   Account,
   isDotComAccount,
@@ -325,7 +326,10 @@ export class CloneRepository extends React.Component<
 
     return (
       <DialogFooter>
-        <OkCancelButtonGroup okButtonText="Clone" okButtonDisabled={disabled} />
+        <OkCancelButtonGroup
+          okButtonText={getDesktopStrings().cloneRepository}
+          okButtonDisabled={disabled}
+        />
       </DialogFooter>
     )
   }

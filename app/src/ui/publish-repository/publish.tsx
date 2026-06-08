@@ -1,6 +1,7 @@
 import * as React from 'react'
 import { PublishRepository } from './publish-repository'
 import { Dispatcher } from '../dispatcher'
+import { getDesktopStrings } from '../lib/theme-strings-context'
 import {
   Account,
   isDotComAccount,
@@ -143,7 +144,7 @@ export class Publish extends React.Component<IPublishProps, IPublishState> {
     return (
       <Dialog
         id="publish-repository"
-        title={__DARWIN__ ? 'Publish Repository' : 'Publish repository'}
+        title={getDesktopStrings().publishRepository}
         onDismissed={this.props.onDismissed}
         onSubmit={this.publishRepository}
         disabled={this.state.publishing}
@@ -307,9 +308,7 @@ export class Publish extends React.Component<IPublishProps, IPublishState> {
       return (
         <DialogFooter>
           <OkCancelButtonGroup
-            okButtonText={
-              __DARWIN__ ? 'Publish Repository' : 'Publish repository'
-            }
+            okButtonText={getDesktopStrings().publishRepository}
             okButtonDisabled={disabled}
           />
         </DialogFooter>

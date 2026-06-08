@@ -34,6 +34,7 @@ import { KeyboardInsertionData } from '../lib/list'
 import { Account } from '../../models/account'
 import { Emoji } from '../../lib/emoji'
 import { formatNumber } from '../../lib/format-number'
+import { getDesktopStrings } from '../lib/theme-strings-context'
 
 interface ICompareSidebarProps {
   readonly repository: Repository
@@ -218,9 +219,11 @@ export class CompareSidebar extends React.Component<
   private renderCommitList() {
     const { formState, commitSHAs } = this.props.compareState
 
+    const s = getDesktopStrings()
+
     let emptyListMessage: string | JSX.Element
     if (formState.kind === HistoryTabMode.History) {
-      emptyListMessage = 'No history'
+      emptyListMessage = s.noHistory
     } else {
       const currentlyComparedBranchName = formState.comparisonBranch.name
 

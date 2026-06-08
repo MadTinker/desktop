@@ -1,5 +1,6 @@
 import * as React from 'react'
 import { TabBar, TabBarType } from '../tab-bar'
+import { getDesktopStrings } from '../lib/theme-strings-context'
 import { Remote } from './remote'
 import { GitIgnore } from './git-ignore'
 import { assertNever } from '../../lib/fatal-error'
@@ -174,7 +175,7 @@ export class RepositorySettings extends React.Component<
     return (
       <Dialog
         id="repository-settings"
-        title={__DARWIN__ ? 'Repository Settings' : 'Repository settings'}
+        title={getDesktopStrings().repositorySettings}
         onDismissed={this.props.onDismissed}
         onSubmit={this.onSubmit}
         disabled={this.state.disabled}
@@ -253,15 +254,11 @@ export class RepositorySettings extends React.Component<
         )
       }
       case RepositorySettingsTab.Hooks: {
-        return (
-          <HooksSettings repoPath={this.props.repository.path} />
-        )
+        return <HooksSettings repoPath={this.props.repository.path} />
       }
 
       case RepositorySettingsTab.HookLoadouts: {
-        return (
-          <HookLoadoutsSettings repoPath={this.props.repository.path} />
-        )
+        return <HookLoadoutsSettings repoPath={this.props.repository.path} />
       }
 
       case RepositorySettingsTab.ForkSettings: {

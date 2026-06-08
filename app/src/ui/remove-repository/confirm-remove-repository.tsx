@@ -5,6 +5,7 @@ import { Ref } from '../lib/ref'
 import { Repository } from '../../models/repository'
 import { TrashNameLabel } from '../lib/context-menu'
 import { OkCancelButtonGroup } from '../dialog/ok-cancel-button-group'
+import { getDesktopStrings } from '../lib/theme-strings-context'
 
 interface IConfirmRemoveRepositoryProps {
   /** The repository to be removed */
@@ -57,7 +58,7 @@ export class ConfirmRemoveRepository extends React.Component<
         id="confirm-remove-repository"
         key="remove-repository-confirmation"
         type="warning"
-        title={__DARWIN__ ? 'Remove Repository' : 'Remove repository'}
+        title={getDesktopStrings().removeRepository}
         dismissDisabled={isRemovingRepository}
         loading={isRemovingRepository}
         disabled={isRemovingRepository}
@@ -89,7 +90,10 @@ export class ConfirmRemoveRepository extends React.Component<
           </div>
         </DialogContent>
         <DialogFooter>
-          <OkCancelButtonGroup destructive={true} okButtonText="Remove" />
+          <OkCancelButtonGroup
+            destructive={true}
+            okButtonText={getDesktopStrings().removeRepository}
+          />
         </DialogFooter>
       </Dialog>
     )

@@ -8,6 +8,7 @@ import { PathText } from '../lib/path-text'
 import { Checkbox, CheckboxValue } from '../lib/checkbox'
 import { TrashNameLabel } from '../lib/context-menu'
 import { OkCancelButtonGroup } from '../dialog/ok-cancel-button-group'
+import { getDesktopStrings } from '../lib/theme-strings-context'
 
 interface IDiscardChangesProps {
   readonly repository: Repository
@@ -56,10 +57,11 @@ export class DiscardChanges extends React.Component<
   }
 
   private getOkButtonLabel() {
+    const s = getDesktopStrings()
     if (this.props.discardingAllChanges) {
-      return __DARWIN__ ? 'Discard All Changes' : 'Discard all changes'
+      return s.discardAll
     }
-    return __DARWIN__ ? 'Discard Changes' : 'Discard changes'
+    return s.discardChanges
   }
 
   private getDialogTitle() {

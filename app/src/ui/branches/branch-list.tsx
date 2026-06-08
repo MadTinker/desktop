@@ -23,6 +23,7 @@ import memoizeOne from 'memoize-one'
 import { getAuthors } from '../../lib/git/log'
 import { Repository } from '../../models/repository'
 import { formatDate } from '../../lib/format-date'
+import { getDesktopStrings } from '../lib/theme-strings-context'
 
 const RowHeight = 30
 
@@ -408,9 +409,10 @@ export class BranchList extends React.Component<
   }
 
   private onRenderNewButton = () => {
+    const s = getDesktopStrings()
     return this.props.canCreateNewBranch ? (
       <Button className="new-branch-button" onClick={this.onCreateNewBranch}>
-        {__DARWIN__ ? 'New Branch' : 'New branch'}
+        {s.newBranch}
       </Button>
     ) : null
   }

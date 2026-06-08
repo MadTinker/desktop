@@ -6,6 +6,7 @@ import { PopupType } from '../../models/popup'
 import { OkCancelButtonGroup } from '../dialog/ok-cancel-button-group'
 import { ErrorWithMetadata } from '../../lib/error-with-metadata'
 import { RetryActionType } from '../../models/retry-actions'
+import { getDesktopStrings } from '../lib/theme-strings-context'
 
 interface IStashDiffHeaderProps {
   readonly stashEntry: IStashEntry
@@ -38,10 +39,11 @@ export class StashDiffHeader extends React.Component<
 
   public render() {
     const { isRestoring, isDiscarding } = this.state
+    const s = getDesktopStrings()
 
     return (
       <div className="header">
-        <h3>Stashed changes</h3>
+        <h3>{s.stashChanges}</h3>
         <div className="row">
           <OkCancelButtonGroup
             okButtonText="Restore"

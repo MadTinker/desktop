@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogFooter } from '../dialog'
 import { Repository } from '../../models/repository'
 import { Ref } from '../lib/ref'
 import { OkCancelButtonGroup } from '../dialog/ok-cancel-button-group'
+import { getDesktopStrings } from '../lib/theme-strings-context'
 
 interface IPushBranchCommitsProps {
   readonly dispatcher: Dispatcher
@@ -136,11 +137,8 @@ export class PushBranchCommits extends React.Component<
 
   private renderButtonGroup() {
     if (renderPublishView(this.props.unPushedCommits)) {
-      return (
-        <OkCancelButtonGroup
-          okButtonText={__DARWIN__ ? 'Publish Branch' : 'Publish branch'}
-        />
-      )
+      const s = getDesktopStrings()
+      return <OkCancelButtonGroup okButtonText={s.publishBranch} />
     }
 
     return (

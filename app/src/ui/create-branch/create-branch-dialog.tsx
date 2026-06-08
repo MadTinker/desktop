@@ -35,6 +35,7 @@ import {
   checkBranchNameRules,
   renderBranchNameRuleError,
 } from '../lib/branch-name-rule-validation'
+import { getDesktopStrings } from '../lib/theme-strings-context'
 
 interface ICreateBranchProps {
   readonly repository: Repository
@@ -237,7 +238,7 @@ export class CreateBranch extends React.Component<
       >
         <DialogContent>
           <RefNameTextBox
-            label="Name"
+            label={getDesktopStrings().branchName}
             ariaDescribedBy={hasError ? this.ERRORS_ID : undefined}
             initialValue={this.props.initialName}
             onValueChange={this.onBranchNameChange}
@@ -272,7 +273,7 @@ export class CreateBranch extends React.Component<
       return this.props.headerText
     }
 
-    return __DARWIN__ ? 'Create a Branch' : 'Create a branch'
+    return getDesktopStrings().createBranch
   }
 
   private getOkButtonText = (): string => {
@@ -280,7 +281,7 @@ export class CreateBranch extends React.Component<
       return this.props.okButtonText
     }
 
-    return __DARWIN__ ? 'Create Branch' : 'Create branch'
+    return getDesktopStrings().createBranch
   }
 
   private onBranchNameChange = (name: string) => {

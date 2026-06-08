@@ -18,6 +18,7 @@ import * as octicons from '../octicons/octicons.generated'
 import { RelativeTime } from '../relative-time'
 
 import { ToolbarButton, ToolbarButtonStyle } from './button'
+import { getDesktopStrings } from '../lib/theme-strings-context'
 import classNames from 'classnames'
 import {
   DropdownState,
@@ -528,7 +529,7 @@ export class PushPullButton extends React.Component<
     return (
       <ToolbarButton
         {...this.defaultButtonProps()}
-        title="Publish repository"
+        title={getDesktopStrings().publishRepository}
         description="Publish this repository to GitHub"
         className="push-pull-button"
         icon={octicons.upload}
@@ -546,7 +547,7 @@ export class PushPullButton extends React.Component<
     return (
       <ToolbarButton
         {...this.defaultButtonProps()}
-        title="Publish branch"
+        title={getDesktopStrings().publishBranch}
         description={description}
         icon={octicons.upload}
         disabled={true}
@@ -574,7 +575,7 @@ export class PushPullButton extends React.Component<
     return (
       <ToolbarDropdown
         {...this.defaultDropdownProps()}
-        title="Publish branch"
+        title={getDesktopStrings().publishBranch}
         description={description}
         icon={octicons.upload}
         onClick={onClick}
@@ -591,7 +592,7 @@ export class PushPullButton extends React.Component<
     lastFetched: Date | null,
     onClick: () => void
   ) {
-    const title = `Fetch ${remoteName}`
+    const title = getDesktopStrings().fetch
     return (
       <ToolbarButton
         {...this.defaultButtonProps()}
@@ -613,8 +614,8 @@ export class PushPullButton extends React.Component<
     onClick: () => void
   ) {
     const title = pullWithRebase
-      ? `Pull ${remoteName} with rebase`
-      : `Pull ${remoteName}`
+      ? `${getDesktopStrings().pull} with rebase`
+      : getDesktopStrings().pull
 
     const dropdownItemTypes = [DropdownItemType.Fetch]
 
@@ -650,7 +651,7 @@ export class PushPullButton extends React.Component<
     return (
       <ToolbarDropdown
         {...this.defaultDropdownProps()}
-        title={`Push ${remoteName}`}
+        title={getDesktopStrings().push}
         description={renderLastFetched(lastFetched)}
         icon={octicons.arrowUp}
         onClick={onClick}

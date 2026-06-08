@@ -8,6 +8,7 @@ import { PathText } from '../lib/path-text'
 import { Checkbox, CheckboxValue } from '../lib/checkbox'
 import { OkCancelButtonGroup } from '../dialog/ok-cancel-button-group'
 import { ITextDiff, DiffSelection } from '../../models/diff'
+import { getDesktopStrings } from '../lib/theme-strings-context'
 
 interface IDiscardSelectionProps {
   readonly repository: Repository
@@ -59,7 +60,7 @@ export class DiscardSelection extends React.Component<
   }
 
   private getOkButtonLabel() {
-    return __DARWIN__ ? 'Discard Changes' : 'Discard changes'
+    return getDesktopStrings().discardChanges
   }
 
   public render() {

@@ -8,6 +8,7 @@ import { IConflictResolutionProgress } from '../../../lib/copilot-conflict-resol
 import { OkCancelButtonGroup } from '../../dialog/ok-cancel-button-group'
 import { Octicon } from '../../octicons'
 import * as octicons from '../../octicons/octicons.generated'
+import { getDesktopStrings } from '../../lib/theme-strings-context'
 
 interface ICopilotConflictsLoadingDialogProps {
   readonly repository: Repository
@@ -49,6 +50,7 @@ export class CopilotConflictsLoadingDialog extends React.Component<ICopilotConfl
   }
 
   public render() {
+    const s = getDesktopStrings()
     return (
       <Dialog
         dismissDisabled={true}
@@ -67,7 +69,7 @@ export class CopilotConflictsLoadingDialog extends React.Component<ICopilotConfl
             cancelButtonText="Cancel"
             onCancelButtonClick={this.onCancel}
             okButtonDisabled={true}
-            okButtonText="Continue"
+            okButtonText={s.continue}
           />
         </DialogFooter>
       </Dialog>
