@@ -122,6 +122,7 @@ import { CommitConflictsWarning } from './merge-conflicts'
 import { AppTheme } from './app-theme'
 import { ThemeStringsProvider } from './lib/theme-strings-context'
 import { ApplicationTheme } from './lib/application-theme'
+import { MadnessTheme, madnessThemes } from './lib/madness-theme'
 import { RepositoryStateCache } from '../lib/stores/repository-state-cache'
 import { PopupType, Popup } from '../models/popup'
 import { OversizedFiles } from './changes/oversized-files-warning'
@@ -1201,12 +1202,36 @@ export class App extends React.Component<IAppProps, IAppState> {
    * appMenuToolbarHighlight state when the Alt key (and only the
    * Alt key) is pressed.
    */
+  /**
+   * Step the active madness color theme forward (+1) or backward (-1),
+   * wrapping around. The cycle includes the "none" ('') option so users can
+   * land back on the unthemed base.
+   */
+  private cycleMadnessTheme(direction: 1 | -1) {
+    const cycle: ReadonlyArray<MadnessTheme> = ['', ...madnessThemes]
+    const current = this.state.selectedMadnessTheme
+    const idx = cycle.indexOf(current)
+    const next = cycle[(idx + direction + cycle.length) % cycle.length]
+    this.props.dispatcher.setSelectedMadnessTheme(next)
+  }
+
   private onWindowKeyDown = (event: KeyboardEvent) => {
     if (event.defaultPrevented) {
       return
     }
 
     if (this.isShowingModal) {
+      return
+    }
+
+    // Cycle madness color themes: Ctrl/Cmd+Shift+] forward, +[ backward.
+    if (
+      (event.ctrlKey || event.metaKey) &&
+      event.shiftKey &&
+      (event.key === ']' || event.key === '[')
+    ) {
+      this.cycleMadnessTheme(event.key === ']' ? 1 : -1)
+      event.preventDefault()
       return
     }
 
