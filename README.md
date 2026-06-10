@@ -31,17 +31,17 @@ Madness Desktop is a fork of GitHub Desktop enhanced for multi-machine workshop 
 
 ## Is Madness Desktop right for me? What are the primary areas of focus?
 
-[This document](https://github.com/MadnessEngineering/madnessDesktop/blob/development/docs/process/what-is-desktop.md) describes the focus of Madness Desktop and who the product is most useful for.
+[This document](docs/process/what-is-desktop.md) describes the focus of Madness Desktop and who the product is most useful for.
 
 ## I have a problem with Madness Desktop
 
-Note: The [Madness Desktop Code of Conduct](https://github.com/MadnessEngineering/madnessDesktop/blob/development/CODE_OF_CONDUCT.md) applies in all interactions relating to the Madness Desktop project.
+Note: The [Madness Desktop Code of Conduct](CODE_OF_CONDUCT.md) applies in all interactions relating to the Madness Desktop project.
 
 First, please search the [open issues](https://github.com/MadnessEngineering/madnessDesktop/issues?q=is%3Aopen)
 and [closed issues](https://github.com/MadnessEngineering/madnessDesktop/issues?q=is%3Aclosed)
 to see if your issue hasn't already been reported (it may also be fixed).
 
-There is also a list of [known issues](https://github.com/MadnessEngineering/madnessDesktop/blob/development/docs/known-issues.md)
+There is also a list of [known issues](docs/known-issues.md)
 that are being tracked against Desktop, and some of these issues have workarounds.
 
 If you can't find an issue that matches what you're seeing, open a [new issue](https://github.com/MadnessEngineering/madnessDesktop/issues/new/choose),
@@ -69,7 +69,7 @@ To setup your development environment for building Desktop, check out: [`setup.m
 See [github.com/MadnessEngineering/madnessDesktop](https://github.com/MadnessEngineering/madnessDesktop) for more product-oriented
 information about Madness Desktop.
 
-See our [getting started documentation](https://github.com/MadnessEngineering/madnessDesktop/tree/development/docs/overview/getting-started-with-github-desktop) for more information on how to set up, authenticate, and configure Madness Desktop.
+See the [installation](docs/installation.md) and [authentication](docs/authentication.md) guides for how to set up, authenticate, and configure Madness Desktop.
 
 ## License
 
