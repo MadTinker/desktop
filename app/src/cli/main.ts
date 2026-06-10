@@ -43,7 +43,8 @@ const usage = (exitCode = 1): never => {
       '  github open [path]                Open the provided path\n' +
       '  github clone [-b branch] <url>    Clone the repository by url or name/owner\n' +
       '                                    (ex torvalds/linux), optionally checking out\n' +
-      '                                    the branch\n'
+      '                                    the branch\n' +
+      '  madhub upgrade                    Download and install the latest release\n'
   )
   process.exit(exitCode)
 }
