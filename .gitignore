@@ -24,3 +24,7 @@ playwright-videos/
 /.claude_temp
 /app/.claude_temp
 /app/.claude
+/app/styles/themes/.claude
+/app/src/.claude
+/app/src/.claude_temp
+/app/styles/themes/.claude_temp
