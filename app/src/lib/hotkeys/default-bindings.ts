@@ -434,6 +434,8 @@ export const DefaultActionDefinitions: ReadonlyArray<ActionDefinition> = [
   { id: 'load-next-commit-batch', label: 'Load More Commits', category: 'navigation', context: 'history-tab', defaultBinding: null, isMenuAction: false },
   { id: 'focus-commit-message', label: 'Focus Commit Message', category: 'navigation', context: 'changes-tab', defaultBinding: null, isMenuAction: false },
   { id: 'toggle-sidebar', label: 'Toggle Sidebar', category: 'navigation', context: 'global', defaultBinding: null, isMenuAction: false },
+  { id: 'cycle-theme-next', label: 'Next Madness Theme', category: 'navigation', context: 'global', defaultBinding: 'CmdOrCtrl+}', isMenuAction: false },
+  { id: 'cycle-theme-prev', label: 'Previous Madness Theme', category: 'navigation', context: 'global', defaultBinding: 'CmdOrCtrl+{', isMenuAction: false },
 
   // ─── Misc ────────────────────────────────────────────────────────────────────
 

@@ -34,6 +34,7 @@ import {
   setGlobalHotkeyStore,
 } from '../lib/hotkeys'
 import { dispatchHotkeyAction } from '../lib/hotkeys/action-dispatcher-map'
+import { ActionDefinitionMap } from '../lib/hotkeys/default-bindings'
 import {
   Repository,
   getGitHubHtmlUrl,
@@ -1167,6 +1168,15 @@ export class App extends React.Component<IAppProps, IAppState> {
   }
 
   private handleHotkeyAction(id: string) {
+    if (id === 'cycle-theme-next') {
+      this.cycleMadnessTheme(1)
+      return
+    }
+    if (id === 'cycle-theme-prev') {
+      this.cycleMadnessTheme(-1)
+      return
+    }
+
     // Try non-menu dispatcher actions first
     const repo = this.getRepository()
     const repoOrNull = repo instanceof CloningRepository ? null : repo
@@ -1176,8 +1186,10 @@ export class App extends React.Component<IAppProps, IAppState> {
       () => repoOrNull
     )
     if (!handled) {
-      // Fall through to menu event handler for menu actions
-      this.onMenuEvent(id as MenuEvent)
+      const def = ActionDefinitionMap.get(id)
+      if (def?.isMenuAction) {
+        this.onMenuEvent(id as MenuEvent)
+      }
     }
   }
 
@@ -1360,15 +1372,6 @@ export class App extends React.Component<IAppProps, IAppState> {
       return
     }
 
-    // Cycle madness color themes: Cmd+} forward, Cmd+{ backward.
-    if (
-      (event.ctrlKey || event.metaKey) &&
-      (event.key === '}' || event.key === '{')
-    ) {
-      this.cycleMadnessTheme(event.key === '}' ? 1 : -1)
-      event.preventDefault()
-      return
-    }
 
     if (shouldRenderApplicationMenu()) {
       if (event.key === 'Shift' && event.altKey) {
