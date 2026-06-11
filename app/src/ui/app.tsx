@@ -205,7 +205,12 @@ import { PullRequestComment } from './notifications/pull-request-comment'
 import { UnknownAuthors } from './unknown-authors/unknown-authors-dialog'
 import { UnsupportedOSBannerDismissedAtKey } from './banners/os-version-no-longer-supported-banner'
 import { offsetFromNow } from '../lib/offset-from'
-import { getNumber } from '../lib/local-storage'
+import {
+  getNumber,
+  getNumberArray,
+  setNumber,
+  setNumberArray,
+} from '../lib/local-storage'
 import { IconPreviewDialog } from './octicons/icon-preview-dialog'
 import { isCertificateErrorSuppressedFor } from '../lib/suppress-certificate-error'
 import { webUtils } from 'electron'
@@ -269,8 +274,31 @@ export const bannerTransitionTimeout = { enter: 500, exit: 400 }
  * changes. See https://github.com/desktop/desktop/issues/1398.
  */
 const ReadyDelay = 100
+
+/** localStorage keys for the persisted repository navigation stack */
+const repoNavHistoryKey = 'repository-nav-history'
+const repoNavIndexKey = 'repository-nav-index'
+
+/** Maximum number of entries kept in the repository navigation stack */
+const RepoNavHistoryLimit = 50
+
 export class App extends React.Component<IAppProps, IAppState> {
   private loading = true
+
+  /**
+   * Stack of repository ids in visit order (most recent last). Back/forward
+   * hotkeys move a cursor through it; manually selecting a repository moves
+   * (or pushes) that repository to the top. Persisted to localStorage.
+   */
+  private repoNavHistory: Array<number> = []
+  private repoNavIndex: number = -1
+
+  /**
+   * Repository id a back/forward navigation is currently selecting, so the
+   * resulting selection change isn't treated as a manual selection. Null when
+   * no navigation is in flight.
+   */
+  private repoNavPendingId: number | null = null
 
   /**
    * Used on non-macOS platforms to support the Alt key behavior for
@@ -329,8 +357,16 @@ export class App extends React.Component<IAppProps, IAppState> {
     })
 
     this.state = props.appStore.getState()
+
+    this.repoNavHistory = [...getNumberArray(repoNavHistoryKey)]
+    this.repoNavIndex = Math.min(
+      getNumber(repoNavIndexKey, this.repoNavHistory.length - 1),
+      this.repoNavHistory.length - 1
+    )
+
     props.appStore.onDidUpdate(state => {
       this.setState(state)
+      this.trackRepoNavSelection(state)
     })
 
     props.appStore.onDidError(error => {
@@ -1215,12 +1251,112 @@ export class App extends React.Component<IAppProps, IAppState> {
     this.props.dispatcher.setSelectedMadnessTheme(next)
   }
 
+  /**
+   * Record repository selection changes in the navigation stack. Selections
+   * caused by back/forward navigation only move the cursor; manual selections
+   * move (or push) the repository to the top of the stack.
+   */
+  private trackRepoNavSelection(state: IAppState) {
+    const selectedState = state.selectedState
+    if (
+      selectedState === null ||
+      selectedState.type !== SelectionType.Repository
+    ) {
+      return
+    }
+
+    const id = selectedState.repository.id
+
+    if (this.repoNavPendingId !== null) {
+      // A back/forward navigation is in flight: the cursor is already
+      // positioned, so just wait for the selection to catch up. Updates that
+      // still report the previous repository are ignored.
+      if (id === this.repoNavPendingId) {
+        this.repoNavPendingId = null
+      }
+      return
+    }
+
+    if (this.repoNavHistory[this.repoNavIndex] === id) {
+      return
+    }
+
+    const existing = this.repoNavHistory.indexOf(id)
+    if (existing !== -1) {
+      this.repoNavHistory.splice(existing, 1)
+    }
+
+    this.repoNavHistory.push(id)
+
+    if (this.repoNavHistory.length > RepoNavHistoryLimit) {
+      this.repoNavHistory.splice(
+        0,
+        this.repoNavHistory.length - RepoNavHistoryLimit
+      )
+    }
+
+    this.repoNavIndex = this.repoNavHistory.length - 1
+    this.persistRepoNav()
+  }
+
+  /**
+   * Step the repository navigation cursor back (-1) or forward (+1) and
+   * select the repository at the new position. Entries whose repository no
+   * longer exists are pruned as they're encountered.
+   */
+  private navigateRepoHistory(direction: 1 | -1) {
+    let idx = this.repoNavIndex + direction
+
+    while (idx >= 0 && idx < this.repoNavHistory.length) {
+      const id = this.repoNavHistory[idx]
+      const repository = this.state.repositories.find(
+        r => r instanceof Repository && r.id === id
+      )
+
+      if (repository !== undefined) {
+        this.repoNavPendingId = id
+        this.repoNavIndex = idx
+        this.persistRepoNav()
+        this.props.dispatcher.selectRepository(repository)
+        return
+      }
+
+      // Stale entry (repository was removed): prune and keep stepping.
+      this.repoNavHistory.splice(idx, 1)
+      if (idx < this.repoNavIndex) {
+        this.repoNavIndex--
+      }
+      if (direction === -1) {
+        idx--
+      }
+    }
+
+    this.persistRepoNav()
+  }
+
+  private persistRepoNav() {
+    setNumberArray(repoNavHistoryKey, this.repoNavHistory)
+    setNumber(repoNavIndexKey, this.repoNavIndex)
+  }
+
   private onWindowKeyDown = (event: KeyboardEvent) => {
     if (event.defaultPrevented) {
       return
     }
 
     if (this.isShowingModal) {
+      return
+    }
+
+    // Repository history: Ctrl/Cmd+Alt+Left back, Ctrl/Cmd+Alt+Right forward.
+    if (
+      (event.ctrlKey || event.metaKey) &&
+      event.altKey &&
+      !event.shiftKey &&
+      (event.key === 'ArrowLeft' || event.key === 'ArrowRight')
+    ) {
+      this.navigateRepoHistory(event.key === 'ArrowLeft' ? -1 : 1)
+      event.preventDefault()
       return
     }
 
