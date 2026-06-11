@@ -1360,13 +1360,12 @@ export class App extends React.Component<IAppProps, IAppState> {
       return
     }
 
-    // Cycle madness color themes: Ctrl/Cmd+Shift+] forward, +[ backward.
+    // Cycle madness color themes: Cmd+} forward, Cmd+{ backward.
     if (
       (event.ctrlKey || event.metaKey) &&
-      event.shiftKey &&
-      (event.key === ']' || event.key === '[')
+      (event.key === '}' || event.key === '{')
     ) {
-      this.cycleMadnessTheme(event.key === ']' ? 1 : -1)
+      this.cycleMadnessTheme(event.key === '}' ? 1 : -1)
       event.preventDefault()
       return
     }
