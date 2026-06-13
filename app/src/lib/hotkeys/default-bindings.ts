@@ -436,6 +436,8 @@ export const DefaultActionDefinitions: ReadonlyArray<ActionDefinition> = [
   { id: 'toggle-sidebar', label: 'Toggle Sidebar', category: 'navigation', context: 'global', defaultBinding: null, isMenuAction: false },
   { id: 'cycle-theme-next', label: 'Next Madness Theme', category: 'navigation', context: 'global', defaultBinding: 'CmdOrCtrl+}', isMenuAction: false },
   { id: 'cycle-theme-prev', label: 'Previous Madness Theme', category: 'navigation', context: 'global', defaultBinding: 'CmdOrCtrl+{', isMenuAction: false },
+  { id: 'navigate-repo-back', label: 'Back (Repo History)', category: 'navigation', context: 'global', defaultBinding: 'CmdOrCtrl+Alt+Left', isMenuAction: false },
+  { id: 'navigate-repo-forward', label: 'Forward (Repo History)', category: 'navigation', context: 'global', defaultBinding: 'CmdOrCtrl+Alt+Right', isMenuAction: false },
 
   // ─── Misc ────────────────────────────────────────────────────────────────────
 

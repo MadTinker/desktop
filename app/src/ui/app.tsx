@@ -1176,6 +1176,14 @@ export class App extends React.Component<IAppProps, IAppState> {
       this.cycleMadnessTheme(-1)
       return
     }
+    if (id === 'navigate-repo-back') {
+      this.navigateRepoHistory(-1)
+      return
+    }
+    if (id === 'navigate-repo-forward') {
+      this.navigateRepoHistory(1)
+      return
+    }
 
     // Try non-menu dispatcher actions first
     const repo = this.getRepository()
@@ -1360,17 +1368,6 @@ export class App extends React.Component<IAppProps, IAppState> {
       return
     }
 
-    // Repository history: Ctrl/Cmd+Alt+Left back, Ctrl/Cmd+Alt+Right forward.
-    if (
-      (event.ctrlKey || event.metaKey) &&
-      event.altKey &&
-      !event.shiftKey &&
-      (event.key === 'ArrowLeft' || event.key === 'ArrowRight')
-    ) {
-      this.navigateRepoHistory(event.key === 'ArrowLeft' ? -1 : 1)
-      event.preventDefault()
-      return
-    }
 
 
     if (shouldRenderApplicationMenu()) {

@@ -83,7 +83,11 @@ export function keyEventToAccelerator(event: KeyboardEvent): Keybinding | null {
   if (event.altKey) {
     parts.push('Alt')
   }
-  if (event.shiftKey) {
+  // Only record Shift for letters and named keys (Tab, arrows, F-keys).
+  // For punctuation/digits the produced character already encodes shift
+  // ('}' vs ']'), so adding Shift would make the binding unmatchable.
+  const isLetter = key.length === 1 && key >= 'a' && key <= 'z'
+  if (event.shiftKey && (isLetter || event.key.length > 1)) {
     parts.push('Shift')
   }
 
