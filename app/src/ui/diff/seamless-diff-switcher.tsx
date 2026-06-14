@@ -101,6 +101,10 @@ interface ISeamlessDiffSwitcherProps {
   // eslint-disable-next-line react/no-unused-prop-types
   readonly onRollbackSubmodule?: (submodulePath: string) => void
 
+  /** Called after a commit is made inside the submodule's inline commit form. */
+  // eslint-disable-next-line react/no-unused-prop-types
+  readonly onSubmoduleCommitted?: () => void
+
   /** Called when the user requests to open a file in an external editor. */
   // eslint-disable-next-line react/no-unused-prop-types
   readonly onOpenInExternalEditor: (fullPath: string) => void
@@ -361,6 +365,7 @@ export class SeamlessDiffSwitcher extends React.Component<
       onInitializeSubmodule,
       onSyncSubmodule,
       onRollbackSubmodule,
+      onSubmoduleCommitted,
       onOpenInExternalEditor,
       externalEditorLabel,
       onChangeImageDiffType,
@@ -405,6 +410,9 @@ export class SeamlessDiffSwitcher extends React.Component<
             onSyncSubmodule={isLoadingDiff ? undefined : onSyncSubmodule}
             onRollbackSubmodule={
               isLoadingDiff ? undefined : onRollbackSubmodule
+            }
+            onSubmoduleCommitted={
+              isLoadingDiff ? undefined : onSubmoduleCommitted
             }
             onOpenInExternalEditor={
               isLoadingDiff ? noop : onOpenInExternalEditor

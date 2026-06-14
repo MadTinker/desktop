@@ -137,6 +137,10 @@ export class Changes extends React.Component<IChangesProps, IChangesState> {
     }
   }
 
+  private onSubmoduleCommitted = () => {
+    this.props.dispatcher.refreshRepository(this.props.repository)
+  }
+
   private onDiscardChanges = (
     diff: ITextDiff,
     diffSelection: DiffSelection
@@ -348,6 +352,7 @@ export class Changes extends React.Component<IChangesProps, IChangesState> {
         onInitializeSubmodule={this.props.onInitializeSubmodule}
         onSyncSubmodule={this.props.onSyncSubmodule}
         onRollbackSubmodule={this.props.onRollbackSubmodule}
+        onSubmoduleCommitted={this.onSubmoduleCommitted}
         onOpenInExternalEditor={path =>
           this.props.dispatcher.openInExternalEditor(path)
         }

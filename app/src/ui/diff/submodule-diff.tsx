@@ -68,6 +68,13 @@ interface ISubmoduleDiffProps {
   readonly onInitializeSubmodule?: (submodulePath: string) => void
   readonly onSyncSubmodule?: (submodulePath: string) => void
   readonly onRollbackSubmodule?: (submodulePath: string) => void
+
+  /**
+   * Called after a commit is made inside the submodule via the inline commit
+   * form, so the parent repository can refresh and surface the submodule's
+   * updated gitlink for staging.
+   */
+  readonly onSubmoduleCommitted?: () => void
   readonly onOpenInExternalEditor: (fullPath: string) => void
   readonly externalEditorLabel?: string
   readonly diff: ISubmoduleDiff
@@ -238,6 +245,9 @@ export class SubmoduleDiff extends React.Component<
         selectedFile: null,
         fileDiff: null,
       })
+      // Refresh the parent repository so the submodule's bumped gitlink shows
+      // up as a stageable change instead of leaving the changes list stale.
+      this.props.onSubmoduleCommitted?.()
     } catch (e) {
       this.setState({ isCommitting: false })
     }

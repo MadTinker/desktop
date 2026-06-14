@@ -103,6 +103,9 @@ interface IDiffProps {
   /** Called when the user clicks Rollback on a modified submodule. */
   readonly onRollbackSubmodule?: (submodulePath: string) => void
 
+  /** Called after a commit is made inside the submodule's inline commit form. */
+  readonly onSubmoduleCommitted?: () => void
+
   /**
    * Called when the user is viewing an image diff and requests
    * to change the diff presentation mode.
@@ -285,6 +288,7 @@ export class Diff extends React.Component<IDiffProps, IDiffState> {
         onInitializeSubmodule={this.props.onInitializeSubmodule}
         onSyncSubmodule={this.props.onSyncSubmodule}
         onRollbackSubmodule={this.props.onRollbackSubmodule}
+        onSubmoduleCommitted={this.props.onSubmoduleCommitted}
         onOpenInExternalEditor={this.props.onOpenInExternalEditor}
         externalEditorLabel={this.props.externalEditorLabel}
         diff={diff}
