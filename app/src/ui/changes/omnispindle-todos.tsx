@@ -30,6 +30,7 @@ interface IOmnispindleTodosState {
   readonly lookupId: string
   readonly lookupLoading: boolean
   readonly lookupError: string | null
+  readonly showDetailPanel: boolean
 }
 
 function statusIcon(status: OmnispindleConnectionStatus) {
@@ -85,6 +86,7 @@ export class OmnispindleTodos extends React.Component<
       lookupId: '',
       lookupLoading: false,
       lookupError: null,
+      showDetailPanel: false,
     }
   }
 
@@ -178,11 +180,20 @@ export class OmnispindleTodos extends React.Component<
   private onTodoClick = (todo: IOmnispindleTodo) => {
     this.setState(prev => ({
       selectedTodo: prev.selectedTodo?.id === todo.id ? null : todo,
+      showDetailPanel: prev.selectedTodo?.id !== todo.id,
     }))
   }
 
   private onCloseDetail = () => {
-    this.setState({ selectedTodo: null, lookupId: '', lookupError: null })
+    this.setState({ selectedTodo: null, lookupId: '', lookupError: null, showDetailPanel: false })
+  }
+
+  private onOpenLookup = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault()
+    this.setState(prev => ({
+      showDetailPanel: !prev.showDetailPanel,
+      expanded: true,
+    }))
   }
 
   private onLookupChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -238,7 +249,7 @@ export class OmnispindleTodos extends React.Component<
       expanded, loading, adding,
       newDescription, newProject, newPriority,
       submitting, submitError, copiedId, selectedTodo,
-      lookupId, lookupLoading, lookupError,
+      lookupId, lookupLoading, lookupError, showDetailPanel,
     } = this.state
     const icon = statusIcon(status)
     const iconClass =
@@ -284,6 +295,15 @@ export class OmnispindleTodos extends React.Component<
               title="Open in Inventorium"
             >
               <Octicon symbol={octicons.linkExternal} />
+            </button>
+          )}
+          {status === 'connected' && (
+            <button
+              className={`omnispindle-lookup-toggle-btn${showDetailPanel ? ' active' : ''}`}
+              onClick={this.onOpenLookup}
+              title={showDetailPanel ? 'Close todo detail' : 'Lookup todo by ID'}
+            >
+              <Octicon symbol={octicons.search} />
             </button>
           )}
           <button
@@ -407,7 +427,7 @@ export class OmnispindleTodos extends React.Component<
           </p>
         )}
 
-        {this.renderDetailPanel(selectedTodo, lookupId, lookupLoading, lookupError)}
+        {showDetailPanel && this.renderDetailPanel(selectedTodo, lookupId, lookupLoading, lookupError)}
       </div>
     )
   }
