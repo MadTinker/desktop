@@ -42,11 +42,6 @@ export class HotkeyListener {
       return
     }
 
-    // Don't fire hotkeys when typing in input fields
-    if (this.isInputFocused(event)) {
-      return
-    }
-
     const accelerator = keyEventToNormalizedAccelerator(event)
     if (!accelerator) {
       return
@@ -54,6 +49,15 @@ export class HotkeyListener {
 
     const actionId = this.bindingMap.get(accelerator)
     if (!actionId) {
+      return
+    }
+
+    const def = ActionDefinitionMap.get(actionId)
+
+    // Global-context actions fire even when an input is focused (e.g.
+    // repo-history navigation should work regardless of filter focus).
+    // All other actions are suppressed while the user is typing.
+    if (def?.context !== 'global' && this.isInputFocused(event)) {
       return
     }
 
