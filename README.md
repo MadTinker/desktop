@@ -1,86 +1,75 @@
-# [Madness Desktop](https://github.com/MadnessEngineering/madnessDesktop)
+# Madness Desktop
 
-[Madness Desktop](https://github.com/MadnessEngineering/madnessDesktop/) is an open-source [Electron](https://www.electronjs.org/)-based
-GitHub app built for the madness_interactive workshop ecosystem. It is written in [TypeScript](https://www.typescriptlang.org) and
-uses [React](https://reactjs.org/).
+A [GitHub Desktop](https://github.com/desktop/desktop) fork wired into the **madness_interactive** workshop — multi-machine git coordination, composable git hooks, and live workshop todos, on top of the familiar Desktop git client. Built with [Electron](https://www.electronjs.org/), [TypeScript](https://www.typescriptlang.org), and [React](https://reactjs.org/).
 
-<picture>
-  <source
-    srcset="https://user-images.githubusercontent.com/634063/202742848-63fa1488-6254-49b5-af7c-96a6b50ea8af.png"
-    media="(prefers-color-scheme: dark)"
-  />
-  <img
-    width="1072"
-    src="https://user-images.githubusercontent.com/634063/202742985-bb3b3b94-8aca-404a-8d8a-fd6a6f030672.png"
-    alt="A screenshot of the Madness Desktop application showing changes being viewed and committed with two attributed co-authors"
-  />
-</picture>
+> **Early build.** Currently `v0.1.0` — an **unsigned macOS build for Apple Silicon (arm64)**. No Intel, Windows, or Linux release yet. The source still builds for other platforms (it's a Desktop fork), but the only thing we ship today is the arm64 macOS zip.
+
+<!-- hero: replace with a real Madness Desktop screenshot once captured — docs/assets/hero-{dark,light}.png, wired back as a <picture> block. -->
 
 ## Where can I get it?
 
-Download the latest build from [GitHub Releases](https://github.com/MadnessEngineering/madnessDesktop/releases).
+1. Download the latest `MadnessDesktop-<version>-darwin-arm64.zip` from [Releases](https://github.com/MadnessEngineering/madnessDesktop/releases).
+2. Unzip it and move **Madness Desktop.app** into `/Applications`.
+3. First launch only: **right-click the app → Open → Open**. The build is unsigned, so macOS Gatekeeper needs that one manual override — after that it opens normally.
+
+## Keeping it updated
+
+Install the command-line tool once (**Madness Desktop → Install Command Line Tool…**), then self-update from the terminal:
+
+```sh
+madhub upgrade
+```
+
+It checks GitHub Releases and, if there's a newer build, downloads it and swaps the app in place.
 
 ## What makes it different?
 
-Madness Desktop is a fork of GitHub Desktop enhanced for multi-machine workshop coordination:
+Everything GitHub Desktop does, plus workshop coordination:
 
-- **Hook Loadouts** — install and manage composable git hook scripts per-repository from the UI. Presets for common workflows (MQTT context publishing, secret scanning, auto-pull, todo prefixing).
-- **MQTT Integration** — publish git context and events to a shared broker. Any machine on the network sees real-time commit activity from all other machines.
-- **Omnispindle Integration** — live todo tracking from the MCP server, visible in the sidebar and injectable into commit messages.
-- **PAT sign-in** — use a Personal Access Token instead of the OAuth browser flow.
+- **[Hook Loadouts](https://github.com/MadnessEngineering/madnessDesktop/blob/HEAD/docs/hook-loadouts.md)** — install and toggle bundles of git-hook scripts per repository from the UI. A thin `.d/` dispatcher lets multiple scripts stack on the same hook without clobbering each other, and recent hook runs show up in a log in the Changes sidebar. Presets: `mad-standard`, `deploy-enabled`, `desktop-dev`, `minimal`.
+- **[MQTT integration](https://github.com/MadnessEngineering/madnessDesktop/blob/HEAD/docs/mqtt-integration.md)** — publish commit context and events to a shared broker. Every machine on the network sees real-time git activity from every other machine.
+- **[Omnispindle todos](https://github.com/MadnessEngineering/madnessDesktop/blob/HEAD/docs/ecosystem.md)** — a live todo list from the Omnispindle MCP server in the Changes sidebar, plus a `todo-prefix` hook that stamps the active todo ID into your commit message.
+- **Subrepo tooling** — submodules nest under their monorepo as collapsible folders, un-added submodules appear as "ghost" rows with one-click **Add**, submodule commit history shows up in diffs, and push/pull steps through each submodule before the parent.
+- **Madness Themes** — a pack of custom color schemes with a picker in **Preferences → Appearance** and hotkeys to cycle through them.
+- **Auto-switch monitor** — automatically focuses whichever repository just picked up new changes.
+- **[`madhub` CLI](#the-madhub-cli)** — open, clone, and self-update from the terminal.
+- **[Token sign-in](https://github.com/MadnessEngineering/madnessDesktop/blob/HEAD/docs/authentication.md)** — sign in with a Personal Access Token, or skip in-app sign-in entirely and let git use your system credential helper. (The GitHub OAuth browser flow can't redirect back to a fork, so these are the two working paths.)
 
-## Is Madness Desktop right for me? What are the primary areas of focus?
+## The `madhub` CLI
 
-[This document](https://github.com/MadnessEngineering/madnessDesktop/blob/HEAD/docs/process/what-is-desktop.md) describes the focus of Madness Desktop and who the product is most useful for.
+Install it from the app menu: **Madness Desktop → Install Command Line Tool…** (symlinks `/usr/local/bin/madhub`).
 
-## I have a problem with Madness Desktop
+| Command | What it does |
+|---------|--------------|
+| `madhub` | Open the current directory |
+| `madhub open [path]` | Open the provided path |
+| `madhub clone [-b branch] <url>` | Clone a repo by URL or `owner/name` (e.g. `torvalds/linux`), optionally checking out a branch |
+| `madhub upgrade` | Download and install the latest release |
 
-Note: The [Madness Desktop Code of Conduct](https://github.com/MadnessEngineering/madnessDesktop/blob/HEAD/CODE_OF_CONDUCT.md) applies in all interactions relating to the Madness Desktop project.
+## The Madness ecosystem
 
-First, please search the [open issues](https://github.com/MadnessEngineering/madnessDesktop/issues?q=is%3Aopen)
-and [closed issues](https://github.com/MadnessEngineering/madnessDesktop/issues?q=is%3Aclosed)
-to see if your issue hasn't already been reported (it may also be fixed).
+Madness Desktop is one node in a larger workshop coordination system — git events flow over MQTT to the [Omnispindle](https://github.com/MadnessEngineering/Omnispindle) MCP server and the [Inventorium](https://github.com/MadnessEngineering/Inventorium) dashboard. See [docs/ecosystem.md](https://github.com/MadnessEngineering/madnessDesktop/blob/HEAD/docs/ecosystem.md) for how the pieces fit together and how to bring a new machine onto the broker.
 
-There is also a list of [known issues](https://github.com/MadnessEngineering/madnessDesktop/blob/HEAD/docs/known-issues.md)
-that are being tracked against Desktop, and some of these issues have workarounds.
+## Documentation
 
-If you can't find an issue that matches what you're seeing, open a [new issue](https://github.com/MadnessEngineering/madnessDesktop/issues/new/choose),
-choose the right template and provide us with enough information to investigate
-further.
+- [Installation & data directories](https://github.com/MadnessEngineering/madnessDesktop/blob/HEAD/docs/installation.md)
+- [Authentication](https://github.com/MadnessEngineering/madnessDesktop/blob/HEAD/docs/authentication.md)
+- [Hook Loadouts](https://github.com/MadnessEngineering/madnessDesktop/blob/HEAD/docs/hook-loadouts.md)
+- [MQTT integration](https://github.com/MadnessEngineering/madnessDesktop/blob/HEAD/docs/mqtt-integration.md)
+- [The Madness ecosystem](https://github.com/MadnessEngineering/madnessDesktop/blob/HEAD/docs/ecosystem.md)
+- [Known issues](https://github.com/MadnessEngineering/madnessDesktop/blob/HEAD/docs/known-issues.md)
+- [All docs](https://github.com/MadnessEngineering/madnessDesktop/tree/HEAD/docs)
 
-## The issue I reported isn't fixed yet. What can I do?
+## Building & contributing
 
-If nobody has responded to your issue in a few days, you're welcome to respond to it with a friendly ping in the issue. Please do not respond more than a second time if nobody has responded. The Madness Desktop maintainers are constrained in time and resources, and diagnosing individual configurations can be difficult and time consuming. While we'll try to at least get you pointed in the right direction, we can't guarantee we'll be able to dig too deeply into any one person's issue.
+To set up a development environment, see [`docs/contributing/setup.md`](https://github.com/MadnessEngineering/madnessDesktop/blob/HEAD/docs/contributing/setup.md). The [`.github/CONTRIBUTING.md`](https://github.com/MadnessEngineering/madnessDesktop/blob/HEAD/.github/CONTRIBUTING.md) guide covers the source layout, and the [docs](https://github.com/MadnessEngineering/madnessDesktop/tree/HEAD/docs) folder has the rest.
 
-## How can I contribute to Madness Desktop?
-
-The [CONTRIBUTING.md](https://github.com/MadnessEngineering/madnessDesktop/blob/HEAD/.github/CONTRIBUTING.md) document will help you get setup and
-familiar with the source. The [documentation](https://github.com/MadnessEngineering/madnessDesktop/tree/HEAD/docs) folder also contains more
-resources relevant to the project.
-
-If you're looking for something to work on, check out the [help wanted](https://github.com/MadnessEngineering/madnessDesktop/issues?q=is%3Aissue+is%3Aopen+label%3A%22help%20wanted%22) label.
-
-## Building Desktop
-
-To setup your development environment for building Desktop, check out: [`setup.md`](https://github.com/MadnessEngineering/madnessDesktop/blob/HEAD/docs/contributing/setup.md).
-
-## More Resources
-
-See [github.com/MadnessEngineering/madnessDesktop](https://github.com/MadnessEngineering/madnessDesktop) for more product-oriented
-information about Madness Desktop.
-
-See the [installation](https://github.com/MadnessEngineering/madnessDesktop/blob/HEAD/docs/installation.md) and [authentication](https://github.com/MadnessEngineering/madnessDesktop/blob/HEAD/docs/authentication.md) guides for how to set up, authenticate, and configure Madness Desktop.
+Found a bug or want to suggest something? Open an [issue](https://github.com/MadnessEngineering/madnessDesktop/issues/new/choose). The [Code of Conduct](https://github.com/MadnessEngineering/madnessDesktop/blob/HEAD/CODE_OF_CONDUCT.md) applies to all project interactions.
 
 ## License
 
 **[MIT](LICENSE)**
 
-The MIT license grant is not for GitHub's trademarks, which include the logo
-designs. GitHub reserves all trademark and copyright rights in and to all
-GitHub trademarks. GitHub's logos include, for instance, the stylized
-Invertocat designs that include "logo" in the file title in the following
-folder: [logos](app/static/logos).
+The MIT license grant is not for GitHub's trademarks, which include the logo designs. GitHub reserves all trademark and copyright rights in and to all GitHub trademarks. GitHub's logos include, for instance, the stylized Invertocat designs that include "logo" in the file title in the following folder: [logos](https://github.com/MadnessEngineering/madnessDesktop/tree/HEAD/app/static/logos).
 
-GitHub® and its stylized versions and the Invertocat mark are GitHub's
-Trademarks or registered Trademarks. When using GitHub's logos, be sure to
-follow the GitHub [logo guidelines](https://github.com/logos).
+GitHub® and its stylized versions and the Invertocat mark are GitHub's Trademarks or registered Trademarks. When using GitHub's logos, be sure to follow the GitHub [logo guidelines](https://github.com/logos).
