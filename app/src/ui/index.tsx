@@ -382,13 +382,13 @@ ipcRenderer.on('blur', () => {
   dispatcher.setAppFocusState(false)
 })
 
-ipcRenderer.on('url-action', (_, action) =>
+ipcRenderer.on('url-action', action =>
   dispatcher
     .dispatchURLAction(action)
     .catch(e => log.error(`URL action ${action.name} failed`, e))
 )
 
-ipcRenderer.on('cli-action', (_, action) =>
+ipcRenderer.on('cli-action', action =>
   dispatcher
     .dispatchCLIAction(action)
     .catch(e => log.error(`CLI action ${action.kind} failed`, e))

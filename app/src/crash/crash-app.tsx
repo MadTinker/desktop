@@ -100,7 +100,7 @@ export class CrashApp extends React.Component<ICrashAppProps, ICrashAppState> {
   public componentDidMount() {
     ipcRenderer.on('window-state-changed', this.onWindowStateChanged)
 
-    ipcRenderer.on('error', (_, crashDetails) => this.setState(crashDetails))
+    ipcRenderer.on('error', crashDetails => this.setState(crashDetails))
 
     ipcRenderer.send('crash-ready')
   }
@@ -121,10 +121,7 @@ export class CrashApp extends React.Component<ICrashAppProps, ICrashAppState> {
     this.setState({ windowState })
   }
 
-  private onWindowStateChanged = (
-    _: Electron.IpcRendererEvent,
-    windowState: WindowState
-  ) => {
+  private onWindowStateChanged = (windowState: WindowState) => {
     this.setState({ windowState })
   }
 

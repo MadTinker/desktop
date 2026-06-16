@@ -168,6 +168,15 @@ declare namespace Electron {
 interface Window {
   Element: typeof Element
   HTMLElement: typeof HTMLElement
+  /** IPC bridge exposed by preload.ts via Electron contextBridge. */
+  electronBridge: {
+    invoke(channel: string, ...args: any[]): Promise<any>
+    send(channel: string, ...args: any[]): void
+    sendSync(channel: string, ...args: any[]): any
+    on(channel: string, id: string, callback: (...args: any[]) => void): void
+    once(channel: string, id: string, callback: (...args: any[]) => void): void
+    removeListener(channel: string, id: string): void
+  }
 }
 
 interface HTMLDialogElement {

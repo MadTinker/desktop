@@ -73,6 +73,18 @@ export const main = merge({}, commonConfig, {
   ],
 })
 
+export const preload = merge({}, commonConfig, {
+  entry: { preload: path.resolve(__dirname, 'src/main-process/preload') },
+  target: 'electron-preload',
+  plugins: [
+    new webpack.DefinePlugin(
+      Object.assign({}, replacements, {
+        __PROCESS_KIND__: JSON.stringify('main'),
+      })
+    ),
+  ],
+})
+
 export const renderer = merge({}, commonConfig, {
   entry: { renderer: path.resolve(__dirname, 'src/ui/index') },
   target: 'electron-renderer',

@@ -10,7 +10,7 @@ export const notificationCallbacks = new QuickLRU<string, () => void>({
 export function initializeRendererNotificationHandler(
   notificationsStore: NotificationsStore
 ) {
-  ipcRenderer.on('notification-event', (_, event, id, userInfo) => {
+  ipcRenderer.on('notification-event', (event, id, userInfo) => {
     if (event !== 'click') {
       return
     }

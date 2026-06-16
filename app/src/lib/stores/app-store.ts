@@ -1108,18 +1108,18 @@ export class AppStore extends TypedBaseStore<IAppState> {
   }
 
   private wireupIpcEventHandlers() {
-    ipcRenderer.on('window-state-changed', (_, windowState) => {
+    ipcRenderer.on('window-state-changed', windowState => {
       this.windowState = windowState
       this.emitUpdate()
     })
 
-    ipcRenderer.on('zoom-factor-changed', (event: any, zoomFactor: number) => {
+    ipcRenderer.on('zoom-factor-changed', (zoomFactor: number) => {
       this.onWindowZoomFactorChanged(zoomFactor)
     })
 
-    ipcRenderer.on('app-menu', (_, menu) => this.setAppMenu(menu))
+    ipcRenderer.on('app-menu', menu => this.setAppMenu(menu))
 
-    ipcRenderer.on('omnispindle-todos-updated', (_, todos, status) => {
+    ipcRenderer.on('omnispindle-todos-updated', (todos, status) => {
       this.omnispindleTodos = todos
       this.omnispindleStatus = status
       this.emitUpdate()
@@ -1127,7 +1127,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
 
     // The main process owns the encrypted key file; when it loads or mints a
     // key it pushes it here so localStorage and the UI stay in sync.
-    ipcRenderer.on('omnispindle-api-key-set', (_, apiKey: string) => {
+    ipcRenderer.on('omnispindle-api-key-set', (apiKey: string) => {
       if (apiKey && apiKey !== this.omnispindleApiKey) {
         this._setOmnispindleApiKey(apiKey)
       }

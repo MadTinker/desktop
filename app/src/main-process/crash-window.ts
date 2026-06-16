@@ -1,4 +1,5 @@
 import { BrowserWindow } from 'electron'
+import * as path from 'path'
 import { Emitter, Disposable } from 'event-kit'
 import { ICrashDetails, ErrorType } from '../crash/shared'
 import { registerWindowStateChangedEvents } from '../lib/window-state'
@@ -39,12 +40,10 @@ export class CrashWindow {
         // Disable auxclick event
         // See https://developers.google.com/web/updates/2016/10/auxclick
         disableBlinkFeatures: 'Auxclick',
-        // SECURITY: same legacy constraint as app-window.ts — see migration
-        // plan documented there. crash-window is lower risk (no user content)
-        // but should be migrated in the same pass.
-        nodeIntegration: true,
+        preload: path.join(__dirname, 'preload.js'),
+        nodeIntegration: false,
         spellcheck: false,
-        contextIsolation: false,
+        contextIsolation: true,
       },
     }
 

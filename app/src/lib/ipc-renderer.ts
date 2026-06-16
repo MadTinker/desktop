@@ -1,6 +1,22 @@
 import { RequestResponseChannels, RequestChannels } from './ipc-shared'
-// eslint-disable-next-line no-restricted-imports
-import { ipcRenderer, IpcRendererEvent } from 'electron'
+
+// IPC bridge exposed by preload.ts via Electron contextBridge.
+// With contextIsolation:true the renderer cannot import from 'electron' directly;
+// all IPC goes through window.electronBridge instead.
+const bridge = window.electronBridge
+
+// Maps each listener function to a stable UUID so the preload can match it on
+// removeListener. Each unique function object gets one ID for its lifetime.
+const listenerIds = new WeakMap<object, string>()
+
+function getListenerId(fn: object): string {
+  let id = listenerIds.get(fn)
+  if (id === undefined) {
+    id = crypto.randomUUID()
+    listenerIds.set(fn, id)
+  }
+  return id
+}
 
 /**
  * Send a message to the main process via channel and expect a result
@@ -11,7 +27,7 @@ export function invoke<T extends keyof RequestResponseChannels>(
   channel: T,
   ...args: Parameters<RequestResponseChannels[T]>
 ): ReturnType<RequestResponseChannels[T]> {
-  return ipcRenderer.invoke(channel, ...args) as any
+  return bridge.invoke(channel, ...args) as any
 }
 
 /**
@@ -22,7 +38,7 @@ export function send<T extends keyof RequestChannels>(
   channel: T,
   ...args: Parameters<RequestChannels[T]>
 ): void {
-  return ipcRenderer.send(channel, ...args) as any
+  bridge.send(channel, ...args)
 }
 
 /**
@@ -34,50 +50,42 @@ export function sendSync<T extends keyof RequestChannels>(
   ...args: Parameters<RequestChannels[T]>
 ): void {
   // eslint-disable-next-line no-sync
-  return ipcRenderer.sendSync(channel, ...args) as any
+  bridge.sendSync(channel, ...args)
 }
 
 /**
  * Subscribes to the specified IPC channel and provides strong typing of
- * the channel name, and request parameters. This is the equivalent of
- * using ipcRenderer.on.
+ * the channel name and parameters. The IpcRendererEvent is stripped by the
+ * preload bridge — listeners receive only the payload arguments.
  */
 export function on<T extends keyof RequestChannels>(
   channel: T,
-  listener: (
-    event: IpcRendererEvent,
-    ...args: Parameters<RequestChannels[T]>
-  ) => void
+  listener: (...args: Parameters<RequestChannels[T]>) => void
 ) {
-  ipcRenderer.on(channel, listener as any)
+  bridge.on(channel, getListenerId(listener), listener as any)
 }
 
 /**
- * Subscribes to the specified IPC channel and provides strong typing of
- * the channel name, and request parameters. This is the equivalent of
- * using ipcRenderer.once
+ * Subscribes to the specified IPC channel for a single event and provides
+ * strong typing of the channel name and parameters.
  */
 export function once<T extends keyof RequestChannels>(
   channel: T,
-  listener: (
-    event: IpcRendererEvent,
-    ...args: Parameters<RequestChannels[T]>
-  ) => void
+  listener: (...args: Parameters<RequestChannels[T]>) => void
 ) {
-  ipcRenderer.once(channel, listener as any)
+  bridge.once(channel, getListenerId(listener), listener as any)
 }
 
 /**
- * Unsubscribes from the specified IPC channel and provides strong typing of
- * the channel name, and request parameters. This is the equivalent of
- * using ipcRenderer.removeListener
+ * Unsubscribes from the specified IPC channel. The listener must be the same
+ * function reference passed to on() or once().
  */
 export function removeListener<T extends keyof RequestChannels>(
   channel: T,
-  listener: (
-    event: IpcRendererEvent,
-    ...args: Parameters<RequestChannels[T]>
-  ) => void
+  listener: (...args: Parameters<RequestChannels[T]>) => void
 ) {
-  ipcRenderer.removeListener(channel, listener as any)
+  const id = listenerIds.get(listener)
+  if (id !== undefined) {
+    bridge.removeListener(channel, id)
+  }
 }

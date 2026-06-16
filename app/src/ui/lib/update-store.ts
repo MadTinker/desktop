@@ -96,7 +96,7 @@ class UpdateStore {
     setNumber(lastSuccessfulCheckKey, now.getTime())
   }
 
-  private onAutoUpdaterError = (e: Electron.IpcRendererEvent, error: Error) => {
+  private onAutoUpdaterError = (error: Error) => {
     this.status = UpdateStatus.UpdateNotAvailable
 
     if (__WIN32__) {

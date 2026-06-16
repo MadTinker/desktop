@@ -374,7 +374,7 @@ export class App extends React.Component<IAppProps, IAppState> {
       props.dispatcher.postError(error)
     })
 
-    ipcRenderer.on('menu-event', (_, name) => this.onMenuEvent(name))
+    ipcRenderer.on('menu-event', name => this.onMenuEvent(name))
 
     updateStore.onDidChange(async state => {
       const status = state.status
@@ -400,7 +400,7 @@ export class App extends React.Component<IAppProps, IAppState> {
       this.props.dispatcher.postError(error)
     })
 
-    ipcRenderer.on('launch-timing-stats', (_, stats) => {
+    ipcRenderer.on('launch-timing-stats', stats => {
       console.info(`App ready time: ${stats.mainReadyTime}ms`)
       console.info(`Load time: ${stats.loadTime}ms`)
       console.info(`Renderer ready time: ${stats.rendererReadyTime}ms`)
@@ -408,7 +408,7 @@ export class App extends React.Component<IAppProps, IAppState> {
       this.props.dispatcher.recordLaunchStats(stats)
     })
 
-    ipcRenderer.on('certificate-error', (_, certificate, error, url) => {
+    ipcRenderer.on('certificate-error', (certificate, error, url) => {
       if (isCertificateErrorSuppressedFor(url)) {
         return
       }

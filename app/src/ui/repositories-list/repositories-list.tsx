@@ -115,6 +115,14 @@ interface IRepositoriesListState {
 
 const RowHeight = 29
 
+// Persists submodule data across component mount/unmount cycles (e.g. panel
+// open/close), keyed by the repos signature so stale entries are naturally
+// displaced when the repo list changes.
+const submoduleCache = new Map<
+  string,
+  ReadonlyMap<number, ReadonlyArray<IDeclaredSubmodule>>
+>()
+
 /**
  * Drop any subrepo whose monorepo parent (or any ancestor) is collapsed, so a
  * collapsed folder hides its entire nested subtree.
@@ -270,6 +278,16 @@ export class RepositoriesList extends React.Component<
     }
     this.lastSubmoduleLoadSignature = signature
 
+    // Serve from module-level cache when repos haven't changed — survives
+    // component remount (panel open/close) without re-running git submodule status.
+    const cached = submoduleCache.get(signature)
+    if (cached !== undefined) {
+      if (!this.submodulesUnmounted) {
+        this.setState({ submoduleMap: cached })
+      }
+      return
+    }
+
     const repos = (this.props.repositories ?? []).filter(
       (r): r is Repository => r instanceof Repository
     )
@@ -301,6 +319,7 @@ export class RepositoriesList extends React.Component<
     if (this.submodulesUnmounted) {
       return
     }
+    submoduleCache.set(signature, map)
     this.setState({ submoduleMap: map })
   }
 

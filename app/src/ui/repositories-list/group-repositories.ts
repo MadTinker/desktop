@@ -345,6 +345,13 @@ const applyNesting = (
   // Only real (non-cloning) repositories have stable on-disk paths to nest by.
   const pathItems = items.filter(i => i.repository instanceof Repository)
 
+  // macOS/Windows filesystems are case-insensitive; git paths from .gitmodules
+  // may differ in case from the path stored in the app. Normalise once.
+  const normalise = __DARWIN__ || __WIN32__
+    ? (p: string) => p.toLowerCase()
+    : (p: string) => p
+  const normalisedExisting = new Set([...existingRepoPaths].map(normalise))
+
   // Build ghost rows for submodules declared in a repo's .gitmodules that
   // haven't been added to the app yet (so they're not already nested).
   const ghostChildrenOf = new Map<string, IRepositoryListItem[]>()
@@ -355,7 +362,7 @@ const applyNesting = (
       continue
     }
     for (const sub of declared) {
-      if (existingRepoPaths.has(sub.path)) {
+      if (normalisedExisting.has(normalise(sub.path))) {
         continue // already added → it's a real nested child, skip the ghost
       }
       const ghosts = ghostChildrenOf.get(item.id) ?? []

@@ -11,6 +11,7 @@ const config: webpack.Configuration = {
 }
 
 const mainConfig = merge({}, common.main, config)
+const preloadConfig = merge({}, common.preload, config)
 const cliConfig = merge({}, common.cli, config)
 const highlighterConfig = merge({}, common.highlighter, config)
 
@@ -63,6 +64,7 @@ const crashConfig = merge({}, common.crash, config, {
 // eslint-disable-next-line no-restricted-syntax
 export default [
   mainConfig,
+  preloadConfig,
   rendererConfig,
   crashConfig,
   cliConfig,

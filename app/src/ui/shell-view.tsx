@@ -137,21 +137,13 @@ export class ShellView extends React.Component<
     }
   }
 
-  private onTerminalData = (
-    _event: Electron.IpcRendererEvent,
-    id: string,
-    data: string
-  ) => {
+  private onTerminalData = (id: string, data: string) => {
     if (id === this.terminalID) {
       this.terminal?.write(data)
     }
   }
 
-  private onTerminalExit = (
-    _event: Electron.IpcRendererEvent,
-    id: string,
-    code: number
-  ) => {
+  private onTerminalExit = (id: string, code: number) => {
     if (id !== this.terminalID) {
       return
     }
