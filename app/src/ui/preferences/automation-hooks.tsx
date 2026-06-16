@@ -265,7 +265,9 @@ export class AutomationHooksPreferences extends React.Component<
         })
         return
       }
-      // Merge: import remote hooks that aren't already local (matched by id)
+      // Merge: import remote hooks that aren't already local (matched by id).
+      // Always import as disabled — user must review script and explicitly enable.
+      // This prevents a compromised API from injecting auto-executing hooks.
       const local = getAutomationHooks()
       const localIds = new Set(local.map(h => h.id))
       let imported = 0
@@ -276,7 +278,7 @@ export class AutomationHooksPreferences extends React.Component<
             name: remote.name,
             trigger: remote.trigger as HookTrigger,
             script: remote.script,
-            enabled: remote.enabled,
+            enabled: false,
           })
           imported++
         }
@@ -287,7 +289,7 @@ export class AutomationHooksPreferences extends React.Component<
           kind: 'success',
           message:
             imported > 0
-              ? `Imported ${imported} hook${imported === 1 ? '' : 's'} from server`
+              ? `Imported ${imported} hook${imported === 1 ? '' : 's'} from server — review scripts and enable manually`
               : 'Already up to date',
         },
       })
