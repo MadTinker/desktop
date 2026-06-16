@@ -29,6 +29,8 @@ import {
   DefaultMqttConfig,
   getMqttConfig,
   saveMqttConfig,
+  saveMqttPassword,
+  migrateMqttPasswordIfNeeded,
   mqttConfigToEnv,
 } from '../mqtt/mqtt-config'
 import {
@@ -854,11 +856,23 @@ export class AppStore extends TypedBaseStore<IAppState> {
 
     this.omnispindleApiKey = localStorage.getItem(omnispindleApiKeyKey) ?? ''
     this.mqttConfig = getMqttConfig()
-    // Inject MQTT env vars into process.env on startup
+    // Inject MQTT env vars (no password) into process.env on startup.
+    // Password is loaded async from keytar below.
     const mqttEnv = mqttConfigToEnv(this.mqttConfig)
     Object.entries(mqttEnv).forEach(([k, v]) => {
       process.env[k] = v
     })
+    // Migrate legacy plaintext password from localStorage → keytar, or load
+    // from keytar if already migrated. Fire-and-forget; password arrives in
+    // memory shortly after startup.
+    migrateMqttPasswordIfNeeded()
+      .then(pw => {
+        if (pw) {
+          this.mqttConfig = { ...this.mqttConfig, password: pw }
+          this.emitUpdate()
+        }
+      })
+      .catch(err => log.error('[mqtt] failed to load password from keychain', err))
     this.localAIConfig = loadLocalAIConfig()
 
     // Chat history archive watcher
@@ -3513,8 +3527,11 @@ export class AppStore extends TypedBaseStore<IAppState> {
   }
 
   public _setMqttConfig(config: IMqttConfig): void {
-    saveMqttConfig(config)
-    this.mqttConfig = config
+    saveMqttConfig(config) // saves without password
+    saveMqttPassword(config.password).catch(err =>
+      log.error('[mqtt] failed to save password to keychain', err)
+    )
+    this.mqttConfig = config // password kept in memory
     const env = mqttConfigToEnv(config)
     Object.entries(env).forEach(([k, v]) => {
       process.env[k] = v

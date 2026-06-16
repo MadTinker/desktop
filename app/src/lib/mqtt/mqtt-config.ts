@@ -1,4 +1,5 @@
 import { hostname } from 'os'
+import { TokenStore } from '../stores/token-store'
 
 export interface IMqttConfig {
   readonly enabled: boolean
@@ -11,6 +12,11 @@ export interface IMqttConfig {
 }
 
 const storageKey = 'madness-mqtt-config'
+
+const MQTT_KEYTAR_KEY = __DEV__
+  ? 'Madness Desktop Dev - MQTT'
+  : 'Madness Desktop - MQTT'
+const MQTT_KEYTAR_ACCOUNT = 'mqtt-password'
 
 export const DefaultMqttConfig: IMqttConfig = {
   enabled: true,
@@ -28,7 +34,10 @@ export function getMqttConfig(): IMqttConfig {
     if (!raw) {
       return DefaultMqttConfig
     }
-    return { ...DefaultMqttConfig, ...JSON.parse(raw) }
+    // Password is never persisted in localStorage — always empty here.
+    // Use getMqttPassword() for the real value.
+    const stored = JSON.parse(raw)
+    return { ...DefaultMqttConfig, ...stored, password: '' }
   } catch {
     return DefaultMqttConfig
   }
@@ -36,10 +45,49 @@ export function getMqttConfig(): IMqttConfig {
 
 export function saveMqttConfig(config: IMqttConfig): void {
   try {
-    localStorage.setItem(storageKey, JSON.stringify(config))
+    // Strip password before persisting — stored in keytar instead.
+    const { password: _pw, ...rest } = config
+    localStorage.setItem(storageKey, JSON.stringify(rest))
   } catch {
     // localStorage unavailable
   }
+}
+
+export function getMqttPassword(): Promise<string | null> {
+  return TokenStore.getItem(MQTT_KEYTAR_KEY, MQTT_KEYTAR_ACCOUNT)
+}
+
+export function saveMqttPassword(password: string): Promise<void> {
+  if (!password) {
+    return TokenStore.deleteItem(MQTT_KEYTAR_KEY, MQTT_KEYTAR_ACCOUNT).then(
+      () => {}
+    )
+  }
+  return TokenStore.setItem(MQTT_KEYTAR_KEY, MQTT_KEYTAR_ACCOUNT, password)
+}
+
+export async function migrateMqttPasswordIfNeeded(): Promise<string | null> {
+  try {
+    const raw = localStorage.getItem(storageKey)
+    if (!raw) {
+      return TokenStore.getItem(MQTT_KEYTAR_KEY, MQTT_KEYTAR_ACCOUNT)
+    }
+    const stored = JSON.parse(raw)
+    if (stored.password) {
+      // Legacy plaintext password in localStorage — move to keytar.
+      await TokenStore.setItem(
+        MQTT_KEYTAR_KEY,
+        MQTT_KEYTAR_ACCOUNT,
+        stored.password
+      )
+      delete stored.password
+      localStorage.setItem(storageKey, JSON.stringify(stored))
+      return stored.password as string
+    }
+  } catch {
+    // fall through
+  }
+  return TokenStore.getItem(MQTT_KEYTAR_KEY, MQTT_KEYTAR_ACCOUNT)
 }
 
 /**
@@ -65,9 +113,8 @@ export function mqttConfigToEnv(
   if (config.username) {
     env.MADNESS_MQTT_USERNAME = config.username
   }
-  if (config.password) {
-    env.MADNESS_MQTT_PASSWORD = config.password
-  }
+  // Password is NOT exposed in hook env — kept in keytar, never spread to
+  // git repo hooks or process.env where 3rd-party scripts can read it.
 
   return env
 }

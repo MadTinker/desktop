@@ -239,11 +239,14 @@ function testMqttConnection(
     if (config.username) {
       args.push('-u', config.username)
     }
+    // Pass password via env var, not -P flag, to keep it out of argv
+    // (argv is visible to other local users via ps).
+    const spawnEnv: NodeJS.ProcessEnv = { ...process.env }
     if (config.password) {
-      args.push('-P', config.password)
+      spawnEnv.MQTT_PASSWORD = config.password
     }
 
-    const proc = spawn('mosquitto_pub', args, { timeout: 5000 })
+    const proc = spawn('mosquitto_pub', args, { timeout: 5000, env: spawnEnv })
     let stderr = ''
 
     proc.stderr.on('data', (data: Buffer) => {
