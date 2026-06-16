@@ -66,6 +66,18 @@ export class AppWindow {
         // Disable auxclick event
         // See https://developers.google.com/web/updates/2016/10/auxclick
         disableBlinkFeatures: 'Auxclick',
+        // SECURITY: nodeIntegration + contextIsolation=false are upstream legacy
+        // from GitHub Desktop. Toggling either breaks all ipcRenderer calls in
+        // the renderer (no preload bridge exists yet).
+        //
+        // Migration path:
+        //   1. Create app/src/main-process/preload.ts — expose a contextBridge
+        //      object wrapping every ipcRenderer.invoke/send/on call the renderer
+        //      makes (grep for ipcRenderer in app/src/ui/ and app/src/lib/).
+        //   2. Set preload: path.join(__dirname, 'preload.js') here.
+        //   3. Flip nodeIntegration: false, contextIsolation: true.
+        //   4. Audit for any innerHTML XSS vectors that could reach IPC.
+        // Until then, innerHTML XSS in an untrusted document = renderer RCE.
         nodeIntegration: true,
         spellcheck: true,
         contextIsolation: false,

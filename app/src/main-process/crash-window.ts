@@ -39,6 +39,9 @@ export class CrashWindow {
         // Disable auxclick event
         // See https://developers.google.com/web/updates/2016/10/auxclick
         disableBlinkFeatures: 'Auxclick',
+        // SECURITY: same legacy constraint as app-window.ts — see migration
+        // plan documented there. crash-window is lower risk (no user content)
+        // but should be migrated in the same pass.
         nodeIntegration: true,
         spellcheck: false,
         contextIsolation: false,

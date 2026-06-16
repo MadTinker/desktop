@@ -21,7 +21,8 @@ export interface ILocalAIConfig {
   readonly timeoutMs: number
   /**
    * When false, only localhost/loopback HTTP endpoints are allowed; HTTPS is
-   * always permitted. Defaults to true to preserve existing behaviour.
+   * always permitted. Defaults to false (secure); users must opt in for plain
+   * HTTP to non-local hosts.
    */
   readonly allowNonLocalHttp: boolean
   /**
@@ -53,7 +54,7 @@ export const DefaultLocalAIConfig: ILocalAIConfig = {
   baseUrl: 'http://localhost:1234',
   modelId: 'local-model',
   timeoutMs: 60000,
-  allowNonLocalHttp: true,
+  allowNonLocalHttp: false,
   sanitizeGitContext: true,
   promptMode: 'default',
   customSystemPrompt: '',
