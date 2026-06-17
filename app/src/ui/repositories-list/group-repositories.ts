@@ -325,7 +325,7 @@ const toSortedListItems = (
  * Whether `child` lives on disk inside `parent` (a strict descendant path).
  * Used to detect monorepo→subrepo relationships from absolute repo paths.
  */
-const isPathInside = (child: string, parent: string): boolean => {
+export const isPathInside = (child: string, parent: string): boolean => {
   const base = parent.endsWith(sep) ? parent : parent + sep
   return child.length > base.length && child.startsWith(base)
 }

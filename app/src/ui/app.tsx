@@ -41,6 +41,7 @@ import {
   getNonForkGitHubRepository,
   isRepositoryWithGitHubRepository,
 } from '../models/repository'
+import { isPathInside } from './repositories-list/group-repositories'
 import { Branch } from '../models/branch'
 import { PreferencesTab } from '../models/preferences'
 import { findItemByAccessKey, itemIsSelectable } from '../models/app-menu'
@@ -4126,6 +4127,11 @@ export class App extends React.Component<IAppProps, IAppState> {
     }
 
     if (selectedState.type === SelectionType.Repository) {
+      const submoduleRepositories = state.repositories.filter(
+        (r): r is Repository =>
+          r instanceof Repository &&
+          isPathInside(r.path, selectedState.repository.path)
+      )
       return (
         <RepositoryView
           ref={this.repositoryViewRef}
@@ -4133,6 +4139,7 @@ export class App extends React.Component<IAppProps, IAppState> {
           // component to reset the scroll positions.
           key={selectedState.repository.hash}
           repository={selectedState.repository}
+          submoduleRepositories={submoduleRepositories}
           state={selectedState.state}
           dispatcher={this.props.dispatcher}
           emoji={state.emoji}

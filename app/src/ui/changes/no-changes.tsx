@@ -85,6 +85,9 @@ interface INoChangesProps {
 
   /** The user's preference of pull request suggested next action to use **/
   readonly pullRequestSuggestedNextAction?: PullRequestSuggestedNextAction
+
+  /** Submodule repos that live inside this repo — shown as a navigation panel. */
+  readonly submoduleRepositories: ReadonlyArray<Repository>
 }
 
 /**
@@ -751,6 +754,36 @@ export class NoChanges extends React.Component<
     )
   }
 
+  private onSubmoduleClicked = (repo: Repository) => {
+    this.props.dispatcher.selectRepository(repo)
+  }
+
+  private renderSubmodules() {
+    const { submoduleRepositories } = this.props
+    if (submoduleRepositories.length === 0) {
+      return null
+    }
+
+    return (
+      <div className="no-changes-submodules">
+        <h3 className="no-changes-submodules-header">Submodules</h3>
+        <ul className="no-changes-submodule-list">
+          {submoduleRepositories.map(repo => (
+            <li key={repo.id} className="no-changes-submodule-item">
+              <button
+                className="no-changes-submodule-button"
+                onClick={() => this.onSubmoduleClicked(repo)}
+                title={repo.path}
+              >
+                <span className="no-changes-submodule-name">{repo.name}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
+    )
+  }
+
   public componentDidMount() {
     this.transitionTimer = window.setTimeout(() => {
       this.setState({ enableTransitions: true })
@@ -780,6 +813,7 @@ export class NoChanges extends React.Component<
             <img src={PaperStackImage} className="blankslate-image" alt="" />
           </div>
           {this.renderActions()}
+          {this.renderSubmodules()}
         </div>
       </div>
     )

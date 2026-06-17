@@ -95,6 +95,14 @@ export const DefaultActionDefinitions: ReadonlyArray<ActionDefinition> = [
     isMenuAction: true,
   },
   {
+    id: 'show-worktrees',
+    label: 'Show Worktrees List',
+    category: 'view',
+    context: 'repository',
+    defaultBinding: 'CmdOrCtrl+Alt+W',
+    isMenuAction: true,
+  },
+  {
     id: 'go-to-commit-message',
     label: 'Go to Summary',
     category: 'view',
@@ -239,6 +247,14 @@ export const DefaultActionDefinitions: ReadonlyArray<ActionDefinition> = [
     category: 'repository',
     context: 'repository',
     defaultBinding: 'CmdOrCtrl+I',
+    isMenuAction: true,
+  },
+  {
+    id: 'create-worktree',
+    label: 'New Worktree',
+    category: 'repository',
+    context: 'repository',
+    defaultBinding: 'CmdOrCtrl+Shift+W',
     isMenuAction: true,
   },
   {

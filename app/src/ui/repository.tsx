@@ -129,6 +129,9 @@ interface IRepositoryViewProps {
   /** The user's preference of pull request suggested next action to use **/
   readonly pullRequestSuggestedNextAction?: PullRequestSuggestedNextAction
 
+  /** Repositories that live inside this repo's path (direct submodule repos). */
+  readonly submoduleRepositories: ReadonlyArray<Repository>
+
   /** Whether or not to show the changes filter */
   readonly showChangesFilter: boolean
 
@@ -669,6 +672,7 @@ export class RepositoryView extends React.Component<
             pullRequestSuggestedNextAction={
               this.props.pullRequestSuggestedNextAction
             }
+            submoduleRepositories={this.props.submoduleRepositories}
           />
         )
       }
