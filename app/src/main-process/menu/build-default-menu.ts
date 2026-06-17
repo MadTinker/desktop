@@ -219,7 +219,7 @@ export function buildDefaultMenu({
       {
         label: __DARWIN__ ? 'Show Worktrees List' : '&Worktrees list',
         id: 'show-worktrees-list',
-        accelerator: 'CmdOrCtrl+Alt+W',
+        accelerator: getAccelerator('show-worktrees', hotkeyBindings, 'CmdOrCtrl+Alt+W'),
         click: emit('show-worktrees'),
       },
       separator,
@@ -412,7 +412,7 @@ export function buildDefaultMenu({
         id: 'create-worktree',
         label: __DARWIN__ ? 'New Worktree…' : 'New work&tree…',
         click: emit('create-worktree'),
-        accelerator: 'CmdOrCtrl+Shift+W',
+        accelerator: getAccelerator('create-worktree', hotkeyBindings, 'CmdOrCtrl+Shift+W'),
       },
       separator,
       {
