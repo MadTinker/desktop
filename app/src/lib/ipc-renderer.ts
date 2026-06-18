@@ -3,7 +3,11 @@ import { RequestResponseChannels, RequestChannels } from './ipc-shared'
 // IPC bridge exposed by preload.ts via Electron contextBridge.
 // With contextIsolation:true the renderer cannot import from 'electron' directly;
 // all IPC goes through window.electronBridge instead.
-const bridge = window.electronBridge
+//
+// NOTE: window.electronBridge is accessed lazily (inside each function) rather
+// than at module level. This module is transitively imported by main-process
+// code (via app-shell → main-process-proxy), so accessing `window` at module
+// init time would crash the main process where `window` is not defined.
 
 // Maps each listener function to a stable UUID so the preload can match it on
 // removeListener. Each unique function object gets one ID for its lifetime.
@@ -27,7 +31,7 @@ export function invoke<T extends keyof RequestResponseChannels>(
   channel: T,
   ...args: Parameters<RequestResponseChannels[T]>
 ): ReturnType<RequestResponseChannels[T]> {
-  return bridge.invoke(channel, ...args) as any
+  return window.electronBridge.invoke(channel, ...args) as any
 }
 
 /**
@@ -38,7 +42,7 @@ export function send<T extends keyof RequestChannels>(
   channel: T,
   ...args: Parameters<RequestChannels[T]>
 ): void {
-  bridge.send(channel, ...args)
+  window.electronBridge.send(channel, ...args)
 }
 
 /**
@@ -50,7 +54,7 @@ export function sendSync<T extends keyof RequestChannels>(
   ...args: Parameters<RequestChannels[T]>
 ): void {
   // eslint-disable-next-line no-sync
-  bridge.sendSync(channel, ...args)
+  window.electronBridge.sendSync(channel, ...args)
 }
 
 /**
@@ -62,7 +66,7 @@ export function on<T extends keyof RequestChannels>(
   channel: T,
   listener: (...args: Parameters<RequestChannels[T]>) => void
 ) {
-  bridge.on(channel, getListenerId(listener), listener as any)
+  window.electronBridge.on(channel, getListenerId(listener), listener as any)
 }
 
 /**
@@ -73,7 +77,7 @@ export function once<T extends keyof RequestChannels>(
   channel: T,
   listener: (...args: Parameters<RequestChannels[T]>) => void
 ) {
-  bridge.once(channel, getListenerId(listener), listener as any)
+  window.electronBridge.once(channel, getListenerId(listener), listener as any)
 }
 
 /**
@@ -86,6 +90,6 @@ export function removeListener<T extends keyof RequestChannels>(
 ) {
   const id = listenerIds.get(listener)
   if (id !== undefined) {
-    bridge.removeListener(channel, id)
+    window.electronBridge.removeListener(channel, id)
   }
 }
