@@ -67,12 +67,16 @@ export class AppWindow {
         // See https://developers.google.com/web/updates/2016/10/auxclick
         disableBlinkFeatures: 'Auxclick',
         preload: path.join(__dirname, 'preload.js'),
-        // nodeIntegration must stay true: the webpack renderer bundle generates
-        // require() calls for externals (electron, fs, path, etc.). Flipping
-        // this to false breaks those calls at runtime with "require is not
-        // defined". contextIsolation: true still isolates the preload world so
-        // the contextBridge / window.electronBridge path is fully intact.
+        // nodeIntegration + sandbox:false are required: the webpack renderer
+        // bundle generates require() calls for externals (electron, fs, path,
+        // etc.). In Electron 20+ the renderer sandbox is ON by default even
+        // with nodeIntegration:true; sandbox:false is needed to disable it.
+        // Old config (contextIsolation:false) implicitly disabled the sandbox,
+        // which is why it worked without an explicit sandbox:false.
+        // contextIsolation:true is kept — the preload world is still isolated
+        // and window.electronBridge is still exposed via contextBridge.
         nodeIntegration: true,
+        sandbox: false,
         spellcheck: true,
         contextIsolation: true,
       },

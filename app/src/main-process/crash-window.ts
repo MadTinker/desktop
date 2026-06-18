@@ -43,6 +43,7 @@ export class CrashWindow {
         preload: path.join(__dirname, 'preload.js'),
         // Same constraint as the main app window: webpack externals need require().
         nodeIntegration: true,
+        sandbox: false,
         spellcheck: false,
         contextIsolation: true,
       },
