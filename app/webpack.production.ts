@@ -7,7 +7,10 @@ import { BundleAnalyzerPlugin } from 'webpack-bundle-analyzer'
 
 const config: webpack.Configuration = {
   mode: 'production',
-  devtool: 'source-map',
+  // hidden-source-map emits the same .map files as source-map but omits the
+  // //# sourceMappingURL comment from bundles — meaningfully lower peak heap
+  // when building 6 configs + 13 SCSS themes simultaneously.
+  devtool: 'hidden-source-map',
 }
 
 const mainConfig = merge({}, common.main, config)
