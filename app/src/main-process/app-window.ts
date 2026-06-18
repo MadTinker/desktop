@@ -67,7 +67,12 @@ export class AppWindow {
         // See https://developers.google.com/web/updates/2016/10/auxclick
         disableBlinkFeatures: 'Auxclick',
         preload: path.join(__dirname, 'preload.js'),
-        nodeIntegration: false,
+        // nodeIntegration must stay true: the webpack renderer bundle generates
+        // require() calls for externals (electron, fs, path, etc.). Flipping
+        // this to false breaks those calls at runtime with "require is not
+        // defined". contextIsolation: true still isolates the preload world so
+        // the contextBridge / window.electronBridge path is fully intact.
+        nodeIntegration: true,
         spellcheck: true,
         contextIsolation: true,
       },
