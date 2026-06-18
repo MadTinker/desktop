@@ -41,11 +41,11 @@ export class CrashWindow {
         // See https://developers.google.com/web/updates/2016/10/auxclick
         disableBlinkFeatures: 'Auxclick',
         preload: path.join(__dirname, 'preload.js'),
-        // Same constraint as the main app window: webpack externals need require().
+        // Same constraint as the main app window — contextIsolation:false,
+        // nodeIntegration:true. See app-window.ts comment for full reasoning.
         nodeIntegration: true,
-        sandbox: false,
         spellcheck: false,
-        contextIsolation: true,
+        contextIsolation: false,
       },
     }
 
