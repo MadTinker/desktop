@@ -67,6 +67,14 @@ import {
   validateHookScript,
   executeHookScript,
 } from './automation-hooks-sync'
+import {
+  install as installClaudeLoadout,
+  uninstall as uninstallClaudeLoadout,
+  getStatus as getClaudeLoadoutStatus,
+  checkDeps as checkClaudeLoadoutDeps,
+  readManifest as readClaudeManifest,
+  resolvePaths as resolveClaudePaths,
+} from '../lib/claude-hooks/installer'
 import { PtyManager } from './pty-manager'
 
 app.setAppLogsPath()
@@ -726,6 +734,26 @@ app.on('ready', () => {
     (_, script: string, env?: Record<string, string>) =>
       executeHookScript(script, env)
   )
+
+  ipcMain.handle('claude-loadout-status', async () =>
+    getClaudeLoadoutStatus(app.getPath('home'))
+  )
+
+  ipcMain.handle('claude-loadout-install', async (_, tier) =>
+    installClaudeLoadout(app.getPath('home'), tier, {
+      installedAt: new Date().toISOString(),
+    })
+  )
+
+  ipcMain.handle('claude-loadout-uninstall', async () =>
+    uninstallClaudeLoadout(app.getPath('home'))
+  )
+
+  ipcMain.handle('claude-loadout-check-deps', async (_, tier) => {
+    const paths = resolveClaudePaths(app.getPath('home'))
+    const manifest = await readClaudeManifest(paths.hooksDir)
+    return checkClaudeLoadoutDeps(manifest, tier, paths.hooksDir)
+  })
 
   ipcMain.handle('terminal-spawn', async (event, options) =>
     ptyManager.spawn(event.sender, options)

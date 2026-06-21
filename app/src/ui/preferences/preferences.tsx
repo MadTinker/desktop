@@ -42,6 +42,7 @@ import {
 import { Prompts } from './prompts'
 import { Repository } from '../../models/repository'
 import { AutomationHooksPreferences } from './automation-hooks'
+import { ClaudeCodePreferences } from './claude-code'
 import { AIServicesPreferences } from './ai-services'
 import { Keybindings } from './keybindings'
 import { MqttPreferences } from './mqtt'
@@ -448,6 +449,10 @@ export class Preferences extends React.Component<
               <Octicon className="icon" symbol={octicons.gear} />
               Advanced
             </span>
+            <span id={this.getTabId(PreferencesTab.ClaudeCode)}>
+              <Octicon className="icon" symbol={octicons.rocket} />
+              Claude Code
+            </span>
           </TabBar>
 
           {this.renderActiveTab()}
@@ -492,6 +497,9 @@ export class Preferences extends React.Component<
         break
       case PreferencesTab.Advanced:
         suffix = 'advanced'
+        break
+      case PreferencesTab.ClaudeCode:
+        suffix = 'claude-code'
         break
       default:
         return assertNever(tab, `Unknown tab type: ${tab}`)
@@ -786,6 +794,9 @@ export class Preferences extends React.Component<
         )
         break
       }
+      case PreferencesTab.ClaudeCode:
+        View = <ClaudeCodePreferences />
+        break
       default:
         return assertNever(index, `Unknown tab index: ${index}`)
     }
@@ -1124,7 +1135,9 @@ export class Preferences extends React.Component<
         dispatcher.setShowReflogTab(this.state.showReflogTab)
       }
 
-      if (this.props.terminalOpenOnStartup !== this.state.terminalOpenOnStartup) {
+      if (
+        this.props.terminalOpenOnStartup !== this.state.terminalOpenOnStartup
+      ) {
         dispatcher.setTerminalOpenOnStartup(this.state.terminalOpenOnStartup)
       }
 

@@ -10,4 +10,5 @@ export enum PreferencesTab {
   AutomationHooks,
   Keybindings,
   Advanced,
+  ClaudeCode,
 }

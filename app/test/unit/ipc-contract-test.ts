@@ -117,6 +117,10 @@ describe('IPC channel contract', () => {
     'automation-hooks-validate',
     'automation-hooks-execute',
     'terminal-spawn',
+    'claude-loadout-status',
+    'claude-loadout-install',
+    'claude-loadout-uninstall',
+    'claude-loadout-check-deps',
   ] as const
 
   describe('RequestChannels', () => {

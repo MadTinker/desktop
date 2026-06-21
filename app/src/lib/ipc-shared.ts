@@ -31,6 +31,12 @@ import type {
   HookExecuteResult,
   RemoteHook,
 } from '../main-process/automation-hooks-sync'
+import type {
+  ClaudeLoadoutResult,
+  ClaudeLoadoutStatus,
+  ClaudeLoadoutTier,
+  ClaudeDepStatus,
+} from './claude-hooks/types'
 
 export interface ITerminalSpawnOptions {
   readonly cwd: string
@@ -191,4 +197,12 @@ export type RequestResponseChannels = {
     env?: Record<string, string>
   ) => Promise<HookExecuteResult>
   'terminal-spawn': (options: ITerminalSpawnOptions) => Promise<string>
+  'claude-loadout-status': () => Promise<ClaudeLoadoutStatus>
+  'claude-loadout-install': (
+    tier: ClaudeLoadoutTier
+  ) => Promise<ClaudeLoadoutResult>
+  'claude-loadout-uninstall': () => Promise<ClaudeLoadoutResult>
+  'claude-loadout-check-deps': (
+    tier: ClaudeLoadoutTier
+  ) => Promise<ReadonlyArray<ClaudeDepStatus>>
 }
