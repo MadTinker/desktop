@@ -534,12 +534,19 @@ export class RepositoriesList extends React.Component<
     this.props.onSelectionChanged(item.repository)
   }
 
-  /** Add an un-added declared submodule to the app and switch to it. */
+  /** Add an un-added declared submodule without switching to it. */
   private onAddSubmodule = async (ghost: IGhostSubmodule) => {
     const added = await this.props.dispatcher.addRepositories([ghost.path])
     const repo = added[0]
-    if (repo !== undefined) {
-      this.props.onSelectionChanged(repo)
+    if (repo === undefined) {
+      return
+    }
+
+    // Inherit every custom group the parent repo belongs to.
+    for (const group of this.props.customRepositoryGroups) {
+      if (group.repositoryIds.includes(ghost.parentRepoId)) {
+        this.props.dispatcher.addRepositoryToGroup(repo.id, group.id)
+      }
     }
   }
 
@@ -756,10 +763,32 @@ export class RepositoriesList extends React.Component<
 
   private onAddToGroup = (repository: Repositoryish, groupId: string) => {
     this.props.dispatcher.addRepositoryToGroup(repository.id, groupId)
+
+    // Propagate group membership to any already-added submodules of this repo.
+    const submodules = this.state.submoduleMap.get(repository.id)
+    if (submodules !== undefined) {
+      const subPaths = new Set(submodules.map(s => s.path))
+      for (const repo of this.props.repositories) {
+        if (subPaths.has(repo.path)) {
+          this.props.dispatcher.addRepositoryToGroup(repo.id, groupId)
+        }
+      }
+    }
   }
 
   private onRemoveFromGroup = (repository: Repositoryish, groupId: string) => {
     this.props.dispatcher.removeRepositoryFromGroup(repository.id, groupId)
+
+    // Propagate group removal to any already-added submodules of this repo.
+    const submodules = this.state.submoduleMap.get(repository.id)
+    if (submodules !== undefined) {
+      const subPaths = new Set(submodules.map(s => s.path))
+      for (const repo of this.props.repositories) {
+        if (subPaths.has(repo.path)) {
+          this.props.dispatcher.removeRepositoryFromGroup(repo.id, groupId)
+        }
+      }
+    }
   }
 
   private onRepoDragStart = (
