@@ -97,7 +97,10 @@ export class OmnispindleTodos extends React.Component<
   }
 
   private onToggle = () => {
-    this.setState(prev => ({ expanded: !prev.expanded }))
+    this.setState(prev => ({
+      expanded: !prev.expanded,
+      showDetailPanel: prev.expanded ? false : prev.showDetailPanel,
+    }))
   }
 
   private onRefresh = (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -427,7 +430,7 @@ export class OmnispindleTodos extends React.Component<
           </p>
         )}
 
-        {showDetailPanel && this.renderDetailPanel(selectedTodo, lookupId, lookupLoading, lookupError)}
+        {expanded && showDetailPanel && this.renderDetailPanel(selectedTodo, lookupId, lookupLoading, lookupError)}
       </div>
     )
   }
