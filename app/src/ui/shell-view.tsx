@@ -17,6 +17,7 @@ interface IShellViewProps {
   readonly fontSize?: number
   readonly cursorBlink?: boolean
   readonly scrollback?: number
+  readonly initialCommand?: string
 }
 
 interface IShellViewState {
@@ -177,6 +178,10 @@ export class ShellView extends React.Component<
         }) ?? null
 
       ipcRenderer.send('terminal-resize', id, cols, rows)
+
+      if (this.props.initialCommand) {
+        ipcRenderer.send('terminal-input', id, this.props.initialCommand + '\r')
+      }
     } catch (error) {
       if (this.unmounted) {
         return

@@ -183,3 +183,125 @@
     }
   }
 }
+
+.terminal-tabs {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+
+  &-bar {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 0 var(--spacing-half);
+    background: var(--toolbar-background-color);
+    border-bottom: 1px solid var(--box-border-color);
+    flex-shrink: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
+
+  &-tab {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px var(--spacing-half);
+    cursor: pointer;
+    border-radius: var(--button-border-radius) var(--button-border-radius) 0 0;
+    color: var(--text-secondary-color);
+    font-size: 12px;
+    white-space: nowrap;
+    border-bottom: 2px solid transparent;
+
+    &:hover {
+      color: var(--text-color);
+      background: var(--button-hover-background);
+    }
+
+    &.is-active {
+      color: var(--text-color);
+      border-bottom-color: var(--focus-color);
+    }
+
+    &-label {
+      max-width: 120px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    &-close {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 16px;
+      height: 16px;
+      padding: 0;
+      background: transparent;
+      border: none;
+      border-radius: 50%;
+      color: var(--text-secondary-color);
+      cursor: pointer;
+      font-size: 14px;
+      line-height: 1;
+      opacity: 0;
+
+      .terminal-tabs-tab:hover & {
+        opacity: 1;
+      }
+
+      &:hover {
+        background: var(--button-hover-background);
+        color: var(--text-color);
+      }
+    }
+  }
+
+  &-claude-btn {
+    margin-left: auto;
+    padding: 3px var(--spacing-half);
+    background: transparent;
+    border: 1px solid var(--focus-color);
+    border-radius: var(--button-border-radius);
+    color: var(--focus-color);
+    cursor: pointer;
+    font-size: 11px;
+    white-space: nowrap;
+
+    &:hover {
+      background: var(--focus-color);
+      color: var(--background-color);
+    }
+  }
+
+  &-add-btn {
+    padding: 3px 8px;
+    background: transparent;
+    border: none;
+    color: var(--text-secondary-color);
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+
+    &:hover {
+      color: var(--text-color);
+    }
+  }
+
+  &-content {
+    flex: 1 1 auto;
+    min-height: 0;
+    position: relative;
+  }
+
+  &-pane {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+  }
+}

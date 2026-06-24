@@ -42,7 +42,7 @@ import { PullRequestSuggestedNextAction } from '../models/pull-request'
 import { clamp } from '../lib/clamp'
 import { Emoji } from '../lib/emoji'
 import { PopupType } from '../models/popup'
-import { ShellView } from './shell-view'
+import { TerminalTabs } from './terminal-tabs'
 import { Octicon } from './octicons'
 import * as octicons from './octicons/octicons.generated'
 
@@ -806,7 +806,7 @@ export class RepositoryView extends React.Component<
             <Octicon symbol={octicons.x} />
           </button>
         </div>
-        <ShellView
+        <TerminalTabs
           cwd={this.props.repository.path}
           fontSize={this.props.terminalFontSize}
           cursorBlink={this.props.terminalCursorBlink}
