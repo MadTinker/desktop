@@ -18,7 +18,7 @@ export class PtyManager {
     options: ITerminalSpawnOptions
   ): string {
     const id = String(this.nextTerminalID++)
-    const ptyProcess = pty.spawn(getShell(options.shell), [], {
+    const ptyProcess = pty.spawn(getShell(options.shell), getShellArgs(), {
       name: 'xterm-256color',
       cols: options.cols,
       rows: options.rows,
@@ -117,6 +117,11 @@ function getShell(shell?: string): string {
   }
 
   return process.env.SHELL || '/bin/bash'
+}
+
+function getShellArgs(): string[] {
+  // Login shell on macOS/Linux loads .zshrc/.bash_profile etc.
+  return __WIN32__ ? [] : ['-l']
 }
 
 function createEnvironment(cwd: string): NodeJS.ProcessEnv {

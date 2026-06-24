@@ -136,4 +136,50 @@
     border: 1px solid var(--form-error-border-color);
     border-radius: var(--button-border-radius);
   }
+
+  &-search {
+    position: absolute;
+    top: var(--spacing-half);
+    right: var(--spacing);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-half);
+    padding: var(--spacing-half) var(--spacing);
+    background: var(--background-color);
+    border: 1px solid var(--box-border-color);
+    border-radius: var(--button-border-radius);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    z-index: 10;
+
+    &-input {
+      width: 200px;
+      padding: 2px var(--spacing-half);
+      background: var(--input-background-color);
+      color: var(--text-color);
+      border: 1px solid var(--input-border-color);
+      border-radius: var(--button-border-radius);
+      font-size: 12px;
+
+      &:focus {
+        outline: none;
+        border-color: var(--focus-color);
+      }
+    }
+
+    &-nav,
+    &-close {
+      padding: 2px 6px;
+      background: transparent;
+      border: 1px solid var(--box-border-color);
+      border-radius: var(--button-border-radius);
+      color: var(--text-color);
+      cursor: pointer;
+      font-size: 12px;
+      line-height: 1;
+
+      &:hover {
+        background: var(--button-hover-background);
+      }
+    }
+  }
 }

@@ -5,6 +5,10 @@ import {
   Terminal as XTermTerminal,
 } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
+import { WebglAddon } from '@xterm/addon-webgl'
+import { SearchAddon } from '@xterm/addon-search'
+import { WebLinksAddon } from '@xterm/addon-web-links'
+import { Unicode11Addon } from '@xterm/addon-unicode11'
 import * as ipcRenderer from '../lib/ipc-renderer'
 import { getMonospaceFontFamily } from './get-monospace-font-family'
 
@@ -17,6 +21,8 @@ interface IShellViewProps {
 
 interface IShellViewState {
   readonly error: string | null
+  readonly showSearch: boolean
+  readonly searchTerm: string
 }
 
 const defaultCols = 80
@@ -40,8 +46,10 @@ export class ShellView extends React.Component<
   IShellViewState
 > {
   private readonly terminalRef = React.createRef<HTMLDivElement>()
+  private readonly searchInputRef = React.createRef<HTMLInputElement>()
   private terminal: XTermTerminal | null = null
   private fitAddon: FitAddon | null = null
+  private searchAddon: SearchAddon | null = null
   private terminalID: string | null = null
   private resizeObserver: ResizeObserver | null = null
   private terminalInputDisposable: IDisposable | null = null
@@ -50,21 +58,63 @@ export class ShellView extends React.Component<
 
   public constructor(props: IShellViewProps) {
     super(props)
-    this.state = { error: null }
+    this.state = { error: null, showSearch: false, searchTerm: '' }
   }
 
   public componentDidMount() {
     this.terminal = new XTermTerminal(buildTerminalOptions(this.props))
+
     this.fitAddon = new FitAddon()
     this.terminal.loadAddon(this.fitAddon)
 
+    const searchAddon = new SearchAddon()
+    this.searchAddon = searchAddon
+    this.terminal.loadAddon(searchAddon)
+
+    this.terminal.loadAddon(
+      new WebLinksAddon((_e, uri) => {
+        ipcRenderer.invoke('open-external', uri)
+      })
+    )
+
+    const unicode11Addon = new Unicode11Addon()
+    this.terminal.loadAddon(unicode11Addon)
+
     if (this.terminalRef.current) {
       this.terminal.open(this.terminalRef.current)
+
+      // WebGL renderer — fall back to canvas on context loss or init failure
+      try {
+        const webglAddon = new WebglAddon()
+        webglAddon.onContextLoss(() => webglAddon.dispose())
+        this.terminal.loadAddon(webglAddon)
+      } catch {
+        // canvas renderer continues
+      }
+
+      this.terminal.unicode.activeVersion = '11'
       this.terminal.focus()
       this.fitTerminal()
       this.resizeObserver = new ResizeObserver(this.onResize)
       this.resizeObserver.observe(this.terminalRef.current)
     }
+
+    this.terminal.attachCustomKeyEventHandler(e => {
+      if (e.type !== 'keydown') {
+        return true
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key === 'f') {
+        this.setState({ showSearch: true }, () =>
+          this.searchInputRef.current?.focus()
+        )
+        return false
+      }
+      if (e.key === 'Escape' && this.state.showSearch) {
+        this.closeSearch()
+        return false
+      }
+      return true
+    })
 
     ipcRenderer.on('terminal-data', this.onTerminalData)
     ipcRenderer.on('terminal-exit', this.onTerminalExit)
@@ -94,6 +144,7 @@ export class ShellView extends React.Component<
       this.terminalID = null
     }
 
+    this.searchAddon = null
     this.fitAddon?.dispose()
     this.fitAddon = null
     this.terminal?.dispose()
@@ -181,10 +232,76 @@ export class ShellView extends React.Component<
     }
   }
 
+  private onSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const searchTerm = e.target.value
+    this.setState({ searchTerm })
+    if (searchTerm) {
+      this.searchAddon?.findNext(searchTerm, { incremental: true })
+    }
+  }
+
+  private onSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      if (e.shiftKey) {
+        this.searchAddon?.findPrevious(this.state.searchTerm)
+      } else {
+        this.searchAddon?.findNext(this.state.searchTerm)
+      }
+    } else if (e.key === 'Escape') {
+      this.closeSearch()
+    }
+  }
+
+  private closeSearch = () => {
+    this.setState({ showSearch: false, searchTerm: '' })
+    this.terminal?.focus()
+  }
+
   public render() {
     return (
       <div className="shell-view">
         <div className="shell-view-terminal" ref={this.terminalRef} />
+        {this.state.showSearch && (
+          <div className="shell-view-search">
+            <input
+              ref={this.searchInputRef}
+              type="text"
+              value={this.state.searchTerm}
+              onChange={this.onSearchChange}
+              onKeyDown={this.onSearchKeyDown}
+              placeholder="Find in terminal…"
+              className="shell-view-search-input"
+            />
+            <button
+              type="button"
+              onClick={() =>
+                this.searchAddon?.findPrevious(this.state.searchTerm)
+              }
+              aria-label="Previous result"
+              className="shell-view-search-nav"
+            >
+              ↑
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                this.searchAddon?.findNext(this.state.searchTerm)
+              }
+              aria-label="Next result"
+              className="shell-view-search-nav"
+            >
+              ↓
+            </button>
+            <button
+              type="button"
+              onClick={this.closeSearch}
+              aria-label="Close search"
+              className="shell-view-search-close"
+            >
+              ✕
+            </button>
+          </div>
+        )}
         {this.state.error !== null && (
           <div className="shell-view-error">{this.state.error}</div>
         )}
