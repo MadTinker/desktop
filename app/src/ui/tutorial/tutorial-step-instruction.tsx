@@ -44,8 +44,8 @@ export class TutorialStepInstructions extends React.Component<ITutorialStepInstr
     )
   }
 
-  private onToggle = (e: React.UIEvent<HTMLElement, ToggleEvent>) => {
-    if (e.nativeEvent.newState === 'open') {
+  private onToggle = (e: React.SyntheticEvent<HTMLDetailsElement, Event>) => {
+    if ((e.nativeEvent as ToggleEvent).newState === 'open') {
       this.props.onSummaryClick(this.props.sectionId)
     }
   }
