@@ -1,4 +1,4 @@
-import { sep } from 'path'
+import { join, sep } from 'path'
 import {
   Repository,
   ILocalRepositoryState,
@@ -362,7 +362,11 @@ const applyNesting = (
       continue
     }
     for (const sub of declared) {
-      if (normalisedExisting.has(normalise(sub.path))) {
+      // `git submodule status` yields paths relative to the parent worktree;
+      // resolve to absolute so dedup and "add" both point at the real root
+      // (not the relative path, which resolves against cwd → .git/modules).
+      const absPath = join(repo.path, sub.path)
+      if (normalisedExisting.has(normalise(absPath))) {
         continue // already added → it's a real nested child, skip the ghost
       }
       const ghosts = ghostChildrenOf.get(item.id) ?? []
@@ -378,7 +382,7 @@ const applyNesting = (
         nestingLevel: 0, // assigned during emit
         parentRepoId: repo.id,
         hasChildren: false,
-        ghost: { path: sub.path, name: sub.name, parentRepoId: repo.id },
+        ghost: { path: absPath, name: sub.name, parentRepoId: repo.id },
       })
       ghostChildrenOf.set(item.id, ghosts)
     }

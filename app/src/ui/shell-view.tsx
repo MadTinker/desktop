@@ -31,6 +31,7 @@ const defaultRows = 24
 
 function buildTerminalOptions(props: IShellViewProps): ITerminalOptions {
   return {
+    allowProposedApi: true,
     cursorBlink: props.cursorBlink ?? true,
     fontFamily: getMonospaceFontFamily(),
     fontSize: props.fontSize ?? 12,
