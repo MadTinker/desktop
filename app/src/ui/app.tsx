@@ -581,6 +581,8 @@ export class App extends React.Component<IAppProps, IAppState> {
         return this.openCurrentRepositoryInShell()
       case 'toggle-integrated-terminal':
         return this.toggleIntegratedTerminal()
+      case 'toggle-dotfiles-panel':
+        return this.toggleDotfilesPanel()
       case 'clone-repository':
         return this.showCloneRepo()
       case 'show-about':
@@ -642,6 +644,10 @@ export class App extends React.Component<IAppProps, IAppState> {
 
   private toggleIntegratedTerminal() {
     this.repositoryViewRef.current?.toggleIntegratedTerminal()
+  }
+
+  private toggleDotfilesPanel() {
+    this.repositoryViewRef.current?.toggleDotfilesPanel()
   }
 
   /**

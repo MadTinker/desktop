@@ -76,6 +76,11 @@ import {
   resolvePaths as resolveClaudePaths,
 } from '../lib/claude-hooks/installer'
 import { PtyManager } from './pty-manager'
+import {
+  resolveDescriptors,
+  readDotfileById,
+  writeDotfileById,
+} from './dotfiles-store'
 
 app.setAppLogsPath()
 enableSourceMaps()
@@ -768,6 +773,20 @@ app.on('ready', () => {
   )
 
   ipcMain.on('terminal-kill', (_, id: string) => ptyManager.kill(id))
+
+  ipcMain.handle('dotfile-list', async (_, repoPath: string) =>
+    resolveDescriptors(repoPath)
+  )
+
+  ipcMain.handle('dotfile-read', async (_, repoPath: string, id: string) =>
+    readDotfileById(repoPath, id)
+  )
+
+  ipcMain.handle(
+    'dotfile-write',
+    async (_, repoPath: string, id: string, contents: string) =>
+      writeDotfileById(repoPath, id, contents)
+  )
 
   /**
    * An event sent by the renderer asking for a copy of the current

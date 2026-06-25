@@ -218,6 +218,14 @@ export const DefaultActionDefinitions: ReadonlyArray<ActionDefinition> = [
     isMenuAction: true,
   },
   {
+    id: 'toggle-dotfiles-panel',
+    label: 'Toggle Dotfiles Panel',
+    category: 'repository',
+    context: 'repository',
+    defaultBinding: 'CmdOrCtrl+Alt+`',
+    isMenuAction: true,
+  },
+  {
     id: 'open-working-directory',
     label: 'Show in File Manager',
     category: 'repository',

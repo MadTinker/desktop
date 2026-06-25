@@ -305,3 +305,151 @@
     flex-direction: column;
   }
 }
+
+// Terminal | Dotfiles mode switch in the bottom-panel header.
+.bottom-panel-modes {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.bottom-panel-mode-tab {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-half);
+  padding: 3px var(--spacing-half);
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-secondary-color);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+
+  &:hover {
+    color: var(--text-color);
+  }
+
+  &.is-active {
+    color: var(--text-color);
+    border-bottom-color: var(--focus-color);
+  }
+}
+
+// The two stacked panes share the resizable body; only one is visible at a
+// time (display toggle keeps both mounted so neither resets).
+.bottom-panel-pane {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+// Dotfiles editor tabs — structural clone of .terminal-tabs.
+.dotfiles-tabs {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+
+  &.is-loading,
+  &.is-error {
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary-color);
+    padding: var(--spacing);
+  }
+
+  &.is-error {
+    color: var(--form-error-text-color);
+  }
+
+  &-bar {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 0 var(--spacing-half);
+    background: var(--toolbar-background-color);
+    border-bottom: 1px solid var(--box-border-color);
+    flex-shrink: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
+
+  &-tab {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px var(--spacing-half);
+    cursor: pointer;
+    border-radius: var(--button-border-radius) var(--button-border-radius) 0 0;
+    color: var(--text-secondary-color);
+    font-size: 12px;
+    white-space: nowrap;
+    border-bottom: 2px solid transparent;
+
+    &:hover {
+      color: var(--text-color);
+      background: var(--button-hover-background);
+    }
+
+    &.is-active {
+      color: var(--text-color);
+      border-bottom-color: var(--focus-color);
+    }
+
+    &-label {
+      max-width: 160px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    &-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--focus-color);
+      opacity: 0;
+      flex-shrink: 0;
+    }
+
+    &.is-dirty &-dot {
+      opacity: 1;
+    }
+  }
+
+  &-error {
+    flex-shrink: 0;
+    padding: var(--spacing-half) var(--spacing);
+    color: var(--form-error-text-color);
+    background: var(--form-error-background);
+    font-size: var(--font-size-sm);
+  }
+
+  &-content {
+    flex: 1 1 auto;
+    min-height: 0;
+    position: relative;
+  }
+
+  &-pane {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+  }
+}
+
+.code-mirror-editor {
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+
+  .CodeMirror {
+    height: 100%;
+    font-family: var(--font-family-monospace);
+    font-size: var(--font-size-sm);
+  }
+}

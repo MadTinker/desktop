@@ -17,6 +17,7 @@ import { DesktopNotificationPermission } from 'desktop-notifications'
 import { NotificationCallback } from 'desktop-notifications'
 import { DesktopAliveEvent } from './stores/alive-store'
 import { CLIAction } from './cli-action'
+import { IDotfileDescriptor } from './dotfiles'
 import {
   IOmnispindleTodo,
   OmnispindleConnectionStatus,
@@ -197,6 +198,15 @@ export type RequestResponseChannels = {
     env?: Record<string, string>
   ) => Promise<HookExecuteResult>
   'terminal-spawn': (options: ITerminalSpawnOptions) => Promise<string>
+  'dotfile-list': (
+    repoPath: string
+  ) => Promise<ReadonlyArray<IDotfileDescriptor>>
+  'dotfile-read': (repoPath: string, id: string) => Promise<string>
+  'dotfile-write': (
+    repoPath: string,
+    id: string,
+    contents: string
+  ) => Promise<void>
   'claude-loadout-status': () => Promise<ClaudeLoadoutStatus>
   'claude-loadout-install': (
     tier: ClaudeLoadoutTier

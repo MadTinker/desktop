@@ -27,6 +27,7 @@ export type MenuEvent =
   | 'show-repository-settings'
   | 'open-in-shell'
   | 'toggle-integrated-terminal'
+  | 'toggle-dotfiles-panel'
   | 'compare-on-github'
   | 'branch-on-github'
   | 'view-repository-on-github'

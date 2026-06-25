@@ -376,6 +376,18 @@ export function buildDefaultMenu({
       },
       {
         label: __DARWIN__
+          ? 'Toggle Dotfiles Panel'
+          : 'Toggle &dotfiles Panel',
+        id: 'toggle-dotfiles-panel',
+        accelerator: getAccelerator(
+          'toggle-dotfiles-panel',
+          hotkeyBindings,
+          'CmdOrCtrl+Alt+`'
+        ),
+        click: emit('toggle-dotfiles-panel'),
+      },
+      {
+        label: __DARWIN__
           ? 'Show in Finder'
           : __WIN32__
           ? 'Show in E&xplorer'

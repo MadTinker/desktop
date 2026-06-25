@@ -43,6 +43,7 @@ import { clamp } from '../lib/clamp'
 import { Emoji } from '../lib/emoji'
 import { PopupType } from '../models/popup'
 import { TerminalTabs } from './terminal-tabs'
+import { DotfilesTabs } from './dotfiles-tabs'
 import { Octicon } from './octicons'
 import * as octicons from './octicons/octicons.generated'
 
@@ -169,10 +170,13 @@ interface IRepositoryViewProps {
   ) => void
 }
 
+type BottomPanelMode = 'terminal' | 'dotfiles'
+
 interface IRepositoryViewState {
   readonly changesListScrollTop: number
   readonly compareListScrollTop: number
   readonly terminalVisible: boolean
+  readonly bottomPanelMode: BottomPanelMode
 }
 
 const enum Tab {
@@ -205,6 +209,7 @@ export class RepositoryView extends React.Component<
       changesListScrollTop: 0,
       compareListScrollTop: 0,
       terminalVisible: props.terminalOpenOnStartup,
+      bottomPanelMode: 'terminal',
     }
   }
 
@@ -228,6 +233,21 @@ export class RepositoryView extends React.Component<
     this.setState(state => ({
       terminalVisible: !state.terminalVisible,
     }))
+  }
+
+  public toggleDotfilesPanel(): void {
+    this.setState(state => {
+      // Already showing dotfiles -> close the whole panel; otherwise open
+      // the panel (if closed) and switch it to the dotfiles surface.
+      if (state.terminalVisible && state.bottomPanelMode === 'dotfiles') {
+        return { terminalVisible: false, bottomPanelMode: 'dotfiles' }
+      }
+      return { terminalVisible: true, bottomPanelMode: 'dotfiles' }
+    })
+  }
+
+  private setBottomPanelMode = (mode: BottomPanelMode) => {
+    this.setState({ terminalVisible: true, bottomPanelMode: mode })
   }
 
   private onChangesListScrolled = (scrollTop: number) => {
@@ -772,12 +792,13 @@ export class RepositoryView extends React.Component<
     this.props.dispatcher.setTerminalHeight(height)
   }
 
-  private renderTerminalPanel(): JSX.Element | null {
+  private renderBottomPanel(): JSX.Element | null {
     if (!this.state.terminalVisible) {
       return null
     }
 
     const terminalHeight = clamp(this.props.terminalHeight)
+    const mode = this.state.bottomPanelMode
 
     return (
       <VerticalResizable
@@ -787,12 +808,34 @@ export class RepositoryView extends React.Component<
         minimumHeight={this.props.terminalHeight.min}
         onReset={this.handleTerminalHeightReset}
         onResize={this.handleTerminalResize}
-        description="Integrated terminal"
+        description="Integrated terminal and dotfiles editor"
       >
         <div className="repository-terminal-header">
-          <div className="repository-terminal-title">
-            <Octicon symbol={octicons.terminal} />
-            <span>Terminal</span>
+          <div className="bottom-panel-modes" role="tablist">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={mode === 'terminal'}
+              className={`bottom-panel-mode-tab${
+                mode === 'terminal' ? ' is-active' : ''
+              }`}
+              onClick={() => this.setBottomPanelMode('terminal')}
+            >
+              <Octicon symbol={octicons.terminal} />
+              <span>Terminal</span>
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={mode === 'dotfiles'}
+              className={`bottom-panel-mode-tab${
+                mode === 'dotfiles' ? ' is-active' : ''
+              }`}
+              onClick={() => this.setBottomPanelMode('dotfiles')}
+            >
+              <Octicon symbol={octicons.gear} />
+              <span>Dotfiles</span>
+            </button>
           </div>
           <div className="repository-terminal-path">
             {this.props.repository.path}
@@ -801,17 +844,31 @@ export class RepositoryView extends React.Component<
             type="button"
             className="repository-terminal-close"
             onClick={this.closeIntegratedTerminal}
-            aria-label="Close terminal"
+            aria-label="Close panel"
           >
             <Octicon symbol={octicons.x} />
           </button>
         </div>
-        <TerminalTabs
-          cwd={this.props.repository.path}
-          fontSize={this.props.terminalFontSize}
-          cursorBlink={this.props.terminalCursorBlink}
-          scrollback={this.props.terminalScrollback}
-        />
+        <div
+          className="bottom-panel-pane"
+          style={{ display: mode === 'terminal' ? 'flex' : 'none' }}
+        >
+          <TerminalTabs
+            cwd={this.props.repository.path}
+            fontSize={this.props.terminalFontSize}
+            cursorBlink={this.props.terminalCursorBlink}
+            scrollback={this.props.terminalScrollback}
+          />
+        </div>
+        <div
+          className="bottom-panel-pane"
+          style={{ display: mode === 'dotfiles' ? 'flex' : 'none' }}
+        >
+          <DotfilesTabs
+            key={this.props.repository.path}
+            repositoryPath={this.props.repository.path}
+          />
+        </div>
       </VerticalResizable>
     )
   }
@@ -820,7 +877,7 @@ export class RepositoryView extends React.Component<
     return (
       <div id="repository-main">
         <div id="repository-content">{this.renderContent()}</div>
-        {this.renderTerminalPanel()}
+        {this.renderBottomPanel()}
       </div>
     )
   }

@@ -447,3 +447,23 @@ body.theme-dark {
 .CodeMirror-cursor {
   border-left-color: currentColor;
 }
+
+// Dotfiles editor — the vendored codemirror.css ships a light theme, so map
+// the editor surface onto the dark panel variables.
+.code-mirror-editor .CodeMirror {
+  background: var(--box-background-color);
+  color: var(--text-color);
+
+  .CodeMirror-gutters {
+    background: var(--box-alt-background-color);
+    border-right-color: var(--box-border-color);
+  }
+
+  .CodeMirror-linenumber {
+    color: var(--text-secondary-color);
+  }
+
+  .CodeMirror-selected {
+    background: var(--box-selected-background-color);
+  }
+}
