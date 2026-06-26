@@ -4186,6 +4186,29 @@ export class AppStore extends TypedBaseStore<IAppState> {
       return
     }
 
+    // Self-heal repositories whose stored `path` points at a submodule's git
+    // dir (e.g. `…/.git/modules/<name>`) rather than its working tree — a
+    // shape some older builds persisted. Such a path makes every on-disk file
+    // resolve under `.git` and read as "does not exist on disk", so resolve
+    // the real working tree and correct the record. A genuine working tree
+    // never contains a `.git` path segment.
+    if (repository.path.split(Path.sep).includes('.git')) {
+      const type = await getRepositoryType(repository.path)
+      if (
+        type.kind === 'regular' &&
+        type.topLevelWorkingDirectory !== repository.path
+      ) {
+        log.info(
+          `[AppStore] healing repository path ${repository.path} -> ${type.topLevelWorkingDirectory}`
+        )
+        repository = await this.repositoriesStore.updateRepositoryPath(
+          repository,
+          type.topLevelWorkingDirectory,
+          type.gitDir
+        )
+      }
+    }
+
     // Populate gitDir for repositories that don't have it yet
     if (repository.gitDir === undefined) {
       const type = await getRepositoryType(repository.path)
