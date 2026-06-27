@@ -2598,6 +2598,12 @@ export class AppStore extends TypedBaseStore<IAppState> {
 
     this.accounts = accounts
     this.repositories = repositories
+
+    // Correct any repositories persisted with a git-dir path (a submodule's
+    // `.git/modules/<name>`) up front, so the whole list points at real
+    // working trees without waiting for each repo to be selected.
+    this.healStoredRepositoryPaths()
+
     this.favoriteRepositories =
       getObject<number[]>(FavoriteRepositoriesKey) ?? []
     this.customRepositoryGroups =
@@ -4147,6 +4153,62 @@ export class AppStore extends TypedBaseStore<IAppState> {
     }
   }
 
+  /**
+   * Self-heal a repository whose stored `path` accidentally points at a git
+   * dir (e.g. a submodule's `…/.git/modules/<name>`) rather than its working
+   * tree — a shape some older builds persisted. Such a path makes every
+   * on-disk file resolve under `.git` and read as "does not exist on disk".
+   *
+   * A genuine working tree never contains a `.git` path segment, so that's the
+   * cheap trigger; `getRepositoryType` then resolves the real working tree
+   * (cdup honors the submodule's `core.worktree`). Returns the corrected
+   * repository, or the original when no fix is needed.
+   */
+  private async healRepositoryPath(
+    repository: Repository
+  ): Promise<Repository> {
+    if (!repository.path.split(Path.sep).includes('.git')) {
+      return repository
+    }
+
+    const type = await getRepositoryType(repository.path)
+    if (
+      type.kind === 'regular' &&
+      type.topLevelWorkingDirectory !== repository.path
+    ) {
+      log.info(
+        `[AppStore] healing repository path ${repository.path} -> ${type.topLevelWorkingDirectory}`
+      )
+      return this.repositoriesStore.updateRepositoryPath(
+        repository,
+        type.topLevelWorkingDirectory,
+        type.gitDir
+      )
+    }
+
+    return repository
+  }
+
+  /**
+   * Sweep every stored repository at startup and heal any whose `path` points
+   * at a git dir, so corrupt records correct themselves on launch instead of
+   * only when the affected repository is selected. Runs in the background;
+   * `updateRepositoryPath` emits updated repositories as each is fixed.
+   */
+  private async healStoredRepositoryPaths(): Promise<void> {
+    const candidates = this.repositories.filter(r =>
+      r.path.split(Path.sep).includes('.git')
+    )
+
+    for (const repository of candidates) {
+      try {
+        await this.healRepositoryPath(repository)
+      } catch (e) {
+        log.error(`[AppStore] failed to heal repository ${repository.path}`, e)
+      }
+    }
+  }
+
   private async recoverMissingRepository(
     repository: Repository
   ): Promise<Repository> {
@@ -4186,28 +4248,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
       return
     }
 
-    // Self-heal repositories whose stored `path` points at a submodule's git
-    // dir (e.g. `…/.git/modules/<name>`) rather than its working tree — a
-    // shape some older builds persisted. Such a path makes every on-disk file
-    // resolve under `.git` and read as "does not exist on disk", so resolve
-    // the real working tree and correct the record. A genuine working tree
-    // never contains a `.git` path segment.
-    if (repository.path.split(Path.sep).includes('.git')) {
-      const type = await getRepositoryType(repository.path)
-      if (
-        type.kind === 'regular' &&
-        type.topLevelWorkingDirectory !== repository.path
-      ) {
-        log.info(
-          `[AppStore] healing repository path ${repository.path} -> ${type.topLevelWorkingDirectory}`
-        )
-        repository = await this.repositoriesStore.updateRepositoryPath(
-          repository,
-          type.topLevelWorkingDirectory,
-          type.gitDir
-        )
-      }
-    }
+    repository = await this.healRepositoryPath(repository)
 
     // Populate gitDir for repositories that don't have it yet
     if (repository.gitDir === undefined) {
