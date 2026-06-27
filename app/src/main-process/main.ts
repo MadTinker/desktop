@@ -382,7 +382,26 @@ async function handleCommandLineArguments(argv: string[]) {
     return
   }
 
-  if (typeof args['cli-open'] === 'string') {
+  const group =
+    typeof args['cli-group'] === 'string' && args['cli-group'].length > 0
+      ? args['cli-group']
+      : undefined
+
+  if (typeof args['cli-add'] === 'string' && group !== undefined) {
+    handleCLIAction({ kind: 'add-to-group', path: args['cli-add'], group })
+  } else if (
+    typeof args['cli-submodule'] === 'string' &&
+    typeof args['cli-submodule-path'] === 'string' &&
+    (args['cli-submodule'] === 'init' ||
+      args['cli-submodule'] === 'pull' ||
+      args['cli-submodule'] === 'push')
+  ) {
+    handleCLIAction({
+      kind: 'submodule-op',
+      path: args['cli-submodule-path'],
+      op: args['cli-submodule'],
+    })
+  } else if (typeof args['cli-open'] === 'string') {
     handleCLIAction({ kind: 'open-repository', path: args['cli-open'] })
   } else if (typeof args['cli-clone'] === 'string') {
     handleCLIAction({
@@ -390,6 +409,7 @@ async function handleCommandLineArguments(argv: string[]) {
       url: args['cli-clone'],
       branch:
         typeof args['cli-branch'] === 'string' ? args['cli-branch'] : undefined,
+      group,
     })
   }
 

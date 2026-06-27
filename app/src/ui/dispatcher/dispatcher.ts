@@ -2083,12 +2083,36 @@ export class Dispatcher {
 
   public async dispatchCLIAction(action: CLIAction) {
     if (action.kind === 'clone-url') {
-      const { branch, url } = action
+      const { branch, url, group } = action
 
-      if (branch) {
-        await this.openBranchNameFromUrl(url, branch)
-      } else {
-        await this.openOrCloneRepository(url)
+      const repository = branch
+        ? await this.openBranchNameFromUrl(url, branch)
+        : await this.openOrCloneRepository(url)
+
+      if (group && repository instanceof Repository) {
+        this.fileRepositoryInGroup(repository, group)
+      }
+    } else if (action.kind === 'add-to-group') {
+      const repository = await this.resolveOrAddRepository(action.path)
+      if (repository) {
+        this.fileRepositoryInGroup(repository, action.group)
+        await this.selectRepository(repository)
+      }
+    } else if (action.kind === 'submodule-op') {
+      const repository = await this.resolveOrAddRepository(action.path)
+      if (repository instanceof Repository) {
+        await this.selectRepository(repository)
+        switch (action.op) {
+          case 'init':
+            await this.initAllSubmodules(repository)
+            break
+          case 'pull':
+            await this.pullAllSubmodules(repository)
+            break
+          case 'push':
+            await this.pushAllSubmodules(repository)
+            break
+        }
       }
     } else if (action.kind === 'open-repository') {
       // user may accidentally provide a folder within the repository
@@ -2112,6 +2136,50 @@ export class Dispatcher {
         await this.showPopup({ type: PopupType.AddRepository, path })
       }
     }
+  }
+
+  /**
+   * Resolve a filesystem path to a tracked Repository, adding it to the list
+   * if it isn't already there. Returns null if the path isn't a git repo.
+   * Used by CLI actions that need the repo's id (grouping, submodule ops).
+   */
+  private async resolveOrAddRepository(
+    rawPath: string
+  ): Promise<Repository | null> {
+    const path = await getRepositoryType(rawPath)
+      .then(t => (t.kind === 'regular' ? t.topLevelWorkingDirectory : rawPath))
+      .catch(e => {
+        log.error('Could not determine repository type', e)
+        return rawPath
+      })
+
+    const existing = matchExistingRepository(
+      this.appStore.getState().repositories,
+      path
+    )
+    if (existing instanceof Repository) {
+      return existing
+    }
+
+    const added = await this.addRepositories([path])
+    return added.at(0) ?? null
+  }
+
+  /**
+   * Drop a repository into a custom group by name, creating the group if no
+   * group with that name exists yet. The CLI's "group via tag" entry point.
+   */
+  private fileRepositoryInGroup(repository: Repository, groupName: string) {
+    const name = groupName.trim()
+    if (name.length === 0) {
+      return
+    }
+
+    const existing = this.appStore
+      .getState()
+      .customRepositoryGroups.find(g => g.name === name)
+    const groupId = existing?.id ?? this.createCustomGroup(name)
+    this.addRepositoryToGroup(repository.id, groupId)
   }
 
   public async dispatchURLAction(action: URLActionType): Promise<void> {
