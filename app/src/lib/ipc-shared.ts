@@ -174,6 +174,12 @@ export type RequestResponseChannels = {
   'should-use-dark-colors': () => Promise<boolean>
   'save-guid': (guid: string) => Promise<void>
   'get-guid': () => Promise<string>
+  /**
+   * Write the textual result of a CLI command to a file so the (detached)
+   * madhub CLI process can poll for it and print it to the terminal. Written
+   * atomically (temp file + rename) so the CLI never reads a partial payload.
+   */
+  'cli-write-result': (path: string, content: string) => Promise<void>
   'show-notification': (
     title: string,
     body: string,

@@ -50,7 +50,7 @@ import {
 } from 'desktop-notifications'
 import { initializeDesktopNotifications } from './notifications'
 import parseCommandLineArgs from 'minimist'
-import { CLIAction } from '../lib/cli-action'
+import { CLIAction, GroupCLIOp, SubmoduleCLIOp } from '../lib/cli-action'
 import { OmnispindleClient } from './omnispindle-client'
 import { send } from './ipc-webcontents'
 import {
@@ -386,21 +386,48 @@ async function handleCommandLineArguments(argv: string[]) {
     typeof args['cli-group'] === 'string' && args['cli-group'].length > 0
       ? args['cli-group']
       : undefined
+  const repo = typeof args['cli-repo'] === 'string' ? args['cli-repo'] : undefined
+  const resultPath =
+    typeof args['cli-result'] === 'string' ? args['cli-result'] : undefined
+  const submoduleOps = ['init', 'pull', 'push', 'sync', 'rollback']
+  const groupOps = ['ls', 'create', 'rm']
 
   if (typeof args['cli-add'] === 'string' && group !== undefined) {
     handleCLIAction({ kind: 'add-to-group', path: args['cli-add'], group })
   } else if (
     typeof args['cli-submodule'] === 'string' &&
-    typeof args['cli-submodule-path'] === 'string' &&
-    (args['cli-submodule'] === 'init' ||
-      args['cli-submodule'] === 'pull' ||
-      args['cli-submodule'] === 'push')
+    repo !== undefined &&
+    submoduleOps.includes(args['cli-submodule'])
   ) {
     handleCLIAction({
       kind: 'submodule-op',
-      path: args['cli-submodule-path'],
-      op: args['cli-submodule'],
+      path: repo,
+      op: args['cli-submodule'] as SubmoduleCLIOp,
+      submodulePath:
+        typeof args['cli-sub-path'] === 'string'
+          ? args['cli-sub-path']
+          : undefined,
     })
+  } else if (typeof args['cli-foreach'] === 'string' && repo !== undefined) {
+    handleCLIAction({
+      kind: 'foreach',
+      path: repo,
+      command: args['cli-foreach'],
+      recursive: args['cli-recursive'] === true,
+      resultPath,
+    })
+  } else if (
+    typeof args['cli-group-op'] === 'string' &&
+    groupOps.includes(args['cli-group-op'])
+  ) {
+    handleCLIAction({
+      kind: 'group-op',
+      op: args['cli-group-op'] as GroupCLIOp,
+      name: group,
+      resultPath,
+    })
+  } else if (args['cli-favorite'] === true && repo !== undefined) {
+    handleCLIAction({ kind: 'favorite', path: repo })
   } else if (typeof args['cli-open'] === 'string') {
     handleCLIAction({ kind: 'open-repository', path: args['cli-open'] })
   } else if (typeof args['cli-clone'] === 'string') {
@@ -964,6 +991,14 @@ app.on('ready', () => {
   ipcMain.handle('get-guid', () => getMainGUID())
 
   ipcMain.handle('save-guid', (_, guid) => saveGUIDFile(guid))
+
+  ipcMain.handle('cli-write-result', async (_, path, content) => {
+    // Write to a sibling temp file then rename so the polling CLI process
+    // never observes a half-written payload.
+    const tmp = `${path}.part`
+    await Fs.promises.writeFile(tmp, content, 'utf8')
+    await Fs.promises.rename(tmp, path)
+  })
 
   ipcMain.handle('show-notification', async (_, title, body, userInfo) =>
     showNotification(title, body, userInfo)

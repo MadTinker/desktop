@@ -106,6 +106,7 @@ describe('IPC channel contract', () => {
     'should-use-dark-colors',
     'save-guid',
     'get-guid',
+    'cli-write-result',
     'show-notification',
     'get-notifications-permission',
     'request-notifications-permission',

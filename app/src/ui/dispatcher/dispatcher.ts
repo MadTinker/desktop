@@ -100,6 +100,7 @@ import {
   executeMenuItem,
   moveToApplicationsFolder,
   isWindowFocused,
+  writeCLIResult,
 } from '../main-process-proxy'
 import {
   CommitStatusStore,
@@ -130,7 +131,7 @@ import { sendNonFatalException } from '../../lib/helpers/non-fatal-exception'
 import { SignInResult } from '../../lib/stores/sign-in-store'
 import { ICustomIntegration } from '../../lib/custom-integration'
 import { isAbsolute } from 'path'
-import { CLIAction } from '../../lib/cli-action'
+import { CLIAction, GroupCLIOp } from '../../lib/cli-action'
 import { BypassReasonType } from '../secret-scanning/bypass-push-protection-dialog'
 import {
   ICopilotConflictResolutionResponse,
@@ -2102,17 +2103,65 @@ export class Dispatcher {
       const repository = await this.resolveOrAddRepository(action.path)
       if (repository instanceof Repository) {
         await this.selectRepository(repository)
+        const sub = action.submodulePath
         switch (action.op) {
           case 'init':
-            await this.initAllSubmodules(repository)
+            await (sub
+              ? this.initSubmodule(repository, sub)
+              : this.initAllSubmodules(repository))
             break
           case 'pull':
-            await this.pullAllSubmodules(repository)
+            await (sub
+              ? this.pullSubmodule(repository, sub)
+              : this.pullAllSubmodules(repository))
             break
           case 'push':
-            await this.pushAllSubmodules(repository)
+            await (sub
+              ? this.pushSubmodule(repository, sub)
+              : this.pushAllSubmodules(repository))
+            break
+          case 'sync':
+            if (sub) {
+              await this.syncSubmodule(repository, sub)
+            }
+            break
+          case 'rollback':
+            if (sub) {
+              await this.rollbackSubmodule(repository, sub)
+            }
             break
         }
+      }
+    } else if (action.kind === 'foreach') {
+      const repository = await this.resolveOrAddRepository(action.path)
+      let output = ''
+      if (repository instanceof Repository) {
+        await this.selectRepository(repository)
+        try {
+          output = await this.foreachSubmodule(
+            repository,
+            action.command,
+            action.recursive
+          )
+        } catch (e) {
+          output = `madhub foreach failed: ${e}`
+        }
+      } else {
+        output = `madhub foreach: ${action.path} is not a tracked repository`
+      }
+      if (action.resultPath) {
+        await writeCLIResult(action.resultPath, output)
+      }
+    } else if (action.kind === 'group-op') {
+      const output = this.runGroupCLIOp(action.op, action.name)
+      if (action.resultPath) {
+        await writeCLIResult(action.resultPath, output)
+      }
+    } else if (action.kind === 'favorite') {
+      const repository = await this.resolveOrAddRepository(action.path)
+      if (repository instanceof Repository) {
+        this.toggleFavoriteRepository(repository.id)
+        await this.selectRepository(repository)
       }
     } else if (action.kind === 'open-repository') {
       // user may accidentally provide a folder within the repository
@@ -2180,6 +2229,53 @@ export class Dispatcher {
       .customRepositoryGroups.find(g => g.name === name)
     const groupId = existing?.id ?? this.createCustomGroup(name)
     this.addRepositoryToGroup(repository.id, groupId)
+  }
+
+  /**
+   * Run a CLI group operation and return a line of text for the CLI to print.
+   * `ls` returns a listing; `create`/`rm` mutate and return a status line.
+   */
+  private runGroupCLIOp(op: GroupCLIOp, name?: string): string {
+    const { customRepositoryGroups, repositories } = this.appStore.getState()
+
+    if (op === 'create') {
+      if (!name) {
+        return 'madhub group create: a name is required'
+      }
+      if (customRepositoryGroups.some(g => g.name === name)) {
+        return `Group "${name}" already exists.`
+      }
+      this.createCustomGroup(name)
+      return `Created group "${name}".`
+    }
+
+    if (op === 'rm') {
+      if (!name) {
+        return 'madhub group rm: a name is required'
+      }
+      const group = customRepositoryGroups.find(g => g.name === name)
+      if (!group) {
+        return `No group named "${name}".`
+      }
+      this.deleteCustomGroup(group.id)
+      return `Removed group "${name}".`
+    }
+
+    // op === 'ls'
+    if (customRepositoryGroups.length === 0) {
+      return 'No custom groups yet.'
+    }
+    const nameById = new Map(repositories.map(r => [r.id, r.name]))
+    return customRepositoryGroups
+      .map(g => {
+        const members = g.repositoryIds.map(id => nameById.get(id) ?? `#${id}`)
+        const body =
+          members.length > 0
+            ? members.map(m => `  - ${m}`).join('\n')
+            : '  (empty)'
+        return `${g.name} (${members.length})\n${body}`
+      })
+      .join('\n')
   }
 
   public async dispatchURLAction(action: URLActionType): Promise<void> {

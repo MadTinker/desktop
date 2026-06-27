@@ -385,6 +385,9 @@ export const showOpenDialog = invokeProxy('show-open-dialog', 1)
 export const saveGUID = invokeProxy('save-guid', 1)
 export const getGUID = invokeProxy('get-guid', 0)
 
+/** Write a CLI command's textual result to a file for the madhub CLI to read */
+export const writeCLIResult = invokeProxy('cli-write-result', 2)
+
 /** Tell the main process to show a notification */
 export const showNotification = invokeProxy('show-notification', 3)
 
