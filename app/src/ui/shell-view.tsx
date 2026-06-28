@@ -52,6 +52,7 @@ export class ShellView extends React.Component<
   private terminal: XTermTerminal | null = null
   private fitAddon: FitAddon | null = null
   private searchAddon: SearchAddon | null = null
+  private webglAddon: WebglAddon | null = null
   private terminalID: string | null = null
   private resizeObserver: ResizeObserver | null = null
   private terminalInputDisposable: IDisposable | null = null
@@ -88,8 +89,9 @@ export class ShellView extends React.Component<
       // WebGL renderer — fall back to canvas on context loss or init failure
       try {
         const webglAddon = new WebglAddon()
-        webglAddon.onContextLoss(() => webglAddon.dispose())
+        webglAddon.onContextLoss(() => this.disposeWebglAddon())
         this.terminal.loadAddon(webglAddon)
+        this.webglAddon = webglAddon
       } catch {
         // canvas renderer continues
       }
@@ -149,8 +151,30 @@ export class ShellView extends React.Component<
     this.searchAddon = null
     this.fitAddon?.dispose()
     this.fitAddon = null
-    this.terminal?.dispose()
+    // Dispose WebGL ourselves first: letting terminal.dispose() cascade into
+    // it can throw if the GL context is already gone (reading `_isDisposed`
+    // of undefined), aborting teardown and leaking the terminal.
+    this.disposeWebglAddon()
+    try {
+      this.terminal?.dispose()
+    } catch (e) {
+      log.warn('Error disposing terminal', e)
+    }
     this.terminal = null
+  }
+
+  /** Tear down the WebGL addon at most once, swallowing teardown errors. */
+  private disposeWebglAddon() {
+    const addon = this.webglAddon
+    if (addon === null) {
+      return
+    }
+    this.webglAddon = null
+    try {
+      addon.dispose()
+    } catch (e) {
+      log.warn('Error disposing WebGL addon', e)
+    }
   }
 
   private async spawn() {
