@@ -59,6 +59,7 @@ import { DeleteBranch, DeleteRemoteBranch } from './delete-branch'
 import { CloningRepositoryView } from './cloning-repository'
 import {
   Toolbar,
+  ToolbarButton,
   ToolbarButtonStyle,
   ToolbarDropdown,
   ToolbarDropdownStyle,
@@ -3540,6 +3541,46 @@ export class App extends React.Component<IAppProps, IAppState> {
     }
   }
 
+  /**
+   * Back/forward buttons for the repository navigation stack, mirroring the
+   * CmdOrCtrl+Alt+Left/Right hotkeys.
+   */
+  private renderRepoNavButtons() {
+    const backDisabled = this.repoNavIndex <= 0
+    const forwardDisabled =
+      this.repoNavIndex >= this.repoNavHistory.length - 1
+    const mod = __DARWIN__ ? '⌘⌥' : 'Ctrl+Alt+'
+
+    return (
+      <div className="repo-nav-buttons">
+        <ToolbarButton
+          className="repo-nav-button"
+          icon={octicons.arrowLeft}
+          tooltip={`Back — previous repository (${mod}←)`}
+          disabled={backDisabled}
+          onClick={this.onRepoNavBack}
+        />
+        <ToolbarButton
+          className="repo-nav-button"
+          icon={octicons.arrowRight}
+          tooltip={`Forward — next repository (${mod}→)`}
+          disabled={forwardDisabled}
+          onClick={this.onRepoNavForward}
+        />
+      </div>
+    )
+  }
+
+  private onRepoNavBack = () => {
+    this.navigateRepoHistory(-1)
+    this.forceUpdate()
+  }
+
+  private onRepoNavForward = () => {
+    this.navigateRepoHistory(1)
+    this.forceUpdate()
+  }
+
   private renderRepositoryToolbarButton() {
     const selection = this.state.selectedState
 
@@ -4096,6 +4137,7 @@ export class App extends React.Component<IAppProps, IAppState> {
     return (
       <Toolbar id="desktop-app-toolbar">
         <div className="sidebar-section" style={{ width }}>
+          {this.renderRepoNavButtons()}
           {this.renderRepositoryToolbarButton()}
         </div>
         {this.renderWorktreeToolbarButton()}

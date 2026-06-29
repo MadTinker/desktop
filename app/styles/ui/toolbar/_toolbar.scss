@@ -33,6 +33,17 @@
     }
   }
 
+  .repo-nav-buttons {
+    display: flex;
+    flex-direction: row;
+    flex-shrink: 0;
+
+    .repo-nav-button {
+      width: var(--toolbar-height);
+      flex-grow: 0;
+    }
+  }
+
   .toolbar-button {
     &.resizable {
       // Fill the available height of the parent
