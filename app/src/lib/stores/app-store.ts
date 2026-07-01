@@ -4164,6 +4164,26 @@ export class AppStore extends TypedBaseStore<IAppState> {
    * (cdup honors the submodule's `core.worktree`). Returns the corrected
    * repository, or the original when no fix is needed.
    */
+  /**
+   * When `_refreshRepository` corrects a stored record in place (path or
+   * gitDir), swap the corrected reference in as the current selection if it's
+   * the same repository. This keeps `this.selectedRepository` identity-stable
+   * (same id) while picking up the fix, so the next refresh doesn't re-correct
+   * and re-trigger the reselect/fetch cascade. No `_selectRepository` — that
+   * would redo the full fetch/PR/prune cycle for what is the same repository.
+   */
+  private adoptRefreshedSelectedRepository(repository: Repository) {
+    const selected = this.selectedRepository
+    if (
+      selected instanceof Repository &&
+      selected.id === repository.id &&
+      selected.hash !== repository.hash
+    ) {
+      this.selectedRepository = repository
+      this.emitUpdate()
+    }
+  }
+
   private async healRepositoryPath(
     repository: Repository
   ): Promise<Repository> {
@@ -4248,7 +4268,17 @@ export class AppStore extends TypedBaseStore<IAppState> {
       return
     }
 
-    repository = await this.healRepositoryPath(repository)
+    const healed = await this.healRepositoryPath(repository)
+    if (healed !== repository) {
+      // The stored record pointed at a git dir and was corrected. Adopt the
+      // healed reference as the current selection so subsequent refreshes see
+      // the working-tree path and don't re-heal — otherwise every refresh
+      // re-emits an updated repository, `updateRepositorySelectionAfter-
+      // RepositoriesChanged` re-selects it (path is part of the hash), and the
+      // reselect kicks off another fetch + refresh, looping indefinitely.
+      this.adoptRefreshedSelectedRepository(healed)
+      repository = healed
+    }
 
     // Populate gitDir for repositories that don't have it yet
     if (repository.gitDir === undefined) {
@@ -4258,6 +4288,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
           repository,
           type.gitDir
         )
+        this.adoptRefreshedSelectedRepository(repository)
       }
     }
 

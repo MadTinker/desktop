@@ -302,6 +302,13 @@ export class RepositoriesStore extends TypedBaseStore<
     repository: Repository,
     gitDir: string
   ): Promise<Repository> {
+    // Nothing to persist if the gitDir already matches — skip the write and,
+    // more importantly, the store update that would otherwise re-trigger a
+    // repository reselect on every refresh.
+    if (repository.gitDir === gitDir) {
+      return repository
+    }
+
     await this.db.repositories.update(repository.id, { gitDir })
 
     this.emitUpdatedRepositories()
@@ -355,6 +362,17 @@ export class RepositoriesStore extends TypedBaseStore<
     gitDir: string | undefined,
     missing: boolean = false
   ): Promise<Repository> {
+    // Skip the write (and the store update it triggers) when nothing changed,
+    // so a repeated heal of an already-corrected path can't loop the app
+    // through reselect → refresh → heal indefinitely.
+    if (
+      repository.path === path &&
+      repository.gitDir === gitDir &&
+      repository.missing === missing
+    ) {
+      return repository
+    }
+
     await this.db.repositories.update(repository.id, {
       missing,
       path,
