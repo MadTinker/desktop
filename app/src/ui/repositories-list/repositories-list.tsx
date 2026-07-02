@@ -115,13 +115,18 @@ interface IRepositoriesListState {
 
 const RowHeight = 29
 
-// Persists submodule data across component mount/unmount cycles (e.g. panel
-// open/close), keyed by the repos signature so stale entries are naturally
-// displaced when the repo list changes.
-const submoduleCache = new Map<
-  string,
-  ReadonlyMap<number, ReadonlyArray<IDeclaredSubmodule>>
->()
+// Persists each repository's declared submodules across panel open/close and
+// unrelated re-renders, keyed per repo (id + path). Keying per repo — rather
+// than by a whole-list signature — means one repo changing (or the list
+// growing) never invalidates the others, so re-opening the panel reuses the
+// cache instead of re-running `git submodule status` across the whole list
+// (which made the list visibly jump as ghost rows popped in). Cleared on app
+// restart.
+const submoduleCache = new Map<string, ReadonlyArray<IDeclaredSubmodule>>()
+
+function submoduleCacheKey(repo: Repository): string {
+  return `${repo.id}:${repo.path}`
+}
 
 /**
  * Drop any subrepo whose monorepo parent (or any ancestor) is collapsed, so a
@@ -241,7 +246,7 @@ export class RepositoriesList extends React.Component<
   }
 
   private submodulesUnmounted = false
-  private lastSubmoduleLoadSignature = ''
+  private submoduleScanInFlight = new Set<string>()
 
   public componentDidMount() {
     this.loadSubmodules()
@@ -256,71 +261,97 @@ export class RepositoriesList extends React.Component<
   }
 
   /**
-   * A stable signature of the added repositories (ids + paths) so we only spawn
-   * `git submodule status` when the set of repos actually changes, not on every
-   * render or unrelated prop update.
-   */
-  private repositoriesSignature(): string {
-    return (this.props.repositories ?? [])
-      .map(r => `${r.id}:${r instanceof Repository ? r.path : ''}`)
-      .sort()
-      .join('|')
-  }
-
-  /**
-   * Read each added repository's .gitmodules so we can surface declared-but-not
-   * -added submodules as ghost rows nested under their monorepo.
+   * Surface declared-but-not-added submodules as ghost rows nested under their
+   * monorepo. Each repository is scanned with `git submodule status` at most
+   * once per session and cached per repo (id + path); opening the panel again
+   * or an unrelated re-render reuses the cache, so only genuinely-new or
+   * changed repos incur git work. This keeps the list from jumping as ghost
+   * rows re-populate every time the panel is opened.
    */
   private async loadSubmodules() {
-    const signature = this.repositoriesSignature()
-    if (signature === this.lastSubmoduleLoadSignature) {
-      return
-    }
-    this.lastSubmoduleLoadSignature = signature
-
-    // Serve from module-level cache when repos haven't changed — survives
-    // component remount (panel open/close) without re-running git submodule status.
-    const cached = submoduleCache.get(signature)
-    if (cached !== undefined) {
-      if (!this.submodulesUnmounted) {
-        this.setState({ submoduleMap: cached })
-      }
-      return
-    }
-
     const repos = (this.props.repositories ?? []).filter(
       (r): r is Repository => r instanceof Repository
     )
 
-    const map = new Map<number, ReadonlyArray<IDeclaredSubmodule>>()
+    // Show whatever's already cached right away (no git), and collect the
+    // repos we haven't scanned yet.
+    const toScan = new Array<Repository>()
+    for (const repo of repos) {
+      const key = submoduleCacheKey(repo)
+      if (!submoduleCache.has(key) && !this.submoduleScanInFlight.has(key)) {
+        toScan.push(repo)
+      }
+    }
+
+    this.applyCachedSubmoduleMap(repos)
+
+    if (toScan.length === 0) {
+      return
+    }
+
+    for (const repo of toScan) {
+      this.submoduleScanInFlight.add(submoduleCacheKey(repo))
+    }
+
     await Promise.all(
-      repos.map(async repo => {
+      toScan.map(async repo => {
+        const key = submoduleCacheKey(repo)
         try {
           const entries = await listSubmodules(repo)
           // Uninitialized submodules have no working tree on disk yet, so
           // there's nothing to add — only surface checked-out ones as ghosts.
-          const usable = entries.filter(e => e.status !== 'uninitialized')
-          if (usable.length === 0) {
-            return
-          }
-          map.set(
-            repo.id,
-            usable.map(e => ({
+          const usable = entries
+            .filter(e => e.status !== 'uninitialized')
+            .map(e => ({
               path: join(repo.path, e.path),
               name: basename(e.path),
             }))
-          )
+          submoduleCache.set(key, usable)
         } catch {
-          // A repo we can't read submodules for simply contributes no ghosts.
+          // A repo we can't read submodules for contributes no ghosts. Cache
+          // the empty result so we don't retry it on every render.
+          submoduleCache.set(key, [])
+        } finally {
+          this.submoduleScanInFlight.delete(key)
         }
       })
     )
 
-    if (this.submodulesUnmounted) {
-      return
+    if (!this.submodulesUnmounted) {
+      this.applyCachedSubmoduleMap(repos)
     }
-    submoduleCache.set(signature, map)
-    this.setState({ submoduleMap: map })
+  }
+
+  /**
+   * Rebuild `submoduleMap` from the per-repo cache and push it to state, but
+   * only when it differs from what's already rendered — so a `componentDidUpdate`
+   * that changed nothing submodule-related doesn't trigger a needless re-render.
+   */
+  private applyCachedSubmoduleMap(repos: ReadonlyArray<Repository>) {
+    const next = new Map<number, ReadonlyArray<IDeclaredSubmodule>>()
+    for (const repo of repos) {
+      const cached = submoduleCache.get(submoduleCacheKey(repo))
+      if (cached !== undefined && cached.length > 0) {
+        next.set(repo.id, cached)
+      }
+    }
+
+    const current = this.state.submoduleMap
+    if (current.size === next.size) {
+      let identical = true
+      for (const [id, subs] of next) {
+        const cur = current.get(id)
+        if (cur === undefined || cur.length !== subs.length) {
+          identical = false
+          break
+        }
+      }
+      if (identical) {
+        return
+      }
+    }
+
+    this.setState({ submoduleMap: next })
   }
 
   private renderItem = (item: IRepositoryListItem, matches: IMatches) => {
