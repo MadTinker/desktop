@@ -247,17 +247,39 @@ export class RepositoriesList extends React.Component<
 
   private submodulesUnmounted = false
   private submoduleScanInFlight = new Set<string>()
+  private lastSelectedRepoId: number | null = null
 
   public componentDidMount() {
+    this.invalidateSelectedRepoSubmodules()
     this.loadSubmodules()
   }
 
   public componentDidUpdate() {
+    this.invalidateSelectedRepoSubmodules()
     this.loadSubmodules()
   }
 
   public componentWillUnmount() {
     this.submodulesUnmounted = true
+  }
+
+  /**
+   * Drop the active repository's cached submodules whenever it becomes selected
+   * — including on panel open (mount) — so the very next `loadSubmodules` re-scans
+   * just that one repo. The rest of the list keeps serving from cache, so a
+   * submodule added to the repo you're working on shows up on the next open
+   * without re-scanning (and re-jumbling) the whole list.
+   */
+  private invalidateSelectedRepoSubmodules() {
+    const selected = this.props.selectedRepository
+    const id = selected instanceof Repository ? selected.id : null
+    if (id === this.lastSelectedRepoId) {
+      return
+    }
+    this.lastSelectedRepoId = id
+    if (selected instanceof Repository) {
+      submoduleCache.delete(submoduleCacheKey(selected))
+    }
   }
 
   /**
@@ -341,7 +363,11 @@ export class RepositoriesList extends React.Component<
       let identical = true
       for (const [id, subs] of next) {
         const cur = current.get(id)
-        if (cur === undefined || cur.length !== subs.length) {
+        if (
+          cur === undefined ||
+          cur.length !== subs.length ||
+          cur.some((s, i) => s.path !== subs[i].path)
+        ) {
           identical = false
           break
         }
