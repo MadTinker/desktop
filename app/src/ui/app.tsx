@@ -54,6 +54,7 @@ import { TitleBar, ZoomInfo, FullScreenInfo } from './window'
 
 import { RepositoriesList } from './repositories-list'
 import { RepositoryView } from './repository'
+import { TerminalPanelHost, BottomPanelMode } from './terminal-panel-host'
 import { RenameBranch } from './rename-branch'
 import { DeleteBranch, DeleteRemoteBranch } from './delete-branch'
 import { CloningRepositoryView } from './cloning-repository'
@@ -321,6 +322,17 @@ export class App extends React.Component<IAppProps, IAppState> {
   private hotkeyStoreDispose: (() => void) | null = null
 
   private repositoryViewRef = React.createRef<RepositoryView>()
+
+  /**
+   * Integrated terminal / dotfiles bottom-panel UI state. Held on the App (not
+   * in RepositoryView, which remounts per repo) so the panel — and its running
+   * shells — persist across repo swaps. Ephemeral, like the old per-view state:
+   * seeded once from the `terminalOpenOnStartup` preference, not persisted.
+   */
+  private bottomPanelVisible = false
+  private bottomPanelEverOpened = false
+  private bottomPanelMode: BottomPanelMode = 'terminal'
+  private bottomPanelStartupApplied = false
 
   /**
    * Gets a value indicating whether or not we're currently showing a
@@ -644,11 +656,43 @@ export class App extends React.Component<IAppProps, IAppState> {
   }
 
   private toggleIntegratedTerminal() {
-    this.repositoryViewRef.current?.toggleIntegratedTerminal()
+    this.setBottomPanelVisible(!this.bottomPanelVisible)
   }
 
   private toggleDotfilesPanel() {
-    this.repositoryViewRef.current?.toggleDotfilesPanel()
+    // Showing dotfiles already -> close the whole panel; otherwise open it (if
+    // closed) and switch it to the dotfiles surface.
+    if (this.bottomPanelVisible && this.bottomPanelMode === 'dotfiles') {
+      this.setBottomPanelVisible(false)
+      return
+    }
+    this.bottomPanelMode = 'dotfiles'
+    this.setBottomPanelVisible(true)
+  }
+
+  private setBottomPanelMode = (mode: BottomPanelMode) => {
+    this.bottomPanelMode = mode
+    this.setBottomPanelVisible(true)
+  }
+
+  private closeBottomPanel = () => {
+    this.setBottomPanelVisible(false)
+  }
+
+  private setBottomPanelVisible(visible: boolean) {
+    this.bottomPanelVisible = visible
+    if (visible) {
+      this.bottomPanelEverOpened = true
+    }
+    this.forceUpdate()
+  }
+
+  private onTerminalResize = (height: number) => {
+    this.props.dispatcher.setTerminalHeight(height)
+  }
+
+  private onResetTerminalHeight = () => {
+    this.props.dispatcher.resetTerminalHeight()
   }
 
   /**
@@ -1375,8 +1419,6 @@ export class App extends React.Component<IAppProps, IAppState> {
     if (this.isShowingModal) {
       return
     }
-
-
 
     if (shouldRenderApplicationMenu()) {
       if (event.key === 'Shift' && event.altKey) {
@@ -3407,9 +3449,60 @@ export class App extends React.Component<IAppProps, IAppState> {
         {this.renderToolbar()}
         {this.renderBanner()}
         {this.renderRepository()}
+        {this.renderBottomPanel()}
         {this.renderPopups()}
         {this.renderDragElement()}
       </div>
+    )
+  }
+
+  /**
+   * The integrated terminal / dotfiles panel. Rendered as a sibling of the
+   * repository area (both are flex children of #desktop-app-contents) rather
+   * than inside RepositoryView, so switching repositories never unmounts it and
+   * the per-repo shells it hosts keep running. Lazily mounted on first open,
+   * then kept mounted and hidden with `display:none` while closed.
+   */
+  private renderBottomPanel(): JSX.Element | null {
+    // Apply the "open terminal on startup" preference once, after the initial
+    // app state has loaded (it's not available at construction time).
+    if (!this.bottomPanelStartupApplied && !this.loading) {
+      this.bottomPanelStartupApplied = true
+      if (this.state.terminalOpenOnStartup) {
+        this.bottomPanelVisible = true
+        this.bottomPanelEverOpened = true
+      }
+    }
+
+    if (!this.bottomPanelEverOpened) {
+      return null
+    }
+
+    const selectedState = this.state.selectedState
+    const activeRepoPath =
+      selectedState?.type === SelectionType.Repository
+        ? selectedState.repository.path
+        : null
+
+    const knownRepoPaths = this.state.repositories
+      .filter((r): r is Repository => r instanceof Repository)
+      .map(r => r.path)
+
+    return (
+      <TerminalPanelHost
+        activeRepoPath={activeRepoPath}
+        knownRepoPaths={knownRepoPaths}
+        visible={this.bottomPanelVisible}
+        mode={this.bottomPanelMode}
+        height={this.state.terminalHeight}
+        fontSize={this.state.terminalFontSize}
+        cursorBlink={this.state.terminalCursorBlink}
+        scrollback={this.state.terminalScrollback}
+        onResize={this.onTerminalResize}
+        onResetHeight={this.onResetTerminalHeight}
+        onSetMode={this.setBottomPanelMode}
+        onClose={this.closeBottomPanel}
+      />
     )
   }
 
@@ -3547,8 +3640,7 @@ export class App extends React.Component<IAppProps, IAppState> {
    */
   private renderRepoNavButtons() {
     const backDisabled = this.repoNavIndex <= 0
-    const forwardDisabled =
-      this.repoNavIndex >= this.repoNavHistory.length - 1
+    const forwardDisabled = this.repoNavIndex >= this.repoNavHistory.length - 1
     const mod = __DARWIN__ ? '⌘⌥' : 'Ctrl+Alt+'
 
     return (
@@ -3682,7 +3774,9 @@ export class App extends React.Component<IAppProps, IAppState> {
       onCreateWorktree: this.state.worktreesEnabled
         ? onCreateWorktree
         : undefined,
-      onShowWorktrees: this.state.worktreesEnabled ? onShowWorktrees : undefined,
+      onShowWorktrees: this.state.worktreesEnabled
+        ? onShowWorktrees
+        : undefined,
       repository: repository,
       shellLabel: this.state.useCustomShell
         ? undefined
@@ -4192,11 +4286,6 @@ export class App extends React.Component<IAppProps, IAppState> {
           dispatcher={this.props.dispatcher}
           emoji={state.emoji}
           sidebarWidth={state.sidebarWidth}
-          terminalHeight={state.terminalHeight}
-          terminalOpenOnStartup={state.terminalOpenOnStartup}
-          terminalFontSize={state.terminalFontSize}
-          terminalCursorBlink={state.terminalCursorBlink}
-          terminalScrollback={state.terminalScrollback}
           commitSummaryWidth={state.commitSummaryWidth}
           stashedFilesWidth={state.stashedFilesWidth}
           issuesStore={this.props.issuesStore}

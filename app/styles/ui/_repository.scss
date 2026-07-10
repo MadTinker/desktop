@@ -343,6 +343,30 @@
   min-height: 0;
 }
 
+// The bottom panel now lives at the app root (a flex-column child of
+// #desktop-app-contents, below the repository area) so it — and the shells it
+// hosts — survive repo swaps. It keeps its #repository-terminal chrome; this
+// wrapper just carries the full-width slot and the show/hide toggle.
+.terminal-panel-host {
+  flex: 0 0 auto;
+  min-height: 0;
+}
+
+// One session stays mounted per repository the panel has shown; only the
+// active repo's session is displayed (the rest keep their ptys alive, hidden).
+.terminal-panel-sessions {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.terminal-panel-session {
+  position: absolute;
+  inset: 0;
+  flex-direction: column;
+  // display (flex when active, none otherwise) is set inline per active repo.
+}
+
 // Dotfiles editor tabs — structural clone of .terminal-tabs.
 .dotfiles-tabs {
   display: flex;

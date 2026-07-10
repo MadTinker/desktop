@@ -10,7 +10,7 @@ import { NoChanges } from './changes/no-changes'
 import { MultipleSelection } from './changes/multiple-selection'
 import { FilesChangedBadge } from './changes/files-changed-badge'
 import { SelectedCommits, CompareSidebar } from './history'
-import { Resizable, VerticalResizable } from './resizable'
+import { Resizable } from './resizable'
 import { TabBar } from './tab-bar'
 import {
   IRepositoryState,
@@ -42,10 +42,6 @@ import { PullRequestSuggestedNextAction } from '../models/pull-request'
 import { clamp } from '../lib/clamp'
 import { Emoji } from '../lib/emoji'
 import { PopupType } from '../models/popup'
-import { TerminalTabs } from './terminal-tabs'
-import { DotfilesTabs } from './dotfiles-tabs'
-import { Octicon } from './octicons'
-import * as octicons from './octicons/octicons.generated'
 
 interface IRepositoryViewProps {
   readonly repository: Repository
@@ -53,11 +49,6 @@ interface IRepositoryViewProps {
   readonly dispatcher: Dispatcher
   readonly emoji: Map<string, Emoji>
   readonly sidebarWidth: IConstrainedValue
-  readonly terminalHeight: IConstrainedValue
-  readonly terminalOpenOnStartup: boolean
-  readonly terminalFontSize: number
-  readonly terminalCursorBlink: boolean
-  readonly terminalScrollback: number
   readonly commitSummaryWidth: IConstrainedValue
   readonly stashedFilesWidth: IConstrainedValue
   readonly issuesStore: IssuesStore
@@ -170,13 +161,9 @@ interface IRepositoryViewProps {
   ) => void
 }
 
-type BottomPanelMode = 'terminal' | 'dotfiles'
-
 interface IRepositoryViewState {
   readonly changesListScrollTop: number
   readonly compareListScrollTop: number
-  readonly terminalVisible: boolean
-  readonly bottomPanelMode: BottomPanelMode
 }
 
 const enum Tab {
@@ -208,8 +195,6 @@ export class RepositoryView extends React.Component<
     this.state = {
       changesListScrollTop: 0,
       compareListScrollTop: 0,
-      terminalVisible: props.terminalOpenOnStartup,
-      bottomPanelMode: 'terminal',
     }
   }
 
@@ -227,27 +212,6 @@ export class RepositoryView extends React.Component<
     this.setState({
       compareListScrollTop: 0,
     })
-  }
-
-  public toggleIntegratedTerminal(): void {
-    this.setState(state => ({
-      terminalVisible: !state.terminalVisible,
-    }))
-  }
-
-  public toggleDotfilesPanel(): void {
-    this.setState(state => {
-      // Already showing dotfiles -> close the whole panel; otherwise open
-      // the panel (if closed) and switch it to the dotfiles surface.
-      if (state.terminalVisible && state.bottomPanelMode === 'dotfiles') {
-        return { terminalVisible: false, bottomPanelMode: 'dotfiles' }
-      }
-      return { terminalVisible: true, bottomPanelMode: 'dotfiles' }
-    })
-  }
-
-  private setBottomPanelMode = (mode: BottomPanelMode) => {
-    this.setState({ terminalVisible: true, bottomPanelMode: mode })
   }
 
   private onChangesListScrolled = (scrollTop: number) => {
@@ -275,8 +239,8 @@ export class RepositoryView extends React.Component<
       selectedSection === RepositorySectionTab.Changes
         ? Tab.Changes
         : selectedSection === RepositorySectionTab.Reflog
-          ? Tab.Reflog
-          : Tab.History
+        ? Tab.Reflog
+        : Tab.History
 
     return (
       <TabBar selectedIndex={selectedTab} onTabClicked={this.onTabClicked}>
@@ -455,8 +419,7 @@ export class RepositoryView extends React.Component<
   }
 
   private renderReflogSidebar(): JSX.Element {
-    const selectedSha =
-      this.props.state.commitSelection.shas[0] ?? null
+    const selectedSha = this.props.state.commitSelection.shas[0] ?? null
     return (
       <ReflogSidebar
         entries={this.props.state.reflogEntries}
@@ -743,17 +706,11 @@ export class RepositoryView extends React.Component<
   }
 
   private onInitializeSubmodule = (submodulePath: string) => {
-    this.props.dispatcher.initSubmodule(
-      this.props.repository,
-      submodulePath
-    )
+    this.props.dispatcher.initSubmodule(this.props.repository, submodulePath)
   }
 
   private onSyncSubmodule = (submodulePath: string) => {
-    this.props.dispatcher.syncSubmodule(
-      this.props.repository,
-      submodulePath
-    )
+    this.props.dispatcher.syncSubmodule(this.props.repository, submodulePath)
   }
 
   private onRollbackSubmodule = (submodulePath: string) => {
@@ -780,104 +737,10 @@ export class RepositoryView extends React.Component<
     }
   }
 
-  private closeIntegratedTerminal = () => {
-    this.setState({ terminalVisible: false })
-  }
-
-  private handleTerminalHeightReset = () => {
-    this.props.dispatcher.resetTerminalHeight()
-  }
-
-  private handleTerminalResize = (height: number) => {
-    this.props.dispatcher.setTerminalHeight(height)
-  }
-
-  private renderBottomPanel(): JSX.Element | null {
-    if (!this.state.terminalVisible) {
-      return null
-    }
-
-    const terminalHeight = clamp(this.props.terminalHeight)
-    const mode = this.state.bottomPanelMode
-
-    return (
-      <VerticalResizable
-        id="repository-terminal"
-        height={terminalHeight}
-        maximumHeight={this.props.terminalHeight.max}
-        minimumHeight={this.props.terminalHeight.min}
-        onReset={this.handleTerminalHeightReset}
-        onResize={this.handleTerminalResize}
-        description="Integrated terminal and dotfiles editor"
-      >
-        <div className="repository-terminal-header">
-          <div className="bottom-panel-modes" role="tablist">
-            <button
-              type="button"
-              role="tab"
-              aria-selected={mode === 'terminal'}
-              className={`bottom-panel-mode-tab${
-                mode === 'terminal' ? ' is-active' : ''
-              }`}
-              onClick={() => this.setBottomPanelMode('terminal')}
-            >
-              <Octicon symbol={octicons.terminal} />
-              <span>Terminal</span>
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={mode === 'dotfiles'}
-              className={`bottom-panel-mode-tab${
-                mode === 'dotfiles' ? ' is-active' : ''
-              }`}
-              onClick={() => this.setBottomPanelMode('dotfiles')}
-            >
-              <Octicon symbol={octicons.gear} />
-              <span>Dotfiles</span>
-            </button>
-          </div>
-          <div className="repository-terminal-path">
-            {this.props.repository.path}
-          </div>
-          <button
-            type="button"
-            className="repository-terminal-close"
-            onClick={this.closeIntegratedTerminal}
-            aria-label="Close panel"
-          >
-            <Octicon symbol={octicons.x} />
-          </button>
-        </div>
-        <div
-          className="bottom-panel-pane"
-          style={{ display: mode === 'terminal' ? 'flex' : 'none' }}
-        >
-          <TerminalTabs
-            cwd={this.props.repository.path}
-            fontSize={this.props.terminalFontSize}
-            cursorBlink={this.props.terminalCursorBlink}
-            scrollback={this.props.terminalScrollback}
-          />
-        </div>
-        <div
-          className="bottom-panel-pane"
-          style={{ display: mode === 'dotfiles' ? 'flex' : 'none' }}
-        >
-          <DotfilesTabs
-            key={this.props.repository.path}
-            repositoryPath={this.props.repository.path}
-          />
-        </div>
-      </VerticalResizable>
-    )
-  }
-
   private renderMainContent(): JSX.Element {
     return (
       <div id="repository-main">
         <div id="repository-content">{this.renderContent()}</div>
-        {this.renderBottomPanel()}
       </div>
     )
   }
