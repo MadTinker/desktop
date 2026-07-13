@@ -42,6 +42,56 @@ describe('RepositoriesStore', () => {
     })
   })
 
+  describe('updating a repository path', () => {
+    it('changes the path of the repository', async () => {
+      const repo = await repositoriesStore.addRepository(
+        '/some/cool/path',
+        '/some/cool/path/.git'
+      )
+
+      await repositoriesStore.updateRepositoryPath(
+        repo,
+        '/some/moved/path',
+        '/some/moved/path/.git'
+      )
+
+      const repositories = await repositoriesStore.getAll()
+      assert.equal(repositories.length, 1)
+      assert.equal(repositories[0].path, '/some/moved/path')
+    })
+
+    it('dedupes when another record already occupies the target path', async () => {
+      // Reproduces the submodule heal loop: a record kept its git-dir as
+      // `path` (older build) while the working tree was also added correctly.
+      // Healing the git-dir record onto the worktree path must not throw on
+      // the unique `path` index — it should drop the duplicate instead.
+      const worktreePath = '/repo/ElementalAlloy'
+      const gitDirPath = '/repo/.git/modules/ellie-api-master'
+
+      await repositoriesStore.addRepository(
+        worktreePath,
+        join(worktreePath, '.git')
+      )
+      const gitDirRepo = await repositoriesStore.addRepository(
+        gitDirPath,
+        gitDirPath
+      )
+
+      await assert.doesNotReject(() =>
+        repositoriesStore.updateRepositoryPath(
+          gitDirRepo,
+          worktreePath,
+          join(worktreePath, '.git')
+        )
+      )
+
+      const repositories = await repositoriesStore.getAll()
+      assert.equal(repositories.length, 1)
+      assert.equal(repositories[0].path, worktreePath)
+      assert.ok(!repositories.some(r => r.path.includes('.git/modules')))
+    })
+  })
+
   describe('updating a GitHub repository', () => {
     const apiRepo: IAPIFullRepository = {
       clone_url: 'https://github.com/my-user/my-repo',

@@ -28,12 +28,6 @@ export async function getRepositoryType(path: string): Promise<RepositoryType> {
       { successExitCodes: new Set([0, 128]) }
     )
 
-    console.log(`getRepositoryType result for ${path}:`, {
-      exitCode: result.exitCode,
-      stdout: result.stdout,
-      stderr: result.stderr,
-    })
-
     if (result.exitCode === 0) {
       // Bare repositories will not include gitdir so we handle that separately
       if (result.stdout.startsWith('true\n')) {

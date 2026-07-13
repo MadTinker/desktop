@@ -373,10 +373,24 @@ export class RepositoriesStore extends TypedBaseStore<
       return repository
     }
 
-    await this.db.repositories.update(repository.id, {
-      missing,
-      path,
-      gitDir,
+    await this.db.transaction('rw', this.db.repositories, async () => {
+      // `path` is a unique index. When another record already occupies the
+      // target path — e.g. a submodule persisted with its git-dir as `path`
+      // by an older build, while the working tree was also added correctly —
+      // a blind update throws a ConstraintError. That silently-failed write
+      // is what left git-dir-as-path records re-healing on every refresh
+      // forever (and their terminals opening in `…/.git/modules/<name>`).
+      // Drop the duplicate and let this record claim the canonical path.
+      const conflicting = await this.db.repositories.get({ path })
+      if (conflicting?.id !== undefined && conflicting.id !== repository.id) {
+        await this.db.repositories.delete(conflicting.id)
+      }
+
+      await this.db.repositories.update(repository.id, {
+        missing,
+        path,
+        gitDir,
+      })
     })
 
     this.emitUpdatedRepositories()
