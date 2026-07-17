@@ -39,8 +39,24 @@
     flex-shrink: 0;
 
     .repo-nav-button {
-      width: var(--toolbar-height);
+      width: 36px;
       flex-grow: 0;
+      flex-shrink: 0;
+
+      // Icon-only button: center the glyph rather than inheriting the
+      // left-aligned, padded layout meant for buttons with text.
+      & > button {
+        justify-content: center;
+        padding: 0;
+
+        .icon {
+          margin-right: 0;
+        }
+
+        &:disabled {
+          opacity: 0.35;
+        }
+      }
     }
   }
 
