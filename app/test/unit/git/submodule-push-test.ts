@@ -3,7 +3,10 @@ import assert from 'node:assert'
 import { join } from 'path'
 import { exec } from 'dugite'
 
-import { pushSubmodule } from '../../../src/lib/git/submodule'
+import {
+  pushAllSubmodules,
+  pushSubmodule,
+} from '../../../src/lib/git/submodule'
 import { setupEmptyRepository } from '../../helpers/repositories'
 import { makeCommit } from '../../helpers/repository-scaffolding'
 import { createTempDirectory } from '../../helpers/temp'
@@ -19,6 +22,34 @@ async function createBareUpstream(
   const barePath = await createTempDirectory(t)
   await exec(['clone', '--bare', source.path, barePath], source.path)
   return barePath
+}
+
+/** A repository with one commit, so it can be cloned and pushed to. */
+async function seedRepository(
+  t: import('node:test').TestContext
+): Promise<Repository> {
+  const repo = await setupEmptyRepository(t)
+  await makeCommit(repo, {
+    entries: [{ path: 'README.md', contents: 'initial' }],
+    commitMessage: 'initial commit',
+  })
+  return repo
+}
+
+/**
+ * Registers `barePath` as a real submodule of `parent` at `name` and returns its
+ * working tree. `protocol.file.allow` is needed because the upstream is a path.
+ */
+async function addSubmodule(
+  parent: Repository,
+  barePath: string,
+  name: string
+): Promise<Repository> {
+  await exec(
+    ['-c', 'protocol.file.allow=always', 'submodule', 'add', barePath, name],
+    parent.path
+  )
+  return new Repository(join(parent.path, name), -1, null, false)
 }
 
 /**
@@ -45,12 +76,7 @@ async function tipOf(path: string): Promise<string> {
 
 describe('git/submodule pushSubmodule', () => {
   it('pushes a submodule that has unpushed commits', async t => {
-    const seed = await setupEmptyRepository(t)
-    await makeCommit(seed, {
-      entries: [{ path: 'README.md', contents: 'initial' }],
-      commitMessage: 'initial commit',
-    })
-
+    const seed = await seedRepository(t)
     const barePath = await createBareUpstream(t, seed)
     const parent = await setupEmptyRepository(t)
     const submodule = await cloneInto(parent, barePath, 'sub')
@@ -66,12 +92,7 @@ describe('git/submodule pushSubmodule', () => {
   })
 
   it('skips a submodule that is behind its own remote', async t => {
-    const seed = await setupEmptyRepository(t)
-    await makeCommit(seed, {
-      entries: [{ path: 'README.md', contents: 'initial' }],
-      commitMessage: 'initial commit',
-    })
-
+    const seed = await seedRepository(t)
     const barePath = await createBareUpstream(t, seed)
     const parent = await setupEmptyRepository(t)
     const submodule = await cloneInto(parent, barePath, 'sub')
@@ -99,5 +120,47 @@ describe('git/submodule pushSubmodule', () => {
     await exec(['init', 'sub'], parent.path)
 
     await pushSubmodule(parent, 'sub')
+  })
+})
+
+describe('git/submodule pushAllSubmodules', () => {
+  it('pushes every submodule even when one fails, then reports it', async t => {
+    // Two independent submodule upstreams: 'a-bad' will be rejected, and it
+    // sorts first, so the good one only gets pushed if the batch carries on.
+    const badSeed = await seedRepository(t)
+    const badBare = await createBareUpstream(t, badSeed)
+    const goodSeed = await seedRepository(t)
+    const goodBare = await createBareUpstream(t, goodSeed)
+
+    const parent = await seedRepository(t)
+    const bad = await addSubmodule(parent, badBare, 'a-bad')
+    const good = await addSubmodule(parent, goodBare, 'b-good')
+
+    // Diverge 'a-bad': a commit of ours, and a commit of theirs on its remote.
+    await makeCommit(bad, {
+      entries: [{ path: 'mine.txt', contents: 'mine' }],
+      commitMessage: 'my commit',
+    })
+    await makeCommit(badSeed, {
+      entries: [{ path: 'theirs.txt', contents: 'theirs' }],
+      commitMessage: 'their commit',
+    })
+    await exec(['push', badBare, 'HEAD'], badSeed.path)
+    const badRemoteTip = await tipOf(badBare)
+
+    await makeCommit(good, {
+      entries: [{ path: 'mine.txt', contents: 'mine' }],
+      commitMessage: 'my commit',
+    })
+
+    await assert.rejects(pushAllSubmodules(parent), (e: Error) => {
+      assert.match(e.message, /a-bad/)
+      assert.doesNotMatch(e.message, /b-good/)
+      return true
+    })
+
+    // The failing submodule left its remote alone, the other one still landed.
+    assert.equal(await tipOf(badBare), badRemoteTip)
+    assert.equal(await tipOf(goodBare), await tipOf(good.path))
   })
 })

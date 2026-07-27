@@ -530,10 +530,64 @@ export async function pullSubmodule(
 }
 
 /**
+ * Reduce an error to the one line worth showing next to a submodule's path.
+ *
+ * A recognized git error already carries a friendly one-line description; a raw
+ * one carries the command's whole output, where the `error:`/`fatal:`/`!
+ * [rejected]` line is the part that says what went wrong.
+ */
+function describeFailure(e: unknown): string {
+  const message = e instanceof Error ? e.message : `${e}`
+  const lines = message
+    .split('\n')
+    .map(l => l.trim())
+    .filter(l => l.length > 0)
+
+  const salient = lines.find(l => /^(error:|fatal:|! \[rejected\])/i.test(l))
+  return salient ?? lines[0] ?? 'unknown error'
+}
+
+/**
+ * Run `operation` over every submodule path, attempting all of them even when
+ * some fail.
+ *
+ * Batch operations act on independent repositories, so one submodule that can't
+ * be reached — out of sync, no write access, bad credentials — has no business
+ * deciding whether the rest get attempted. Failures are collected and rethrown
+ * as a single plain Error: plain because re-raising a submodule's git error lets
+ * the push/pull error handlers attribute it to the parent repository.
+ */
+async function forEachSubmoduleTolerantly(
+  verb: string,
+  paths: ReadonlyArray<string>,
+  operation: (path: string, index: number) => Promise<void>
+): Promise<void> {
+  const failures = new Array<string>()
+
+  for (const [index, path] of paths.entries()) {
+    try {
+      await operation(path, index)
+    } catch (e) {
+      log.warn(`[submodule] could not ${verb} ${path}`, e)
+      failures.push(`${path}: ${describeFailure(e)}`)
+    }
+  }
+
+  if (failures.length > 0) {
+    throw new Error(
+      `Could not ${verb} ${failures.length} of ${paths.length} submodules:\n\n` +
+        failures.join('\n')
+    )
+  }
+}
+
+/**
  * Pull all initialized submodules to their latest upstream commits.
  *
  * Equivalent to running `git pull --ff` inside each initialized submodule.
  * Submodules that are uninitialized or have no remotes are skipped silently.
+ * Every submodule is attempted; if any fail, they're reported together once the
+ * rest are done.
  *
  * @param repository - The parent repository containing the submodules
  * @param progressCallback - Optional per-submodule progress callback. Receives
@@ -550,23 +604,26 @@ export async function pullAllSubmodules(
   const active = allSubmodules.filter(s => s.status !== 'uninitialized')
   const total = active.length
 
-  for (let i = 0; i < total; i++) {
-    const submodule = active[i]
-    await pullSubmodule(
-      repository,
-      submodule.path,
-      progressCallback
-        ? progress => progressCallback({ ...progress, index: i, total })
-        : undefined
-    )
-  }
+  await forEachSubmoduleTolerantly(
+    'pull',
+    active.map(s => s.path),
+    (path, i) =>
+      pullSubmodule(
+        repository,
+        path,
+        progressCallback
+          ? progress => progressCallback({ ...progress, index: i, total })
+          : undefined
+      )
+  )
 }
 
 /**
  * Initialize all uninitialized submodules.
  *
  * Filters to only submodules with status 'uninitialized' and calls
- * initSubmodule for each. Already-initialized submodules are skipped.
+ * initSubmodule for each. Already-initialized submodules are skipped. Every
+ * submodule is attempted; if any fail, they're reported together at the end.
  */
 export async function initAllSubmodules(
   repository: Repository,
@@ -580,18 +637,23 @@ export async function initAllSubmodules(
   const uninit = allSubmodules.filter(s => s.status === 'uninitialized')
   const total = uninit.length
 
-  for (let i = 0; i < total; i++) {
-    const submodule = uninit[i]
-    progressCallback?.({ index: i, total, path: submodule.path })
-    await initSubmodule(repository, submodule.path)
-  }
+  await forEachSubmoduleTolerantly(
+    'initialize',
+    uninit.map(s => s.path),
+    (path, i) => {
+      progressCallback?.({ index: i, total, path })
+      return initSubmodule(repository, path)
+    }
+  )
 }
 
 /**
  * Push all initialized submodules to their configured upstream remotes.
  *
- * Mirrors pullAllSubmodules: iterates active submodules and calls
- * pushSubmodule for each. Submodules with no remotes are skipped silently.
+ * Mirrors pullAllSubmodules: iterates active submodules and calls pushSubmodule
+ * for each. Submodules with no remotes, or with nothing to push, are skipped
+ * silently. Every submodule is attempted; if any fail, they're reported together
+ * once the rest are done.
  */
 export async function pushAllSubmodules(
   repository: Repository,
@@ -603,16 +665,18 @@ export async function pushAllSubmodules(
   const active = allSubmodules.filter(s => s.status !== 'uninitialized')
   const total = active.length
 
-  for (let i = 0; i < total; i++) {
-    const submodule = active[i]
-    await pushSubmodule(
-      repository,
-      submodule.path,
-      progressCallback
-        ? progress => progressCallback({ ...progress, index: i, total })
-        : undefined
-    )
-  }
+  await forEachSubmoduleTolerantly(
+    'push',
+    active.map(s => s.path),
+    (path, i) =>
+      pushSubmodule(
+        repository,
+        path,
+        progressCallback
+          ? progress => progressCallback({ ...progress, index: i, total })
+          : undefined
+      )
+  )
 }
 
 /**

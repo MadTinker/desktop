@@ -10476,34 +10476,59 @@ export class AppStore extends TypedBaseStore<IAppState> {
     return this._refreshRepository(repository)
   }
 
-  /** Pull all initialized submodules to their latest upstream commits. */
-  public async _pullAllSubmodules(repository: Repository): Promise<void> {
+  /**
+   * Run a batch submodule operation, then refresh and report whatever failed.
+   *
+   * The batch attempts every submodule, so a failure means "some of these
+   * didn't work", not "nothing happened" — the repository still has to be
+   * refreshed to show the submodules that did move, and the error is reported
+   * after that rather than in place of it.
+   */
+  private async withSubmoduleBatch(
+    repository: Repository,
+    description: string,
+    batch: () => Promise<void>
+  ): Promise<void> {
     return this.withPushPullFetch(repository, async () => {
+      let failure: Error | undefined
+
       try {
-        await pullAllSubmodules(repository, progress => {
-          const { index, total } = progress
-          this.updatePushPullFetchProgress(repository, {
-            ...progress,
-            title: `Pulling submodules (${index + 1}/${total})`,
-            value: (index + progress.value) / total,
-          })
-        })
+        await batch()
       } catch (e) {
-        log.error('Failed to pull all submodules', e)
-        this.emitError(e)
-        return
+        log.error(`Failed to ${description}`, e)
+        failure = e
       }
 
       this.updatePushPullFetchProgress(repository, null)
       await this._refreshRepository(repository)
+
+      if (failure !== undefined) {
+        this.emitError(failure)
+      }
     })
+  }
+
+  /** Pull all initialized submodules to their latest upstream commits. */
+  public async _pullAllSubmodules(repository: Repository): Promise<void> {
+    return this.withSubmoduleBatch(repository, 'pull all submodules', () =>
+      pullAllSubmodules(repository, progress => {
+        const { index, total } = progress
+        this.updatePushPullFetchProgress(repository, {
+          ...progress,
+          title: `Pulling submodules (${index + 1}/${total})`,
+          value: (index + progress.value) / total,
+        })
+      })
+    )
   }
 
   /** Initialize all uninitialized submodules with progress tracking. */
   public async _initAllSubmodules(repository: Repository): Promise<void> {
-    return this.withPushPullFetch(repository, async () => {
-      try {
-        await initAllSubmodules(repository, ({ index, total, path }) => {
+    return this.withSubmoduleBatch(
+      repository,
+      'initialize all submodules',
+      () =>
+        initAllSubmodules(repository, ({ index, total, path }) => {
           this.updatePushPullFetchProgress(repository, {
             kind: 'pull',
             title: `Initializing submodules (${index + 1}/${total})`,
@@ -10512,38 +10537,21 @@ export class AppStore extends TypedBaseStore<IAppState> {
             remote: '',
           })
         })
-      } catch (e) {
-        log.error('Failed to initialize all submodules', e)
-        this.emitError(e)
-        return
-      }
-
-      this.updatePushPullFetchProgress(repository, null)
-      await this._refreshRepository(repository)
-    })
+    )
   }
 
   /** Push all initialized submodules with progress tracking. */
   public async _pushAllSubmodules(repository: Repository): Promise<void> {
-    return this.withPushPullFetch(repository, async () => {
-      try {
-        await pushAllSubmodules(repository, progress => {
-          const { index, total } = progress
-          this.updatePushPullFetchProgress(repository, {
-            ...progress,
-            title: `Pushing submodules (${index + 1}/${total})`,
-            value: (index + progress.value) / total,
-          })
+    return this.withSubmoduleBatch(repository, 'push all submodules', () =>
+      pushAllSubmodules(repository, progress => {
+        const { index, total } = progress
+        this.updatePushPullFetchProgress(repository, {
+          ...progress,
+          title: `Pushing submodules (${index + 1}/${total})`,
+          value: (index + progress.value) / total,
         })
-      } catch (e) {
-        log.error('Failed to push all submodules', e)
-        this.emitError(e)
-        return
-      }
-
-      this.updatePushPullFetchProgress(repository, null)
-      await this._refreshRepository(repository)
-    })
+      })
+    )
   }
 
   /** Run a shell command across all submodules and return combined stdout. */
