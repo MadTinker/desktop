@@ -29,6 +29,8 @@ Details about how the team is organizing and shipping Madness Desktop:
     by users
  - **[Pull Requests](process/pull-requests.md)** - how code contributions are submitted and reviewed
  - **[Releasing Updates](process/releasing-updates.md)** - how we deploy things
+ - **[Upstream Sync](process/upstream-sync.md)** - how we merge GitHub Desktop
+    into the fork, and what always conflicts
 
 ## Technical
 
