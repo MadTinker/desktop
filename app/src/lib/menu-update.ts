@@ -267,7 +267,8 @@ function getRepositoryMenuBuilder(state: IAppState): MenuStateBuilder {
       menuStateBuilder.enable(id)
     }
 
-    // Worktree actions follow the user's worktree toggle.
+    // Worktree actions follow the user's worktree toggle, which is stricter
+    // than upstream's enableWorktreeSupport kill switch.
     menuStateBuilder.setEnabled('show-worktrees-list', state.worktreesEnabled)
     menuStateBuilder.setEnabled('create-worktree', state.worktreesEnabled)
 

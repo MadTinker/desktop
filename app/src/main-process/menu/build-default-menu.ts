@@ -4,6 +4,7 @@ import { MenuEvent } from './menu-event'
 import { truncateWithEllipsis } from '../../lib/truncate-with-ellipsis'
 import { getLogDirectoryPath } from '../../lib/logging/get-log-path'
 import { UNSAFE_openDirectory } from '../shell'
+import { enableWorktreeSupport } from '../../lib/feature-flag'
 import { MenuLabelsEvent } from '../../models/menu-labels'
 import * as ipcWebContents from '../ipc-webcontents'
 import { mkdir } from 'fs/promises'
@@ -50,7 +51,16 @@ function getAccelerator(
   return fallback
 }
 
-export function buildDefaultMenu({
+/** The menu labels upstream builds from, plus our user hotkey bindings. */
+type DefaultMenuParams = MenuLabelsEvent & {
+  hotkeyBindings?: Record<string, string | null>
+}
+
+export function buildDefaultMenu(params: DefaultMenuParams): Electron.Menu {
+  return Menu.buildFromTemplate(buildDefaultMenuTemplate(params))
+}
+
+export function buildDefaultMenuTemplate({
   selectedExternalEditor,
   selectedShell,
   askForConfirmationOnForcePush,
@@ -62,9 +72,7 @@ export function buildDefaultMenu({
   askForConfirmationWhenStashingAllChanges = true,
   isChangesFilterVisible = true,
   hotkeyBindings,
-}: MenuLabelsEvent & {
-  hotkeyBindings?: Record<string, string | null>
-}): Electron.Menu {
+}: DefaultMenuParams): Electron.MenuItemConstructorOptions[] {
   contributionTargetDefaultBranch = truncateWithEllipsis(
     contributionTargetDefaultBranch,
     25
@@ -217,10 +225,11 @@ export function buildDefaultMenu({
         click: emit('show-branches'),
       },
       {
-        label: __DARWIN__ ? 'Show Worktrees List' : '&Worktrees list',
+        label: __DARWIN__ ? 'Show Worktrees List' : 'Wor&ktrees list',
         id: 'show-worktrees-list',
         accelerator: getAccelerator('show-worktrees', hotkeyBindings, 'CmdOrCtrl+Alt+W'),
         click: emit('show-worktrees'),
+        visible: enableWorktreeSupport(),
       },
       separator,
       {
@@ -424,9 +433,14 @@ export function buildDefaultMenu({
         id: 'create-worktree',
         label: __DARWIN__ ? 'New Worktree…' : 'New work&tree…',
         click: emit('create-worktree'),
-        accelerator: getAccelerator('create-worktree', hotkeyBindings, 'CmdOrCtrl+Shift+W'),
+        accelerator: getAccelerator(
+          'create-worktree',
+          hotkeyBindings,
+          'CmdOrCtrl+Shift+W'
+        ),
+        visible: enableWorktreeSupport(),
       },
-      separator,
+      ...(enableWorktreeSupport() ? [separator] : []),
       {
         label: __DARWIN__ ? 'Repository Settings…' : 'Repository &settings…',
         id: 'show-repository-settings',
@@ -637,7 +651,7 @@ export function buildDefaultMenu({
 
   ensureItemIds(template)
 
-  return Menu.buildFromTemplate(template)
+  return template
 }
 
 function getPushLabel(

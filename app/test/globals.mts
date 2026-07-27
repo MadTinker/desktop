@@ -47,3 +47,21 @@ mock.module('electron', {
     ipcRenderer: { on: mock.fn(x => {}) },
   },
 })
+
+// Our renderer runs with contextIsolation, so IPC goes through the preload
+// bridge on `window` rather than through the `electron` module — mocking
+// `electron` alone leaves the bridge undefined. Renderer singletons subscribe to
+// IPC channels while being constructed at import time (UpdateStore is the one
+// that bites: the `lib/git` barrel reaches it through stats-store → the stores
+// barrel → app-store), so any test importing that barrel crashes before its
+// first assertion unless the bridge exists.
+Object.assign(window, {
+  electronBridge: {
+    on: () => {},
+    once: () => {},
+    removeListener: () => {},
+    send: () => {},
+    sendSync: () => undefined,
+    invoke: () => Promise.resolve(undefined),
+  },
+})

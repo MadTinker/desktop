@@ -30,11 +30,13 @@ afterEach(async () => {
 
 describe('helper side-effect surfaces', () => {
   it('applies theme classes, updates color scheme, and clears theme classes on unmount', async () => {
-    const electron = await import('electron')
-    const previousSend = electron.ipcRenderer.send
+    // IPC leaves the renderer through the contextIsolation preload bridge, not
+    // the electron module — watch the bridge or nothing is recorded.
+    const bridge = window.electronBridge
+    const previousSend = bridge.send
     const sends: Array<[string, string]> = []
 
-    electron.ipcRenderer.send = (channel: string, value: string) => {
+    bridge.send = (channel: string, value: string) => {
       sends.push([channel, value])
     }
 
@@ -63,7 +65,7 @@ describe('helper side-effect surfaces', () => {
 
       assert.equal(document.body.classList.contains('theme-light'), false)
     } finally {
-      electron.ipcRenderer.send = previousSend
+      bridge.send = previousSend
     }
   })
 
