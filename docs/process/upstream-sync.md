@@ -174,6 +174,14 @@ are enabled on this fork. Workflows triggered by `issues` events only fire from
 the default branch, so a merge branch is inert — but decide about them before
 merging to the default branch, not after.
 
+We deleted upstream's gh-aw agentic issue triage in the 2026-07 sync
+(`.github/workflows/issue-triage.{md,lock.yml}` and
+`.github/aw/actions-lock.json`): it dispatches Copilot at issues opened here,
+and its tool allowlist points at upstream's own repositories. Expect it back on
+the next merge as a re-add, along with any new agentic workflows they land. The
+default answer is delete. Grep for `engine: copilot` and `gh-aw` after
+resolving, and check what any new workflow triggers on.
+
 ## Sync log
 
 | Date | Upstream point | Conflicts | Notes |
