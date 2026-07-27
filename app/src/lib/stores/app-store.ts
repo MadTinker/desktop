@@ -5532,15 +5532,30 @@ export class AppStore extends TypedBaseStore<IAppState> {
           let aborted = false
 
           // Phase 1 — push each submodule individually before the main push.
+          // A submodule that can't be pushed (out of sync with its own remote,
+          // no write access, auth failure) must not sink the operation the user
+          // actually asked for: letting it throw here skips the main push
+          // entirely and hands a submodule's git error to the error handlers,
+          // which attribute it to this repository — a non-fast-forward in a
+          // submodule then shows up as "Newer Commits on Remote" for the parent.
+          const submoduleFailures = new Array<string>()
           let submoduleOffset = 0
           for (const submodule of activeSubmodules) {
-            await pushSubmodule(repository, submodule.path, progress => {
-              this.updatePushPullFetchProgress(repository, {
-                ...progress,
-                title: pushTitle,
-                value: submoduleOffset + perSubmoduleWeight * progress.value,
+            try {
+              await pushSubmodule(repository, submodule.path, progress => {
+                this.updatePushPullFetchProgress(repository, {
+                  ...progress,
+                  title: pushTitle,
+                  value: submoduleOffset + perSubmoduleWeight * progress.value,
+                })
               })
-            })
+            } catch (e) {
+              log.warn(
+                `[performPush] could not push submodule ${submodule.path}; continuing with the main push`,
+                e
+              )
+              submoduleFailures.push(submodule.path)
+            }
             submoduleOffset += perSubmoduleWeight
           }
 
@@ -5606,6 +5621,26 @@ export class AppStore extends TypedBaseStore<IAppState> {
           await this.refreshBranchProtectionState(repository)
 
           await this._refreshRepository(repository)
+
+          // Report skipped submodules once, after the push the user asked for
+          // has landed. Deliberately a plain Error: re-raising the underlying
+          // git error would let the push error handlers blame this repository
+          // for a submodule's problem.
+          if (submoduleFailures.length > 0) {
+            this.emitError(
+              new Error(
+                `Pushed ${branch.name}, but ${
+                  submoduleFailures.length === 1
+                    ? 'one submodule could'
+                    : `${submoduleFailures.length} submodules could`
+                } not be pushed: ${submoduleFailures.join(
+                  ', '
+                )}. Open the submodule manager to push ${
+                  submoduleFailures.length === 1 ? 'it' : 'them'
+                } and see the error.`
+              )
+            )
+          }
         },
         { retryAction }
       )

@@ -62,6 +62,30 @@ async function resolvePushRefspec(
 }
 
 /**
+ * Count the commits HEAD has that its upstream doesn't, i.e. what a push would
+ * actually deliver.
+ *
+ * Returns null when there's no upstream to compare against (no tracking config,
+ * detached HEAD, upstream ref gone) — the caller can't tell whether there's
+ * anything to push, so it should attempt the push and let git decide.
+ */
+async function countUnpushedCommits(repo: Repository): Promise<number | null> {
+  const result = await git(
+    ['rev-list', '--count', '@{upstream}..HEAD'],
+    repo.path,
+    'countUnpushedCommits',
+    { successExitCodes: new Set([0, 128]) }
+  )
+
+  if (result.exitCode !== 0) {
+    return null
+  }
+
+  const count = parseInt(result.stdout.trim(), 10)
+  return isNaN(count) ? null : count
+}
+
+/**
  * Update submodules after a git operation.
  *
  * @param repository - The repository in which to update submodules
@@ -374,6 +398,15 @@ export async function pushSubmodule(
     log.warn(
       `[pushSubmodule] ${submodulePath} is in detached HEAD with no upstream; skipping push`
     )
+    return
+  }
+
+  // A submodule that's merely behind its own remote has nothing to deliver, and
+  // pushing it anyway earns a non-fast-forward rejection that the caller would
+  // have to interpret. Skip it — a null count means we can't tell, so we push.
+  const unpushed = await countUnpushedCommits(submoduleRepo)
+  if (unpushed === 0) {
+    log.debug(`[pushSubmodule] ${submodulePath} has nothing to push; skipping`)
     return
   }
 
