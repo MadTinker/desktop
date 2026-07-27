@@ -57,6 +57,7 @@ import assert from 'assert'
 
 const isPublishableBuild = isPublishable()
 const isDevelopmentBuild = getChannel() === 'development'
+const isNonProductionRelease = getChannel() !== 'production'
 const shouldSkipPackaging = process.env.DESKTOP_SKIP_PACKAGE === '1'
 
 const projectRoot = path.join(__dirname, '..')

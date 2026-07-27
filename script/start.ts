@@ -39,10 +39,16 @@ function startApp() {
 if (process.env.NODE_ENV === 'production') {
   startApp()
 } else {
-  const rendererConfig = configs[1]
+  const message = 'Could not find public path from configuration'
+  // The renderer is the config the dev server serves, and the only one with a
+  // publicPath. Found by that rather than by position: our preload bundle sits
+  // at index 1, where upstream's renderer used to be.
+  const rendererConfig = u(
+    message,
+    configs.find(c => c.output?.publicPath !== undefined)
+  )
   const compiler = webpack(rendererConfig)
   const port = getPortOrDefault()
-  const message = 'Could not find public path from configuration'
 
   const devMiddleware = DevMiddleware(compiler, {
     publicPath: u(
