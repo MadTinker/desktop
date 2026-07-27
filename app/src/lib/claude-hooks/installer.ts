@@ -1,7 +1,7 @@
 /**
  * Claude Code Loadout installer.
  *
- * Clones the claude-hooks repo into a managed directory, then merges the chosen
+ * Clones the crochetomancy hooks repo into a managed directory, then merges the chosen
  * tier's hook commands into ~/.claude/settings.json — appending only, never
  * clobbering user/non-managed entries. Everything we write is recorded in a
  * sidecar so uninstall removes precisely those entries.
@@ -26,7 +26,7 @@ import {
 } from './types'
 
 export const DEFAULT_HOOKS_REPO =
-  'https://github.com/MadnessEngineering/claude-hooks.git'
+  'https://github.com/MadnessEngineering/crochetomancy.git'
 
 const MANIFEST_FILE = 'loadout-manifest.json'
 const SIDECAR_FILE = '.madness-loadout.json'

@@ -1,6 +1,6 @@
 /**
  * Types for the Claude Code Loadout installer — distributes the claude-prime
- * hooks (github.com/MadnessEngineering/claude-hooks) into a fresh machine's
+ * hooks (github.com/MadnessEngineering/crochetomancy) into a fresh machine's
  * ~/.claude. Mirrors the per-repo git-hook loadout system, but targets the
  * machine-global Claude Code config instead of a single repository.
  */

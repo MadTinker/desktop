@@ -50,8 +50,8 @@ interface IClaudeCodePreferencesState {
 }
 
 /**
- * Preferences tab for the Claude Code Loadout — clones the claude-hooks repo
- * into ~/.claude/hooks and merges a chosen tier's hooks into settings.json.
+ * Preferences tab for the Claude Code Loadout — clones the crochetomancy hooks
+ * repo into ~/.claude/hooks and merges a chosen tier's hooks into settings.json.
  */
 export class ClaudeCodePreferences extends React.Component<
   Record<string, never>,
@@ -207,7 +207,7 @@ export class ClaudeCodePreferences extends React.Component<
           <p className="claude-loadout-intro">
             Distribute the workshop's Claude Code hooks (session naming,
             telemetry, autocommit, notifications) to this machine. Picks a tier,
-            clones <code>claude-hooks</code> into <code>~/.claude/hooks</code>,
+            clones <code>crochetomancy</code> into <code>~/.claude/hooks</code>,
             and merges its hooks into <code>settings.json</code> — touching only
             entries it owns.
           </p>
