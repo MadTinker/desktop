@@ -4,6 +4,61 @@
   min-height: 0;
 }
 
+/** A foldable folder row in the changes list */
+.changes-folder-header {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  width: 100%;
+  padding-right: var(--spacing);
+  cursor: default;
+  overflow: hidden;
+  color: var(--text-secondary-color);
+
+  input[type='checkbox'] {
+    flex-grow: 0;
+    flex-shrink: 0;
+    margin-right: var(--spacing-half);
+  }
+
+  .folder-toggle {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    min-width: 0;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: inherit;
+    font-family: inherit;
+    font-size: inherit;
+    cursor: default;
+  }
+
+  .folder-chevron {
+    flex-shrink: 0;
+    margin-right: var(--spacing-half);
+    fill: var(--text-secondary-color);
+  }
+
+  .folder-name {
+    @include ellipsis;
+    font-weight: var(--font-weight-semibold);
+    text-align: left;
+  }
+
+  .folder-file-count {
+    flex-shrink: 0;
+    margin-left: var(--spacing-half);
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary-color);
+  }
+
+  &:hover {
+    background-color: var(--box-alt-background-color);
+  }
+}
+
 /** A React component holding the currently selected repository's changes */
 .changes-list-container {
   display: flex;

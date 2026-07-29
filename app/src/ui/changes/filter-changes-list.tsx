@@ -73,6 +73,16 @@ import {
   applyFilters,
 } from './filter-changes-logic'
 import { ChangesListFilterOptions } from './changes-list-filter-options'
+import { ChangesFolderHeader } from './changes-folder-header'
+import {
+  buildChangesTree,
+  getAllFolderPaths,
+  IChangesFolder,
+} from './changes-folder-tree'
+import {
+  getCollapsedFolders,
+  setCollapsedFolders,
+} from './collapsed-folders-store'
 import { HookProgress } from '../../lib/git'
 import { formatNumber } from '../../lib/format-number'
 
@@ -80,7 +90,19 @@ export interface IChangesListItem extends IFilterListItem {
   readonly id: string
   readonly text: ReadonlyArray<string>
   readonly change: WorkingDirectoryFileChange
+  /** How far to indent the row when the list is grouped into folders. */
+  readonly depth: number
+  /**
+   * The portion of the path to display. Equal to the full path unless the file
+   * sits underneath a folder header, in which case it's the file name.
+   */
+  readonly displayPath: string
 }
+
+/** The identifier of the group holding files that aren't under any folder */
+const RootGroupIdentifier = 'changed-files'
+
+const folderGroupIdentifier = (path: string) => `folder:${path}`
 
 const RowHeight = 29
 const StashIcon: OcticonSymbolVariant = {
@@ -256,6 +278,96 @@ interface IFilterChangesListState {
   readonly selectedItems: ReadonlyArray<IChangesListItem>
   readonly focusedRow: string | null
   readonly groups: ReadonlyArray<IFilterListGroup<IChangesListItem>>
+  /** The folders the user has folded up, by path */
+  readonly collapsedFolders: ReadonlySet<string>
+  /** The folder shown by each group header, by group identifier */
+  readonly folders: Map<string, IChangesFolder>
+  /** The ids of files hidden only because their folder is folded up */
+  readonly collapsedFileIDs: ReadonlySet<string>
+}
+
+interface IGroupState {
+  readonly groups: ReadonlyArray<IFilterListGroup<IChangesListItem>>
+  readonly folders: Map<string, IChangesFolder>
+  readonly collapsedFileIDs: ReadonlySet<string>
+}
+
+function createListItem(
+  file: WorkingDirectoryFileChange,
+  depth: number,
+  displayPath: string
+): IChangesListItem {
+  return { text: [file.path], id: file.id, change: file, depth, displayPath }
+}
+
+/**
+ * Arrange the working directory files into the groups backing the list. When
+ * the user is filtering by text we show a flat list of full paths so that the
+ * matched characters line up with what they typed; otherwise the files are
+ * grouped into foldable folders.
+ */
+function createGroupState(
+  files: ReadonlyArray<WorkingDirectoryFileChange>,
+  collapsedFolders: ReadonlySet<string>,
+  groupByFolder: boolean
+): IGroupState {
+  if (!groupByFolder) {
+    return {
+      groups: [
+        {
+          identifier: RootGroupIdentifier,
+          showHeader: false,
+          items: files.map(f => createListItem(f, 0, f.path)),
+        },
+      ],
+      folders: new Map(),
+      collapsedFileIDs: new Set(),
+    }
+  }
+
+  const groups = new Array<IFilterListGroup<IChangesListItem>>()
+  const folders = new Map<string, IChangesFolder>()
+  const collapsedFileIDs = new Set<string>()
+
+  for (const section of buildChangesTree(files, collapsedFolders)) {
+    const { folder } = section
+
+    if (folder === null) {
+      groups.push({
+        identifier: RootGroupIdentifier,
+        showHeader: false,
+        items: section.files.map(f => createListItem(f, 0, f.path)),
+      })
+      continue
+    }
+
+    const identifier = folderGroupIdentifier(folder.path)
+    folders.set(identifier, folder)
+
+    if (folder.collapsed) {
+      folder.allFiles.forEach(f => collapsedFileIDs.add(f.id))
+    }
+
+    groups.push({
+      identifier,
+      showHeaderWhenEmpty: true,
+      items: section.files.map(f =>
+        // Renames and copies render the path they came from alongside the
+        // current one, so shortening only the latter would read as a move
+        // between folders that didn't happen.
+        createListItem(
+          f,
+          folder.depth + 1,
+          f.status.kind === AppFileStatusKind.Renamed ||
+            f.status.kind === AppFileStatusKind.Copied
+            ? f.path
+            : basename(f.path)
+        )
+      ),
+    })
+  }
+
+  return { groups, folders, collapsedFileIDs }
 }
 
 function getSelectedItemsFromProps(
@@ -273,14 +385,18 @@ function getSelectedItemsFromProps(
       continue
     }
 
-    selectedItems.push({
-      text: [file.path, file.status.kind.toString()],
-      id: file.id,
-      change: file,
-    })
+    selectedItems.push(createListItem(file, 0, file.path))
   }
 
   return selectedItems
+}
+
+/**
+ * Text filtering shows a flat list of full paths; anything else groups the
+ * changes into foldable folders.
+ */
+function isGroupingByFolder(props: IFilterChangesListProps) {
+  return !props.showChangesFilter || props.fileListFilter.filterText === ''
 }
 
 /** Get checkbox value from includeAll status */
@@ -358,49 +474,58 @@ export class FilterChangesList extends React.Component<
   public constructor(props: IFilterChangesListProps) {
     super(props)
 
-    const listItems = this.createListItems(props.workingDirectory.files)
-    const groups = [listItems]
+    const collapsedFolders = getCollapsedFolders(props.repository)
+    const groupState = createGroupState(
+      props.workingDirectory.files,
+      collapsedFolders,
+      isGroupingByFolder(props)
+    )
 
     this.state = {
       filteredItems: new Map<string, IChangesListItem>(
-        listItems.items.map(i => [i.id, i])
+        props.workingDirectory.files.map(f => [
+          f.id,
+          createListItem(f, 0, f.path),
+        ])
       ),
       selectedItems: getSelectedItemsFromProps(props),
       focusedRow: null,
-      groups,
+      collapsedFolders,
+      ...groupState,
     }
   }
 
   public componentWillReceiveProps(nextProps: IFilterChangesListProps) {
+    const repositoryChanged =
+      nextProps.repository.path !== this.props.repository.path
+
     // No need to update state unless we haven't done it yet or the
     // selected file id list has changed.
     if (
-      !arrayEquals(nextProps.selectedFileIDs, this.props.selectedFileIDs) ||
-      !arrayEquals(
+      !repositoryChanged &&
+      arrayEquals(nextProps.selectedFileIDs, this.props.selectedFileIDs) &&
+      arrayEquals(
         nextProps.workingDirectory.files,
         this.props.workingDirectory.files
-      )
+      ) &&
+      isGroupingByFolder(nextProps) === isGroupingByFolder(this.props)
     ) {
-      this.setState({
-        selectedItems: getSelectedItemsFromProps(nextProps),
-        groups: [this.createListItems(nextProps.workingDirectory.files)],
-      })
+      return
     }
-  }
 
-  private createListItems(
-    files: ReadonlyArray<WorkingDirectoryFileChange>
-  ): IFilterListGroup<IChangesListItem> {
-    const items = files.map(file => ({
-      text: [file.path],
-      id: file.id,
-      change: file,
-    }))
+    const collapsedFolders = repositoryChanged
+      ? getCollapsedFolders(nextProps.repository)
+      : this.state.collapsedFolders
 
-    return {
-      identifier: 'changed-files',
-      items,
-    }
+    this.setState({
+      selectedItems: getSelectedItemsFromProps(nextProps),
+      collapsedFolders,
+      ...createGroupState(
+        nextProps.workingDirectory.files,
+        collapsedFolders,
+        isGroupingByFolder(nextProps)
+      ),
+    })
   }
 
   private onIncludeAllChanged = (event: React.FormEvent<HTMLInputElement>) => {
@@ -410,6 +535,60 @@ export class FilterChangesList extends React.Component<
       ([, v]) => v.change
     )
     this.props.onIncludeChanged(filteredItemPaths, include)
+  }
+
+  private setCollapsedFolders(collapsedFolders: ReadonlySet<string>) {
+    setCollapsedFolders(this.props.repository, collapsedFolders)
+
+    this.setState({
+      collapsedFolders,
+      ...createGroupState(
+        this.props.workingDirectory.files,
+        collapsedFolders,
+        isGroupingByFolder(this.props)
+      ),
+    })
+  }
+
+  private toggleFolder = (folder: IChangesFolder) => {
+    const collapsedFolders = new Set(this.state.collapsedFolders)
+
+    if (collapsedFolders.has(folder.path)) {
+      collapsedFolders.delete(folder.path)
+    } else {
+      collapsedFolders.add(folder.path)
+    }
+
+    this.setCollapsedFolders(collapsedFolders)
+  }
+
+  private onCollapseAllFolders = () => {
+    this.setCollapsedFolders(
+      new Set(getAllFolderPaths(this.props.workingDirectory.files))
+    )
+  }
+
+  private onExpandAllFolders = () => {
+    this.setCollapsedFolders(new Set())
+  }
+
+  private renderFolderHeader = (identifier: string): JSX.Element | null => {
+    const folder = this.state.folders.get(identifier)
+
+    if (folder === undefined) {
+      return null
+    }
+
+    const { rebaseConflictState, isCommitting } = this.props
+
+    return (
+      <ChangesFolderHeader
+        folder={folder}
+        disableSelection={isCommitting || rebaseConflictState !== null}
+        onToggle={this.toggleFolder}
+        onIncludeChanged={this.props.onIncludeChanged}
+      />
+    )
   }
 
   private renderChangedFile = (
@@ -471,6 +650,8 @@ export class FilterChangesList extends React.Component<
         checkboxTooltip={checkboxTooltip}
         focused={this.state.focusedRow === changeListItem.id}
         matches={matches}
+        depth={changeListItem.depth}
+        displayPath={changeListItem.displayPath}
       />
     )
   }
@@ -566,6 +747,26 @@ export class FilterChangesList extends React.Component<
         enabled: hasLocalChanges && this.props.branch !== null && !hasConflicts,
       },
     ]
+
+    const folderCount = getAllFolderPaths(
+      this.props.workingDirectory.files
+    ).length
+
+    if (folderCount > 0) {
+      items.push(
+        { type: 'separator' },
+        {
+          label: __DARWIN__ ? 'Collapse All Folders' : 'Collapse all folders',
+          action: this.onCollapseAllFolders,
+          enabled: this.state.collapsedFolders.size < folderCount,
+        },
+        {
+          label: __DARWIN__ ? 'Expand All Folders' : 'Expand all folders',
+          action: this.onExpandAllFolders,
+          enabled: this.state.collapsedFolders.size > 0,
+        }
+      )
+    }
 
     showContextualMenu(items)
   }
@@ -1200,6 +1401,21 @@ export class FilterChangesList extends React.Component<
   ) => {
     const filteredSet = new Map<string, IChangesListItem>()
     filteredItems.forEach(f => filteredSet.set(f.id, f))
+
+    // Files inside a folded up folder aren't rendered but they haven't been
+    // filtered out either - they're still committed and still counted.
+    for (const file of this.props.workingDirectory.files) {
+      if (!this.state.collapsedFileIDs.has(file.id)) {
+        continue
+      }
+
+      const item = createListItem(file, 0, file.path)
+
+      if (!this.props.showChangesFilter || this.applyFilters(item)) {
+        filteredSet.set(file.id, item)
+      }
+    }
+
     this.setState({ filteredItems: filteredSet })
   }
 
@@ -1339,7 +1555,18 @@ export class FilterChangesList extends React.Component<
     )
   }
 
-  private getListAriaLabel = () => {
+  private getListAriaLabel = (groupIndex: number) => {
+    const group = this.state.groups[groupIndex]
+    const folder =
+      group === undefined ? undefined : this.state.folders.get(group.identifier)
+
+    if (folder !== undefined) {
+      const count = folder.allFiles.length
+      return `${folder.path}, ${formatNumber(count)} changed file${plural(
+        count
+      )}`
+    }
+
     const { files } = this.props.workingDirectory
     return `${formatNumber(files.length)} changed file${plural(files.length)}`
   }
@@ -1382,10 +1609,12 @@ export class FilterChangesList extends React.Component<
                 ? this.applyFilters
                 : undefined
             }
+            renderGroupHeader={this.renderFolderHeader}
             invalidationProps={{
               workingDirectory: workingDirectory,
               isCommitting: isCommitting,
               focusedRow: this.state.focusedRow,
+              collapsedFolders: this.state.collapsedFolders,
               showChangesFilter: this.props.showChangesFilter,
               filterNewFiles: this.props.fileListFilter.isNewFile,
               filterModifiedFiles: this.props.fileListFilter.isModifiedFile,

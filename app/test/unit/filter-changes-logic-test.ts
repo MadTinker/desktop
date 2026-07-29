@@ -48,6 +48,8 @@ function createTestItem(
     id: path,
     text: [path],
     change,
+    depth: 0,
+    displayPath: path,
   }
 }
 
@@ -165,6 +167,8 @@ describe('filter-changes-logic', () => {
             { kind: AppFileStatusKind.Untracked },
             DiffSelection.fromInitialSelection(DiffSelectionType.None)
           ),
+          depth: 0,
+          displayPath: 'untracked.txt',
         }
 
         assert.equal(applyFilterOptions(untrackedFile, filters), true)

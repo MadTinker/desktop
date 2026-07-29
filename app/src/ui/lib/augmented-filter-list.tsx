@@ -854,13 +854,16 @@ function createStateUpdate<T extends IFilterListItem>(
       filterValueChanged = true
     }
 
-    if (!items.length) {
+    const renderHeader =
+      props.renderGroupHeader !== undefined && group.showHeader !== false
+
+    if (!items.length && !(renderHeader && group.showHeaderWhenEmpty)) {
       continue
     }
 
     groupIndices.push(idx)
 
-    if (props.renderGroupHeader && group.showHeader !== false) {
+    if (renderHeader) {
       groupRows.push({ kind: 'group', identifier: group.identifier })
     }
 

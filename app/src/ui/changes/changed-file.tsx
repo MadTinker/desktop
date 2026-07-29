@@ -19,6 +19,13 @@ interface IChangedFileProps {
   readonly focused: boolean
   /** The characters in the file path to highlight */
   readonly matches?: IMatches
+  /** How far to indent the row when the list is grouped into folders */
+  readonly depth?: number
+  /**
+   * The path to display, which is the file name rather than the full path when
+   * the file sits underneath a folder header. Defaults to the full path.
+   */
+  readonly displayPath?: string
   readonly onIncludeChanged: (
     file: WorkingDirectoryFileChange,
     include: boolean
@@ -50,11 +57,14 @@ export class ChangedFile extends React.Component<IChangedFileProps, {}> {
       checkboxTooltip,
       focused,
       matches,
+      depth,
+      displayPath,
     } = this.props
     const { status, path } = file
     const fileStatus = mapStatus(status)
 
-    const listItemPadding = 10 * 2
+    const indent = (depth ?? 0) * 12
+    const listItemPadding = 10 * 2 + indent
     const checkboxWidth = 20
     const statusWidth = 16
     const filePadding = 5
@@ -78,7 +88,14 @@ export class ChangedFile extends React.Component<IChangedFileProps, {}> {
     )} ${includedText}`
 
     return (
-      <div className="file">
+      <div
+        className="file"
+        style={
+          indent > 0
+            ? { paddingLeft: `calc(var(--spacing) + ${indent}px)` }
+            : undefined
+        }
+      >
         <TooltippedContent
           tooltip={checkboxTooltip}
           direction={TooltipDirection.EAST}
@@ -96,7 +113,7 @@ export class ChangedFile extends React.Component<IChangedFileProps, {}> {
         </TooltippedContent>
 
         <PathLabel
-          path={path}
+          path={displayPath ?? path}
           status={status}
           availableWidth={availablePathWidth}
           ariaHidden={true}

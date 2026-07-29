@@ -34,6 +34,13 @@ export interface IFilterListGroup<
   /** Whether to render this group's header. Defaults to true. */
   readonly showHeader?: boolean
 
+  /**
+   * Whether to render this group's header even when it holds no items, as is
+   * the case for a collapsed folder in the changes list. Defaults to false, ie
+   * empty groups are omitted entirely.
+   */
+  readonly showHeaderWhenEmpty?: boolean
+
   /** The items in the group. */
   readonly items: ReadonlyArray<Item>
 }
