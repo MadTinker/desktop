@@ -77,6 +77,49 @@
         color: var(--dialog-information-color);
         flex-shrink: 0;
       }
+
+      .submodule-head-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3em;
+        margin-left: auto;
+        max-width: 50%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-family: var(--font-family-monospace);
+        font-weight: var(--font-weight-normal);
+        color: var(--text-secondary-color);
+
+        .octicon {
+          color: var(--text-secondary-color);
+        }
+
+        &.detached {
+          color: var(--color-modified);
+
+          .octicon {
+            color: var(--color-modified);
+          }
+        }
+      }
+    }
+
+    .submodule-head-warning {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5em;
+      padding: 6px 10px;
+      font-size: var(--font-size-sm);
+      line-height: 1.4;
+      background-color: var(--box-alt-background-color);
+      border-bottom: 1px solid var(--box-border-color);
+
+      .octicon {
+        flex-shrink: 0;
+        margin-top: 2px;
+        color: var(--color-modified);
+      }
     }
 
     .submodule-file-list {

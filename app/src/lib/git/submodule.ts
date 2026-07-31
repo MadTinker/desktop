@@ -698,14 +698,62 @@ export async function foreachSubmodule(
   }
   args.push(command)
 
-  const { stdout } = await git(
-    args,
-    repository.path,
-    'foreachSubmodule',
-    { successExitCodes: new Set([0, 1]) }
-  )
+  const { stdout } = await git(args, repository.path, 'foreachSubmodule', {
+    successExitCodes: new Set([0, 1]),
+  })
 
   return stdout
+}
+
+/** Where a submodule's HEAD currently points. */
+export interface ISubmoduleHead {
+  /** The local branch HEAD is on, or null when HEAD is detached. */
+  readonly branch: string | null
+
+  /**
+   * The upstream tracking branch, remote prefix stripped, or null when there
+   * isn't one. When detached this is where `pushSubmodule` would deliver the
+   * commit, so it's the difference between a stranded commit and a recoverable
+   * one.
+   */
+  readonly upstreamBranch: string | null
+}
+
+/**
+ * Resolve the branch a commit made in this submodule would land on.
+ *
+ * Submodules are checked out at a SHA by default, so a commit made there
+ * belongs to no branch at all unless someone checked one out first — this is
+ * what lets the UI say so before the commit rather than after.
+ */
+export async function getSubmoduleHead(
+  submodulePath: string
+): Promise<ISubmoduleHead> {
+  const headResult = await git(
+    ['symbolic-ref', '-q', '--short', 'HEAD'],
+    submodulePath,
+    'getSubmoduleHead',
+    { successExitCodes: new Set([0, 1, 128]) }
+  )
+
+  const branch =
+    headResult.exitCode === 0 ? headResult.stdout.trim() || null : null
+
+  const upstreamResult = await git(
+    ['rev-parse', '--abbrev-ref', '@{upstream}'],
+    submodulePath,
+    'getSubmoduleUpstream',
+    { successExitCodes: new Set([0, 1, 128]) }
+  )
+
+  let upstreamBranch: string | null = null
+  if (upstreamResult.exitCode === 0) {
+    const upstream = upstreamResult.stdout.trim()
+    const slashIdx = upstream.indexOf('/')
+    upstreamBranch = slashIdx === -1 ? upstream : upstream.slice(slashIdx + 1)
+  }
+
+  return { branch, upstreamBranch }
 }
 
 /**

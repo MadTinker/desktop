@@ -10,7 +10,11 @@ import { SuggestedAction } from '../suggested-actions'
 import { Ref } from '../lib/ref'
 import { CopyButton } from '../copy-button'
 import { shortenSHA, CommitOneLine } from '../../models/commit'
-import { getSubmoduleCommitsBetween } from '../../lib/git/submodule'
+import {
+  getSubmoduleCommitsBetween,
+  getSubmoduleHead,
+  ISubmoduleHead,
+} from '../../lib/git/submodule'
 import { Button } from '../lib/button'
 import { Repository } from '../../models/repository'
 import { getStatus } from '../../lib/git/status'
@@ -99,6 +103,8 @@ interface ISubmoduleDiffState {
   readonly lastCommitSha: string | null
   readonly localAIConfig: ILocalAIConfig | null
   readonly isGeneratingAIMessage: boolean
+  /** Where a commit made here would land; null until resolved. */
+  readonly head: ISubmoduleHead | null
 }
 
 export class SubmoduleDiff extends React.Component<
@@ -118,6 +124,7 @@ export class SubmoduleDiff extends React.Component<
       lastCommitSha: null,
       localAIConfig: null,
       isGeneratingAIMessage: false,
+      head: null,
     }
   }
 
@@ -178,15 +185,31 @@ export class SubmoduleDiff extends React.Component<
 
   private async loadSubmoduleStatus() {
     const { diff } = this.props
-    if (
-      diff.entryStatus === 'uninitialized' ||
-      (!diff.status.modifiedChanges && !diff.status.untrackedChanges)
-    ) {
+    if (diff.entryStatus === 'uninitialized') {
+      this.setState({
+        submoduleFiles: [],
+        selectedFile: null,
+        fileDiff: null,
+        head: null,
+      })
+      return
+    }
+
+    // Resolved even when there's nothing to commit — the post-commit
+    // confirmation names the branch too.
+    try {
+      this.setState({ head: await getSubmoduleHead(diff.fullPath) })
+    } catch {
+      this.setState({ head: null })
+    }
+
+    if (!diff.status.modifiedChanges && !diff.status.untrackedChanges) {
       this.setState({ submoduleFiles: [], selectedFile: null, fileDiff: null })
       return
     }
 
     this.setState({ loadingStatus: true })
+
     try {
       const status = await getStatus(this.getSubmoduleRepo())
       if (status !== null) {
@@ -463,6 +486,7 @@ export class SubmoduleDiff extends React.Component<
       lastCommitSha,
       localAIConfig,
       isGeneratingAIMessage,
+      head,
     } = this.state
     const { diff, readOnly } = this.props
 
@@ -476,7 +500,8 @@ export class SubmoduleDiff extends React.Component<
           <Octicon symbol={octicons.check} className="added-icon" />
           <div className="content">
             <p>
-              Committed to submodule: <Ref>{shortenSHA(lastCommitSha)}</Ref>
+              Committed to {head?.branch ?? 'detached HEAD'} in submodule:{' '}
+              <Ref>{shortenSHA(lastCommitSha)}</Ref>
             </p>
           </div>
         </div>
@@ -506,7 +531,10 @@ export class SubmoduleDiff extends React.Component<
             {submoduleFiles.length} file
             {submoduleFiles.length !== 1 ? 's' : ''} changed in submodule
           </span>
+          {this.renderHeadBadge()}
         </div>
+
+        {this.renderDetachedHeadWarning()}
 
         <div className="submodule-file-list">
           {submoduleFiles.map(f => this.renderFileListItem(f))}
@@ -514,7 +542,9 @@ export class SubmoduleDiff extends React.Component<
 
         {selectedFile !== null && fileDiff !== null && (
           <div className="submodule-file-diff">
-            <div className="submodule-file-diff-header">{selectedFile.path}</div>
+            <div className="submodule-file-diff-header">
+              {selectedFile.path}
+            </div>
             <div className="submodule-diff-lines">
               {fileDiff.hunks.map((hunk, hi) => (
                 <React.Fragment key={hi}>
@@ -580,8 +610,8 @@ export class SubmoduleDiff extends React.Component<
                       localAIConfig.provider === 'lmstudio'
                         ? 'LM Studio'
                         : localAIConfig.provider === 'ollama'
-                          ? 'Ollama'
-                          : 'Local AI'
+                        ? 'Ollama'
+                        : 'Local AI'
                     }`
               }
               tooltip={
@@ -591,8 +621,8 @@ export class SubmoduleDiff extends React.Component<
                       localAIConfig.provider === 'lmstudio'
                         ? 'LM Studio'
                         : localAIConfig.provider === 'ollama'
-                          ? 'Ollama'
-                          : 'Local AI'
+                        ? 'Ollama'
+                        : 'Local AI'
                     }`
               }
             >
@@ -608,9 +638,72 @@ export class SubmoduleDiff extends React.Component<
             }
             type="button"
           >
-            {isCommitting ? 'Committing…' : `Commit ${submoduleFiles.length} file${submoduleFiles.length !== 1 ? 's' : ''} to submodule`}
+            {isCommitting
+              ? 'Committing…'
+              : `Commit ${submoduleFiles.length} file${
+                  submoduleFiles.length !== 1 ? 's' : ''
+                } to ${head?.branch ?? 'detached HEAD'}`}
           </Button>
         </div>
+      </div>
+    )
+  }
+
+  /**
+   * The branch chip in the inline changes header — the submodule's answer to
+   * the parent repository's "Commit to <branch>" button.
+   */
+  private renderHeadBadge() {
+    const { head } = this.state
+    if (head === null) {
+      return null
+    }
+
+    if (head.branch !== null) {
+      return (
+        <span className="submodule-head-badge">
+          <Octicon symbol={octicons.gitBranch} />
+          {head.branch}
+        </span>
+      )
+    }
+
+    return (
+      <span className="submodule-head-badge detached">
+        <Octicon symbol={octicons.alert} />
+        detached HEAD
+      </span>
+    )
+  }
+
+  /**
+   * Committing onto a detached HEAD produces a commit no branch points at, so
+   * say what happens to it before the commit rather than after.
+   */
+  private renderDetachedHeadWarning() {
+    const { head } = this.state
+    if (head === null || head.branch !== null) {
+      return null
+    }
+
+    return (
+      <div className="submodule-head-warning">
+        <Octicon symbol={octicons.alert} className="modified-icon" />
+        <span>
+          {head.upstreamBranch !== null ? (
+            <>
+              HEAD is detached. The commit won't be on a local branch; pushing
+              this submodule delivers it to <Ref>{head.upstreamBranch}</Ref>.
+              Check out a branch first to keep it locally.
+            </>
+          ) : (
+            <>
+              HEAD is detached with no upstream branch. The commit won't belong
+              to any branch and won't be pushed — check out a branch before
+              committing.
+            </>
+          )}
+        </span>
       </div>
     )
   }
@@ -623,7 +716,9 @@ export class SubmoduleDiff extends React.Component<
     return (
       <div
         key={file.path}
-        className={`submodule-file-item ${statusClass}${isSelected ? ' selected' : ''}`}
+        className={`submodule-file-item ${statusClass}${
+          isSelected ? ' selected' : ''
+        }`}
         onClick={() => this.onFileClick(file)}
         onContextMenu={e => this.onContextMenu(file, e)}
         role="button"
@@ -634,7 +729,9 @@ export class SubmoduleDiff extends React.Component<
           }
         }}
       >
-        <span className="submodule-file-status">{this.fileStatusLabel(file)}</span>
+        <span className="submodule-file-status">
+          {this.fileStatusLabel(file)}
+        </span>
         <span className="submodule-file-path">{file.path}</span>
       </div>
     )
@@ -823,7 +920,8 @@ export class SubmoduleDiff extends React.Component<
     } = this.props
 
     const showInitialize =
-      diff.entryStatus === 'uninitialized' && onInitializeSubmodule !== undefined
+      diff.entryStatus === 'uninitialized' &&
+      onInitializeSubmodule !== undefined
     const showSync = diff.url !== null && onSyncSubmodule !== undefined
     const showRollback =
       !readOnly &&
