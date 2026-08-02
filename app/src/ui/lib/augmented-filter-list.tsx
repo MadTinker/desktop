@@ -823,7 +823,8 @@ function getFirstVisibleRow<T extends IFilterListItem>(
   return InvalidRowIndexPath
 }
 
-function createStateUpdate<T extends IFilterListItem>(
+/** Exported for testing, this is what turns the groups into list rows. */
+export function createStateUpdate<T extends IFilterListItem>(
   props: IAugmentedSectionFilterListProps<T>,
   state: IAugmentedSectionFilterListState<T> | null
 ) {
