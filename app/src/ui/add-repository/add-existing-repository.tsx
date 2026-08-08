@@ -17,6 +17,17 @@ import { showOpenDialog } from '../main-process-proxy'
 import { Ref } from '../lib/ref'
 import { InputError } from '../lib/input-description/input-error'
 import { IAccessibleMessage } from '../../models/accessible-message'
+import { Repository } from '../../models/repository'
+import { assertNever } from '../../lib/fatal-error'
+import { Select } from '../lib/select'
+import { ICustomRepositoryGroup } from '../repositories-list/repository-group-types'
+import {
+  FavoritesChoiceValue,
+  NewGroupChoiceValue,
+  NoGroupChoiceValue,
+  customGroupChoiceValue,
+  resolveGroupChoice,
+} from './repository-group-choice'
 
 interface IAddExistingRepositoryProps {
   readonly dispatcher: Dispatcher
@@ -26,6 +37,9 @@ interface IAddExistingRepositoryProps {
    * Defaults to the empty string if not defined.
    */
   readonly path?: string
+
+  /** The custom groups the new repository can be filed under. */
+  readonly customRepositoryGroups: ReadonlyArray<ICustomRepositoryGroup>
 }
 
 interface IAddExistingRepositoryState {
@@ -44,6 +58,12 @@ interface IAddExistingRepositoryState {
   readonly isRepositoryUnsafe: boolean
   readonly repositoryUnsafePath?: string
   readonly isTrustingRepository: boolean
+
+  /** The raw value of the group `<select>`. See repository-group-choice.ts. */
+  readonly groupChoice: string
+
+  /** Name typed into the inline box shown by the "New group…" choice. */
+  readonly newGroupName: string
 }
 
 /** The component for adding an existing local repository. */
@@ -64,6 +84,8 @@ export class AddExistingRepository extends React.Component<
       isRepositoryBare: false,
       isRepositoryUnsafe: false,
       isTrustingRepository: false,
+      groupChoice: NoGroupChoiceValue,
+      newGroupName: '',
     }
   }
 
@@ -222,6 +244,49 @@ export class AddExistingRepository extends React.Component<
     )
   }
 
+  /**
+   * Picker for where the new repository lands in the repository list. Handy for
+   * the `madhub .` entry point, where the dialog is the only stop between the
+   * command line and a tracked repository — filing it here saves a trip through
+   * the list's context menu afterwards.
+   */
+  private renderGroupSelector() {
+    const { customRepositoryGroups } = this.props
+
+    return (
+      <>
+        <Row>
+          <Select
+            label={__DARWIN__ ? 'Add To' : 'Add to'}
+            value={this.state.groupChoice}
+            onChange={this.onGroupChoiceChanged}
+          >
+            <option value={NoGroupChoiceValue}>Nothing (just the list)</option>
+            <option value={FavoritesChoiceValue}>Favorites</option>
+            {customRepositoryGroups.map(g => (
+              <option key={g.id} value={customGroupChoiceValue(g.id)}>
+                {g.name}
+              </option>
+            ))}
+            <option value={NewGroupChoiceValue}>
+              {__DARWIN__ ? 'New Group…' : 'New group…'}
+            </option>
+          </Select>
+        </Row>
+        {this.state.groupChoice === NewGroupChoiceValue && (
+          <Row>
+            <TextBox
+              value={this.state.newGroupName}
+              label={__DARWIN__ ? 'Group Name' : 'Group name'}
+              placeholder="group name"
+              onValueChanged={this.onNewGroupNameChanged}
+            />
+          </Row>
+        )}
+      </>
+    )
+  }
+
   public render() {
     return (
       <Dialog
@@ -244,6 +309,7 @@ export class AddExistingRepository extends React.Component<
             <Button onClick={this.showFilePicker}>Choose…</Button>
           </Row>
           {this.renderErrors()}
+          {this.renderGroupSelector()}
         </DialogContent>
 
         <DialogFooter>
@@ -259,6 +325,16 @@ export class AddExistingRepository extends React.Component<
     if (this.state.path !== path) {
       this.updatePath(path)
     }
+  }
+
+  private onGroupChoiceChanged = (
+    event: React.FormEvent<HTMLSelectElement>
+  ) => {
+    this.setState({ groupChoice: event.currentTarget.value })
+  }
+
+  private onNewGroupNameChanged = (newGroupName: string) => {
+    this.setState({ newGroupName })
   }
 
   private showFilePicker = async () => {
@@ -293,9 +369,44 @@ export class AddExistingRepository extends React.Component<
     const repositories = await dispatcher.addRepositories([resolvedPath])
 
     if (repositories.length > 0) {
+      this.applyGroupChoice(repositories[0])
       dispatcher.closeFoldout(FoldoutType.Repository)
       dispatcher.selectRepository(repositories[0])
       dispatcher.recordAddExistingRepository()
+    }
+  }
+
+  /** File the newly added repository wherever the group picker asked for. */
+  private applyGroupChoice(repository: Repository) {
+    const { dispatcher, customRepositoryGroups } = this.props
+    const assignment = resolveGroupChoice(
+      this.state.groupChoice,
+      this.state.newGroupName,
+      customRepositoryGroups
+    )
+
+    switch (assignment.kind) {
+      case 'none':
+        return
+      case 'favorite':
+        // A repository we just added is never already a favorite, so the toggle
+        // only ever adds here.
+        dispatcher.toggleFavoriteRepository(repository.id)
+        return
+      case 'existing':
+        dispatcher.addRepositoryToGroup(repository.id, assignment.groupId)
+        return
+      case 'new':
+        dispatcher.addRepositoryToGroup(
+          repository.id,
+          dispatcher.createCustomGroup(assignment.name)
+        )
+        return
+      default:
+        return assertNever(
+          assignment,
+          `Unknown group assignment: ${assignment}`
+        )
     }
   }
 
