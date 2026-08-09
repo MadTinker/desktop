@@ -42,6 +42,10 @@ import { PullRequestSuggestedNextAction } from '../models/pull-request'
 import { clamp } from '../lib/clamp'
 import { Emoji } from '../lib/emoji'
 import { PopupType } from '../models/popup'
+import classNames from 'classnames'
+import { Octicon } from './octicons'
+import * as octicons from './octicons/octicons.generated'
+import { SubmodulePanel } from './submodule-management/submodule-panel'
 
 interface IRepositoryViewProps {
   readonly repository: Repository
@@ -164,6 +168,9 @@ interface IRepositoryViewProps {
 interface IRepositoryViewState {
   readonly changesListScrollTop: number
   readonly compareListScrollTop: number
+
+  /** Whether the submodule side panel is slid open. */
+  readonly submodulePanelOpen: boolean
 }
 
 const enum Tab {
@@ -195,6 +202,7 @@ export class RepositoryView extends React.Component<
     this.state = {
       changesListScrollTop: 0,
       compareListScrollTop: 0,
+      submodulePanelOpen: false,
     }
   }
 
@@ -656,6 +664,7 @@ export class RepositoryView extends React.Component<
               this.props.pullRequestSuggestedNextAction
             }
             submoduleRepositories={this.props.submoduleRepositories}
+            onShowSubmodulePanel={this.onShowSubmodulePanel}
           />
         )
       }
@@ -737,10 +746,74 @@ export class RepositoryView extends React.Component<
     }
   }
 
+  private onShowSubmodulePanel = () => {
+    this.setState({ submodulePanelOpen: true })
+  }
+
+  private onToggleSubmodulePanel = () => {
+    this.setState(state => ({ submodulePanelOpen: !state.submodulePanelOpen }))
+  }
+
+  private onCloseSubmodulePanel = () => {
+    this.setState({ submodulePanelOpen: false })
+  }
+
+  /**
+   * The submodule manager as a panel that slides in from the right edge of the
+   * repository content, plus the slim tab on that edge which toggles it.
+   *
+   * Mounted only once opened — `SubmodulePanel` shells out to `git submodule`
+   * on mount, and repositories without submodules shouldn't pay for that.
+   */
+  private renderSubmodulePanel(): JSX.Element {
+    const { submodulePanelOpen } = this.state
+
+    return (
+      <>
+        <button
+          type="button"
+          className="submodule-panel-toggle"
+          onClick={this.onToggleSubmodulePanel}
+          aria-expanded={submodulePanelOpen}
+          aria-label="Toggle submodule panel"
+        >
+          <Octicon symbol={octicons.fileSubmodule} />
+        </button>
+        <aside
+          className={classNames('submodule-side-panel', {
+            open: submodulePanelOpen,
+          })}
+          aria-hidden={!submodulePanelOpen}
+        >
+          <header className="submodule-side-panel-header">
+            <span className="submodule-side-panel-title">Submodules</span>
+            <button
+              type="button"
+              className="submodule-side-panel-close"
+              onClick={this.onCloseSubmodulePanel}
+              aria-label="Close submodule panel"
+            >
+              <Octicon symbol={octicons.x} />
+            </button>
+          </header>
+          {submodulePanelOpen && (
+            <SubmodulePanel
+              repository={this.props.repository}
+              dispatcher={this.props.dispatcher}
+            />
+          )}
+        </aside>
+      </>
+    )
+  }
+
   private renderMainContent(): JSX.Element {
     return (
       <div id="repository-main">
-        <div id="repository-content">{this.renderContent()}</div>
+        <div id="repository-content">
+          {this.renderContent()}
+          {this.renderSubmodulePanel()}
+        </div>
       </div>
     )
   }

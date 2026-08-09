@@ -52,8 +52,32 @@
 #submodule-management {
   min-width: 560px;
 
+  // The dialog has no height of its own to hand down, so cap the list here
+  // rather than letting it grow the modal off-screen. The side panel instead
+  // lets it fill the available height.
+  .submodule-list {
+    max-height: 380px;
+  }
+}
+
+// Shared by the modal dialog and the repository view's slide-in side panel.
+.submodule-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+
   .tab-bar {
     margin: 0 var(--spacing);
+    flex-shrink: 0;
+  }
+
+  .submodule-panel-body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
   }
 
   .submodule-loading {
@@ -75,7 +99,6 @@
     list-style: none;
     margin: 0;
     padding: 0;
-    max-height: 380px;
     overflow-y: auto;
   }
 
@@ -149,10 +172,16 @@
     display: flex;
     flex-direction: row;
     gap: var(--spacing-half);
-    flex: 1;
+    flex-shrink: 0;
+    padding: var(--spacing-half) var(--spacing);
+    border-top: 1px solid var(--box-border-color);
   }
 
   // Foreach tab
+  .submodule-foreach {
+    padding: var(--spacing);
+  }
+
   .submodule-foreach-description {
     margin: 0 0 var(--spacing-half);
     color: var(--text-secondary-color);

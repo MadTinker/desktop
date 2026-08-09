@@ -30,6 +30,9 @@
     flex: 1 1 auto;
     min-height: 0;
     min-width: 0;
+    // Anchors the submodule side panel and its edge toggle, both of which are
+    // positioned against this box rather than taking part in the flex row.
+    position: relative;
   }
 
   &-sidebar {

@@ -19,7 +19,7 @@ import {
 } from '../../lib/rebase'
 import { StashedChangesLoadStates } from '../../models/stash-entry'
 import { Dispatcher } from '../dispatcher'
-import { SuggestedActionGroup } from '../suggested-actions'
+import { SuggestedAction, SuggestedActionGroup } from '../suggested-actions'
 import { PreferencesTab } from '../../models/preferences'
 import { PopupType } from '../../models/popup'
 import {
@@ -88,6 +88,9 @@ interface INoChangesProps {
 
   /** Submodule repos that live inside this repo — shown as a navigation panel. */
   readonly submoduleRepositories: ReadonlyArray<Repository>
+
+  /** Opens the repository view's submodule side panel. */
+  readonly onShowSubmodulePanel: () => void
 }
 
 /**
@@ -749,8 +752,35 @@ export class NoChanges extends React.Component<
           {this.renderOpenInExternalEditor()}
           {this.renderShowInFileManager()}
           {this.renderViewOnGitHub()}
+          {this.renderManageSubmodules()}
         </SuggestedActionGroup>
       </>
+    )
+  }
+
+  private onManageSubmodulesClicked = () => {
+    this.props.onShowSubmodulePanel()
+  }
+
+  /**
+   * Surfaces the submodule panel, which is otherwise only reachable from the
+   * toolbar dropdown.
+   *
+   * Rendered for every repository rather than only those with submodules: the
+   * only submodule signal available here is `submoduleRepositories`, which
+   * lists tracked repositories nested inside this one — not the repository's
+   * actual submodules — so gating on it would hide the card from precisely the
+   * people who haven't found the feature yet. The panel itself says so when
+   * there are none.
+   */
+  private renderManageSubmodules() {
+    return (
+      <SuggestedAction
+        title="Manage submodules"
+        description="Initialize, sync, and push this repository's submodules, or run a command across all of them."
+        buttonText={__DARWIN__ ? 'Show Submodules' : 'Show submodules'}
+        onClick={this.onManageSubmodulesClicked}
+      />
     )
   }
 
