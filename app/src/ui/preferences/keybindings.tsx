@@ -92,6 +92,7 @@ export class Keybindings extends React.Component<
               onChange={this.onFilterChanged}
             />
             <button
+              type="button"
               className="button-component"
               onClick={this.onExport}
               title="Export keybindings to JSON"
@@ -99,6 +100,7 @@ export class Keybindings extends React.Component<
               Export
             </button>
             <button
+              type="button"
               className="button-component"
               onClick={this.onImport}
               title="Import keybindings from JSON"
@@ -106,6 +108,7 @@ export class Keybindings extends React.Component<
               Import
             </button>
             <button
+              type="button"
               className="button-component reset-all-button"
               onClick={this.onResetAll}
             >
@@ -197,6 +200,7 @@ export class Keybindings extends React.Component<
         </div>
         {hasOverride && (
           <button
+            type="button"
             className="keybinding-reset-button"
             onClick={() => this.onResetBinding(def.id)}
             title="Reset to default"

@@ -95,6 +95,7 @@ import {
   setNumberFormatPreference,
 } from '../../models/formatting-preferences'
 import { enableFormattingPreferences } from '../../lib/feature-flag'
+import { getNumber, setNumber } from '../../lib/local-storage'
 
 interface IPreferencesProps {
   readonly dispatcher: Dispatcher
@@ -240,6 +241,20 @@ const DefaultCustomIntegration: ICustomIntegration = {
   arguments: TargetPathArgument,
 }
 
+/** localStorage key remembering which settings tab was last open. */
+const lastSelectedTabKey = 'preferences-last-selected-tab'
+
+/** Read the last opened settings tab, ignoring stale/out-of-range values. */
+function getLastSelectedTab(): PreferencesTab | null {
+  const stored = getNumber(lastSelectedTabKey)
+
+  if (stored === undefined || PreferencesTab[stored] === undefined) {
+    return null
+  }
+
+  return stored
+}
+
 /** The app-level preferences component. */
 export class Preferences extends React.Component<
   IPreferencesProps,
@@ -249,7 +264,10 @@ export class Preferences extends React.Component<
     super(props)
 
     this.state = {
-      selectedIndex: this.props.initialSelectedTab || PreferencesTab.Accounts,
+      selectedIndex:
+        this.props.initialSelectedTab ??
+        this.getRestorableTab() ??
+        PreferencesTab.Accounts,
       committerName: '',
       committerEmail: '',
       defaultBranch: '',
@@ -1391,8 +1409,24 @@ export class Preferences extends React.Component<
     this.props.onDismissed()
   }
 
+  /**
+   * The last opened tab, unless it's one that isn't currently rendered (the
+   * Copilot tab only shows up for accounts with SDK access).
+   */
+  private getRestorableTab(): PreferencesTab | null {
+    const tab = getLastSelectedTab()
+
+    if (tab === PreferencesTab.Copilot && !this.isCopilotSdkEnabled) {
+      return null
+    }
+
+    return tab
+  }
+
   private onTabClicked = (visualIndex: number) => {
-    this.setState({ selectedIndex: this.visualIndexToTab(visualIndex) })
+    const selectedIndex = this.visualIndexToTab(visualIndex)
+    setNumber(lastSelectedTabKey, selectedIndex)
+    this.setState({ selectedIndex })
   }
 
   private get isCopilotSdkEnabled(): boolean {

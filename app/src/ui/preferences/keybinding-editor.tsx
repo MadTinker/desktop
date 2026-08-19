@@ -64,6 +64,7 @@ export class KeybindingEditor extends React.Component<
 
         <div className="keybinding-editor-actions">
           <button
+            type="button"
             className="button-component"
             onClick={this.onConfirm}
             onMouseDown={this.onButtonMouseDown}
@@ -72,6 +73,7 @@ export class KeybindingEditor extends React.Component<
             Save
           </button>
           <button
+            type="button"
             className="button-component"
             onClick={this.onClear}
             onMouseDown={this.onButtonMouseDown}
@@ -79,6 +81,7 @@ export class KeybindingEditor extends React.Component<
             Unbind
           </button>
           <button
+            type="button"
             className="button-component"
             onClick={this.props.onCancel}
             onMouseDown={this.onButtonMouseDown}

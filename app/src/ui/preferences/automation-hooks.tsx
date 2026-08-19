@@ -447,6 +447,7 @@ export class AutomationHooksPreferences extends React.Component<
             </div>
             <div className="automation-hook-actions">
               <button
+                type="button"
                 className="automation-hook-btn automation-hook-btn-run"
                 onClick={() => this.onRunHook(hook)}
                 disabled={running === hook.id}
@@ -456,6 +457,7 @@ export class AutomationHooksPreferences extends React.Component<
                 {running === hook.id ? 'Running…' : '▶ Run'}
               </button>
               <button
+                type="button"
                 className="automation-hook-btn"
                 onClick={() => this.openEdit(hook)}
                 aria-label="Edit hook"
@@ -463,6 +465,7 @@ export class AutomationHooksPreferences extends React.Component<
                 Edit
               </button>
               <button
+                type="button"
                 className="automation-hook-btn automation-hook-btn-toggle"
                 onClick={() => this.onToggle(hook.id, !hook.enabled)}
                 aria-label={hook.enabled ? 'Disable hook' : 'Enable hook'}
@@ -471,6 +474,7 @@ export class AutomationHooksPreferences extends React.Component<
               </button>
               {omnispindleApiKey && (
                 <button
+                  type="button"
                   className="automation-hook-btn automation-hook-btn-push"
                   onClick={() => this.onPushHook(hook)}
                   aria-label="Push hook to server"
@@ -480,6 +484,7 @@ export class AutomationHooksPreferences extends React.Component<
                 </button>
               )}
               <button
+                type="button"
                 className="automation-hook-btn automation-hook-btn-danger"
                 onClick={() => this.onDelete(hook.id)}
                 aria-label="Delete hook"

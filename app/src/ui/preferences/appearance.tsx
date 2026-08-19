@@ -332,6 +332,7 @@ export class Appearance extends React.Component<
         <h2 id="madness-theme-heading">Color Theme</h2>
         <div className="madness-theme-grid" role="group" aria-labelledby="madness-theme-heading">
           <button
+            type="button"
             className={`madness-swatch${!selectedMadnessTheme ? ' selected' : ''}`}
             onClick={() => onSelectedMadnessThemeChanged('')}
             aria-pressed={!selectedMadnessTheme}
@@ -347,6 +348,7 @@ export class Appearance extends React.Component<
             }
             return (
               <button
+                type="button"
                 key={t}
                 className={`madness-swatch${selectedMadnessTheme === t ? ' selected' : ''}`}
                 onClick={() => onSelectedMadnessThemeChanged(t)}
