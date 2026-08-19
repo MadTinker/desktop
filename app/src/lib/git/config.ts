@@ -123,6 +123,62 @@ async function getConfigValueInPath(
 }
 
 /**
+ * Look up every local config value whose name matches a regular expression.
+ *
+ * Equivalent to `git config --local --get-regexp <regexp>`. Use this instead of
+ * repeated `getConfigValue` calls when reading a family of related keys — it is
+ * one git invocation rather than one per key.
+ *
+ * @param regexp A POSIX regular expression matched against the *canonical* key
+ *               name. Git lower-cases section and variable names (but not
+ *               subsection names) before matching, so the pattern should be
+ *               written in lower case.
+ *
+ * @returns A map of canonical key name to value. Keys with no match produce an
+ *          empty map rather than an error.
+ */
+export async function getConfigValuesMatching(
+  repository: Repository,
+  regexp: string
+): Promise<Map<string, string>> {
+  const result = await git(
+    ['config', '-z', '--local', '--get-regexp', regexp],
+    repository.path,
+    'getConfigValuesMatching',
+    // Git exits with 1 when nothing matches. That's not an error for us.
+    { successExitCodes: new Set([0, 1]) }
+  )
+
+  const values = new Map<string, string>()
+
+  if (result.exitCode === 1) {
+    return values
+  }
+
+  // With -z each record is NUL-terminated and the key is separated from its
+  // value by a newline: `key\nvalue\0`.
+  for (const record of result.stdout.split('\0')) {
+    if (record.length === 0) {
+      continue
+    }
+
+    const separatorIndex = record.indexOf('\n')
+
+    if (separatorIndex === -1) {
+      // A valueless key (`[section] key` with no `=`). Nothing useful to read.
+      continue
+    }
+
+    values.set(
+      record.slice(0, separatorIndex),
+      record.slice(separatorIndex + 1)
+    )
+  }
+
+  return values
+}
+
+/**
  * Get the path to the global git config
  *
  * Note: this uses git config --edit which will automatically create the global
