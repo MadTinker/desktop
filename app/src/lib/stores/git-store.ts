@@ -1016,6 +1016,21 @@ export class GitStore extends BaseStore {
       remotes.set(this.upstreamRemote.name, this.upstreamRemote)
     }
 
+    // Anything else the repository is configured with. Without this a third
+    // remote — a bitbucket alongside origin, say — is never fetched at all, so
+    // its tracking refs are stale forever and anything comparing against them
+    // is quietly wrong.
+    //
+    // Background fetches deliberately stay narrow: they run on a timer for
+    // every repository, and reaching a second host that often turns a
+    // previously invisible auth problem into a stream of prompts. A fetch the
+    // user actually asked for should cover everything they've configured.
+    if (!backgroundTask) {
+      for (const remote of this._remotes) {
+        remotes.set(remote.name, remote)
+      }
+    }
+
     if (remotes.size > 0) {
       await this.fetchRemotes(
         [...remotes.values()],
@@ -1579,6 +1594,35 @@ export class GitStore extends BaseStore {
   }
 
   /** Changes the URL for the remote that matches the given name  */
+  /**
+   * Add a remote and load the new set of remotes.
+   *
+   * Returns false when git refused, having already surfaced the reason.
+   */
+  public async addRemote(name: string, url: string): Promise<boolean> {
+    const wasSuccessful =
+      (await this.performFailableOperation(() =>
+        addRemote(this.repository, name, url)
+      )) !== undefined
+
+    await this.loadRemotes()
+    this.emitUpdate()
+    return wasSuccessful
+  }
+
+  /** Remove a remote and load the new set of remotes. */
+  public async removeRemote(name: string): Promise<boolean> {
+    const wasSuccessful =
+      (await this.performFailableOperation(async () => {
+        await removeRemote(this.repository, name)
+        return true
+      })) === true
+
+    await this.loadRemotes()
+    this.emitUpdate()
+    return wasSuccessful
+  }
+
   public async setRemoteURL(name: string, url: string): Promise<boolean> {
     const wasSuccessful =
       (await this.performFailableOperation(() =>

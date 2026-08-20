@@ -1,11 +1,14 @@
-// Submodule side panel: slides in from the right edge of #repository-content,
-// with a slim always-visible tab on that edge to toggle it. Overlays the
-// content rather than displacing it, so opening it never reflows the diff.
+// Side panels: slide in from the right edge of #repository-content, with a
+// stack of slim always-visible tabs on that edge to toggle them. They overlay
+// the content rather than displacing it, so opening one never reflows the diff.
+//
+// Every panel anchors to the same edge, so only one is open at a time and the
+// toggles stack vertically rather than sharing a position.
 
-$submodule-side-panel-width: 420px;
-$submodule-panel-toggle-height: 92px;
+$side-panel-width: 420px;
+$side-panel-toggle-height: 92px;
 
-.submodule-panel-toggle {
+.side-panel-toggles {
   position: absolute;
   top: 50%;
   right: 0;
@@ -13,10 +16,16 @@ $submodule-panel-toggle-height: 92px;
   z-index: 1;
 
   display: flex;
+  flex-direction: column;
+  gap: var(--spacing-quarter, 2px);
+}
+
+.side-panel-toggle {
+  display: flex;
   align-items: center;
   justify-content: center;
   width: 18px;
-  height: $submodule-panel-toggle-height;
+  height: $side-panel-toggle-height;
   padding: 0;
 
   background: var(--box-alt-background-color, var(--box-background-color));
@@ -31,6 +40,11 @@ $submodule-panel-toggle-height: 92px;
     background: var(--list-item-hover-background-color);
   }
 
+  &.active {
+    color: var(--text-color);
+    background: var(--box-selected-background-color, var(--box-background-color));
+  }
+
   &:focus-visible {
     outline: 2px solid var(--focus-color);
     outline-offset: -2px;
@@ -41,7 +55,7 @@ $submodule-panel-toggle-height: 92px;
   }
 }
 
-.submodule-side-panel {
+.side-panel {
   position: absolute;
   top: 0;
   right: 0;
@@ -50,7 +64,7 @@ $submodule-panel-toggle-height: 92px;
 
   display: flex;
   flex-direction: column;
-  width: $submodule-side-panel-width;
+  width: $side-panel-width;
   max-width: 100%;
 
   background: var(--box-background-color);
@@ -78,7 +92,7 @@ $submodule-panel-toggle-height: 92px;
   }
 }
 
-.submodule-side-panel-header {
+.side-panel-header {
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -88,14 +102,14 @@ $submodule-panel-toggle-height: 92px;
   border-bottom: 1px solid var(--box-border-color);
 }
 
-.submodule-side-panel-title {
+.side-panel-title {
   flex: 1;
   font-weight: 600;
   font-size: var(--font-size);
   color: var(--text-color);
 }
 
-.submodule-side-panel-close {
+.side-panel-close {
   display: flex;
   align-items: center;
   justify-content: center;

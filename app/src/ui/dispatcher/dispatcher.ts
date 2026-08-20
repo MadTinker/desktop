@@ -4713,6 +4713,28 @@ export class Dispatcher {
     })
   }
 
+  /** Open the remotes manager. */
+  public showRemotesManagement(repository: Repository): Promise<void> {
+    return this.appStore._showPopup({
+      type: PopupType.RemotesManagement,
+      repository,
+    })
+  }
+
+  /** Add a remote to the repository. */
+  public addRemote(
+    repository: Repository,
+    name: string,
+    url: string
+  ): Promise<void> {
+    return this.appStore._addRemote(repository, name, url)
+  }
+
+  /** Remove a remote from the repository. */
+  public removeRemote(repository: Repository, name: string): Promise<void> {
+    return this.appStore._removeRemote(repository, name)
+  }
+
   /** Open the dialog for choosing which remotes a branch may be pushed to. */
   public showBranchRemotePolicy(
     repository: Repository,

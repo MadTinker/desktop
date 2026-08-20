@@ -128,6 +128,7 @@ export enum PopupType {
   ConfirmArchiveChatHistory = 'ConfirmArchiveChatHistory',
   BranchRemotePolicy = 'BranchRemotePolicy',
   RemoteBlocked = 'RemoteBlocked',
+  RemotesManagement = 'RemotesManagement',
 }
 
 interface IBasePopup {
@@ -579,6 +580,7 @@ export type PopupDetail =
        */
       resolve?: (allowed: RemoteAllowList | null) => void
     }
+  | { type: PopupType.RemotesManagement; repository: Repository }
   | {
       /** Explains a push refused by policy. Offers no way to push anyway. */
       type: PopupType.RemoteBlocked

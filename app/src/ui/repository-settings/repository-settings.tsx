@@ -228,6 +228,13 @@ export class RepositorySettings extends React.Component<
     )
   }
 
+  private onShowRemotesManagement = () => {
+    // The manager is its own dialog, so step out of this one first rather than
+    // stacking two.
+    this.props.onDismissed()
+    this.props.dispatcher.showRemotesManagement(this.props.repository)
+  }
+
   private renderActiveTab() {
     const tab = this.state.selectedTab
     switch (tab) {
@@ -238,6 +245,7 @@ export class RepositorySettings extends React.Component<
             <Remote
               remote={remote}
               onRemoteUrlChanged={this.onRemoteUrlChanged}
+              onShowRemotesManagement={this.onShowRemotesManagement}
             />
           )
         } else {

@@ -42,10 +42,15 @@ import { PullRequestSuggestedNextAction } from '../models/pull-request'
 import { clamp } from '../lib/clamp'
 import { Emoji } from '../lib/emoji'
 import { PopupType } from '../models/popup'
-import classNames from 'classnames'
-import { Octicon } from './octicons'
 import * as octicons from './octicons/octicons.generated'
 import { SubmodulePanel } from './submodule-management/submodule-panel'
+import {
+  ISidePanelToggle,
+  SidePanel,
+  SidePanelKind,
+  SidePanelToggles,
+} from './side-panel/side-panel'
+import { RemotesPanel } from './remotes-management/remotes-panel'
 
 interface IRepositoryViewProps {
   readonly repository: Repository
@@ -165,12 +170,24 @@ interface IRepositoryViewProps {
   ) => void
 }
 
+const SidePanelToggleDefinitions: ReadonlyArray<ISidePanelToggle> = [
+  {
+    kind: 'submodules',
+    label: 'Submodules',
+    symbol: octicons.fileSubmodule,
+  },
+  { kind: 'remotes', label: 'Remotes', symbol: octicons.server },
+]
+
 interface IRepositoryViewState {
   readonly changesListScrollTop: number
   readonly compareListScrollTop: number
 
-  /** Whether the submodule side panel is slid open. */
-  readonly submodulePanelOpen: boolean
+  /**
+   * Which side panel is slid open, if any. Only one at a time — they all
+   * anchor to the same edge.
+   */
+  readonly openSidePanel: SidePanelKind | null
 }
 
 const enum Tab {
@@ -202,7 +219,7 @@ export class RepositoryView extends React.Component<
     this.state = {
       changesListScrollTop: 0,
       compareListScrollTop: 0,
-      submodulePanelOpen: false,
+      openSidePanel: null,
     }
   }
 
@@ -747,62 +764,65 @@ export class RepositoryView extends React.Component<
   }
 
   private onShowSubmodulePanel = () => {
-    this.setState({ submodulePanelOpen: true })
+    this.setState({ openSidePanel: 'submodules' })
   }
 
-  private onToggleSubmodulePanel = () => {
-    this.setState(state => ({ submodulePanelOpen: !state.submodulePanelOpen }))
+  private onToggleSidePanel = (kind: SidePanelKind) => {
+    this.setState(state => ({
+      openSidePanel: state.openSidePanel === kind ? null : kind,
+    }))
   }
 
-  private onCloseSubmodulePanel = () => {
-    this.setState({ submodulePanelOpen: false })
+  private onCloseSidePanel = () => {
+    this.setState({ openSidePanel: null })
   }
 
   /**
-   * The submodule manager as a panel that slides in from the right edge of the
-   * repository content, plus the slim tab on that edge which toggles it.
+   * The panels that slide in from the right edge of the repository content,
+   * plus the stack of slim tabs on that edge which toggle them.
    *
-   * Mounted only once opened — `SubmodulePanel` shells out to `git submodule`
-   * on mount, and repositories without submodules shouldn't pay for that.
+   * Each panel's content is mounted only once opened — they shell out to git
+   * on mount, and a repository with no submodules or a single remote shouldn't
+   * pay for that.
    */
-  private renderSubmodulePanel(): JSX.Element {
-    const { submodulePanelOpen } = this.state
+  private renderSidePanels(): JSX.Element {
+    const { openSidePanel } = this.state
 
     return (
       <>
-        <button
-          type="button"
-          className="submodule-panel-toggle"
-          onClick={this.onToggleSubmodulePanel}
-          aria-expanded={submodulePanelOpen}
-          aria-label="Toggle submodule panel"
+        <SidePanelToggles
+          toggles={SidePanelToggleDefinitions}
+          openPanel={openSidePanel}
+          onToggle={this.onToggleSidePanel}
+        />
+        <SidePanel
+          title="Submodules"
+          open={openSidePanel === 'submodules'}
+          onClose={this.onCloseSidePanel}
         >
-          <Octicon symbol={octicons.fileSubmodule} />
-        </button>
-        <aside
-          className={classNames('submodule-side-panel', {
-            open: submodulePanelOpen,
-          })}
-          aria-hidden={!submodulePanelOpen}
-        >
-          <header className="submodule-side-panel-header">
-            <span className="submodule-side-panel-title">Submodules</span>
-            <button
-              type="button"
-              className="submodule-side-panel-close"
-              onClick={this.onCloseSubmodulePanel}
-              aria-label="Close submodule panel"
-            >
-              <Octicon symbol={octicons.x} />
-            </button>
-          </header>
-          {submodulePanelOpen && (
+          {openSidePanel === 'submodules' && (
             <SubmodulePanel
               repository={this.props.repository}
               dispatcher={this.props.dispatcher}
             />
           )}
-        </aside>
+        </SidePanel>
+        <SidePanel
+          title="Remotes"
+          open={openSidePanel === 'remotes'}
+          onClose={this.onCloseSidePanel}
+        >
+          {openSidePanel === 'remotes' && (
+            <RemotesPanel
+              repository={this.props.repository}
+              dispatcher={this.props.dispatcher}
+              remotes={this.props.state.remotes}
+              remotePolicies={this.props.state.remotePolicies}
+              branchesState={this.props.state.branchesState}
+              aheadBehindStore={this.props.aheadBehindStore}
+            />
+          )}
+        </SidePanel>
       </>
     )
   }
@@ -812,7 +832,7 @@ export class RepositoryView extends React.Component<
       <div id="repository-main">
         <div id="repository-content">
           {this.renderContent()}
-          {this.renderSubmodulePanel()}
+          {this.renderSidePanels()}
         </div>
       </div>
     )

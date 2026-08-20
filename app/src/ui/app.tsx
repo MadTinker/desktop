@@ -101,6 +101,7 @@ import { SubmoduleManagementDialog } from './submodule-management/submodule-mana
 import { isRemoteAllowed } from '../models/remote-policy'
 import { BranchRemotePolicyDialog } from './remote-policy/branch-remote-policy-dialog'
 import { RemoteBlockedDialog } from './remote-policy/remote-blocked-dialog'
+import { RemotesManagementDialog } from './remotes-management/remotes-management-dialog'
 import { ConfirmArchiveChatHistoryDialog } from './chat-history/confirm-archive-chat-history-dialog'
 import type { IBYOKProvider } from '../lib/copilot/byok'
 import { getConflictResolutionModelDisplay } from '../lib/copilot/conflict-resolution-model'
@@ -3373,6 +3374,22 @@ export class App extends React.Component<IAppProps, IAppState> {
             remotes={popup.remotes}
             currentPolicy={popup.currentPolicy}
             resolve={popup.resolve}
+            onDismissed={onPopupDismissedFn}
+          />
+        )
+      }
+      case PopupType.RemotesManagement: {
+        const state = this.props.repositoryStateManager.get(popup.repository)
+
+        return (
+          <RemotesManagementDialog
+            key="remotes-management"
+            repository={popup.repository}
+            dispatcher={this.props.dispatcher}
+            remotes={state.remotes}
+            remotePolicies={state.remotePolicies}
+            branchesState={state.branchesState}
+            aheadBehindStore={this.props.aheadBehindStore}
             onDismissed={onPopupDismissedFn}
           />
         )

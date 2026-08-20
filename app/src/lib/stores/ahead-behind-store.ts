@@ -13,12 +13,15 @@ function getCacheKey(repository: Repository, from: string, to: string) {
 }
 
 /**
- * The maximum number of _concurrent_ `git rev-list` operations we'll run. We're
- * gonna play it safe and stick to no concurrent operations initially since
- * that's how the previous ahead/behind logic worked but it should be safe to
- * bump this to 3 or so to squeeze some more performance out of it.
+ * The maximum number of _concurrent_ `git rev-list` operations we'll run.
+ *
+ * This sat at 1 for a long time to match the ahead/behind logic that preceded
+ * this store, with a note that 3 or so should be safe. The branch × remote
+ * matrix asks for many comparisons at once, which at a concurrency of 1 made
+ * the grid fill in visibly one cell at a time, so we've taken the note up on
+ * its offer.
  */
-const MaxConcurrent = 1
+const MaxConcurrent = 3
 
 export class AheadBehindStore {
   /**

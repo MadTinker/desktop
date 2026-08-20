@@ -1,0 +1,234 @@
+// Remotes manager: the remotes list and the branch × remote sync matrix.
+// Shared by the modal dialog and the repository view's slide-in side panel.
+
+#remotes-management {
+  min-width: 640px;
+
+  // The dialog has no height of its own to hand down, so cap the scrollers
+  // here rather than letting them grow the modal off-screen. The side panel
+  // instead lets them fill the available height.
+  .remotes-list,
+  .remote-sync-matrix-scroll {
+    max-height: 380px;
+  }
+}
+
+.remotes-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+
+  .tab-bar {
+    margin: 0 var(--spacing);
+    flex-shrink: 0;
+  }
+
+  .remotes-panel-body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .remotes-loading {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-half);
+    color: var(--text-secondary-color);
+    padding: var(--spacing);
+  }
+
+  .remotes-empty {
+    color: var(--text-secondary-color);
+    font-style: italic;
+    padding: var(--spacing);
+    margin: 0;
+  }
+
+  .remotes-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    overflow-y: auto;
+  }
+
+  .remote-row {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-quarter, 2px);
+    padding: var(--spacing-half) var(--spacing);
+    border-bottom: 1px solid var(--box-border-color);
+
+    &:last-child {
+      border-bottom: none;
+    }
+  }
+
+  .remote-row-header {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: var(--spacing-half);
+  }
+
+  .remote-name {
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .remote-url {
+    color: var(--text-secondary-color);
+    font-size: var(--font-size-sm);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .remote-actions {
+    display: flex;
+    flex-direction: row;
+    gap: var(--spacing-half);
+    margin-top: var(--spacing-quarter, 2px);
+  }
+
+  .remote-edit {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-quarter, 2px);
+  }
+
+  .remotes-add {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-half);
+    padding: var(--spacing);
+    border-top: 1px solid var(--box-border-color);
+    flex-shrink: 0;
+  }
+}
+
+// Host badge. Neutral by default; the recognised hosts get a tint so a
+// repository spanning two services reads at a glance.
+.remote-badge {
+  display: inline-block;
+  flex-shrink: 0;
+  padding: 1px 6px;
+  border-radius: var(--border-radius);
+  font-size: var(--font-size-xs, 10px);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  background: var(--box-alt-background-color, var(--box-background-color));
+  color: var(--text-secondary-color);
+  border: 1px solid var(--box-border-color);
+
+  &.github {
+    color: var(--text-color);
+  }
+
+  &.bitbucket {
+    color: var(--color-modified);
+  }
+
+  &.gitlab {
+    color: var(--status-warning-color, #f57c00);
+  }
+}
+
+.remote-sync-matrix-scroll {
+  // A repository with several remotes makes this wider than the side panel;
+  // scroll it here rather than letting the panel scroll sideways.
+  overflow: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.remote-sync-matrix {
+  border-collapse: collapse;
+  width: 100%;
+
+  th,
+  td {
+    padding: 4px var(--spacing-half);
+    text-align: left;
+    border-bottom: 1px solid var(--box-border-color);
+    white-space: nowrap;
+  }
+
+  thead th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: var(--box-background-color);
+    font-size: var(--font-size-sm);
+  }
+
+  tbody th {
+    font-weight: 400;
+    max-width: 180px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .remote-sync-matrix-remote {
+    display: block;
+    font-weight: 600;
+  }
+
+  .remote-sync-matrix-host {
+    display: block;
+    color: var(--text-secondary-color);
+    font-size: var(--font-size-xs, 10px);
+  }
+
+  .sync-cell {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    font-size: var(--font-size-sm);
+
+    .octicon {
+      flex-shrink: 0;
+    }
+  }
+
+  .sync-cell.synced {
+    color: var(--color-new);
+  }
+
+  .sync-cell.absent {
+    color: var(--text-secondary-color);
+  }
+
+  .sync-cell.ahead,
+  .sync-cell.behind,
+  .sync-cell.diverged {
+    color: var(--color-modified);
+  }
+
+  .sync-cell.loading {
+    color: var(--text-secondary-color);
+  }
+
+  // Locked cells are buttons into the policy editor, so they need to read as
+  // interactive without looking like the rest of the grid is clickable.
+  button.sync-cell.locked {
+    padding: 0;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: var(--status-error-color);
+
+    &:hover {
+      color: var(--text-color);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--focus-color);
+      outline-offset: 1px;
+    }
+  }
+}

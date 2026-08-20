@@ -1,6 +1,7 @@
 import * as React from 'react'
 import { IRemote } from '../../models/remote'
 import { TextBox } from '../lib/text-box'
+import { LinkButton } from '../lib/link-button'
 import { DialogContent } from '../dialog'
 
 interface IRemoteProps {
@@ -9,6 +10,9 @@ interface IRemoteProps {
 
   /** The function to call when the remote URL is changed by the user. */
   readonly onRemoteUrlChanged: (url: string) => void
+
+  /** Opens the remotes manager, which handles every remote rather than one. */
+  readonly onShowRemotesManagement: () => void
 }
 
 /** The Remote component. */
@@ -27,6 +31,11 @@ export class Remote extends React.Component<IRemoteProps, {}> {
           value={remote.url}
           onValueChanged={this.props.onRemoteUrlChanged}
         />
+        <p className="remote-settings-manage">
+          <LinkButton onClick={this.props.onShowRemotesManagement}>
+            Manage all remotes…
+          </LinkButton>
+        </p>
       </DialogContent>
     )
   }
