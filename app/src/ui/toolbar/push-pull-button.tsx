@@ -32,6 +32,10 @@ import { PushPullButtonDropDown } from './push-pull-button-dropdown'
 import { AriaLiveContainer } from '../accessibility/aria-live-container'
 import { enableResizingToolbarButtons } from '../../lib/feature-flag'
 import { formatCompactNumber } from '../../lib/format-number'
+import {
+  RemoteAllowList,
+  describeRemoteAllowList,
+} from '../../models/remote-policy'
 
 export const DropdownItemClassName = 'push-pull-dropdown-item'
 
@@ -44,6 +48,18 @@ interface IPushPullButtonProps {
 
   /** The name of the remote. */
   readonly remoteName: string | null
+
+  /**
+   * Set when the current branch's policy forbids pushing to the remote it
+   * would push to, in which case the write actions are replaced by a locked,
+   * disabled button. Null when the push is permitted, or when no policy has
+   * been recorded yet — an unset policy prompts on push rather than blocking.
+   */
+  readonly remotePolicyBlock: {
+    readonly branchName: string
+    readonly remoteName: string
+    readonly allowed: RemoteAllowList
+  } | null
 
   /** Is a push/pull/fetch in progress? */
   readonly networkActionInProgress: boolean
@@ -446,6 +462,7 @@ export class PushPullButton extends React.Component<
       lastFetched,
       pullWithRebase,
       forcePushBranchState,
+      remotePolicyBlock,
     } = this.props
 
     if (progress !== null) {
@@ -462,6 +479,10 @@ export class PushPullButton extends React.Component<
 
     if (tipState === TipState.Detached) {
       return this.detachedHeadButton(rebaseInProgress)
+    }
+
+    if (remotePolicyBlock !== null) {
+      return this.lockedButton(remotePolicyBlock)
     }
 
     if (aheadBehind === null) {
@@ -507,6 +528,30 @@ export class PushPullButton extends React.Component<
       numTagsToPush,
       lastFetched,
       this.push
+    )
+  }
+
+  /**
+   * Shown in place of push/force-push/publish when the branch is locked out of
+   * the remote it would push to. Disabled rather than hidden so the reason is
+   * discoverable, and deliberately without a "push anyway" — changing the
+   * policy is a separate, explicit action.
+   */
+  private lockedButton(block: {
+    readonly branchName: string
+    readonly remoteName: string
+    readonly allowed: RemoteAllowList
+  }) {
+    return (
+      <ToolbarButton
+        {...this.defaultButtonProps()}
+        title="Push blocked"
+        description={`${block.branchName} cannot be pushed to ${
+          block.remoteName
+        } — ${describeRemoteAllowList(block.allowed).toLowerCase()}`}
+        icon={octicons.lock}
+        disabled={true}
+      />
     )
   }
 

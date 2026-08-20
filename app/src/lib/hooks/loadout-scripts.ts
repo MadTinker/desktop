@@ -242,6 +242,66 @@ echo "Starting yarn build:dev in background..."
 `,
 }
 
+// ---------------------------------------------------------------------------
+// pre-push: remote-guard
+// ---------------------------------------------------------------------------
+const remoteGuard: HookScript = {
+  id: 'remote-guard',
+  name: 'Remote Guard',
+  description:
+    'Blocks pushes of branches locked to other remotes (or to no remote at all)',
+  hookType: 'pre-push',
+  script: `#!/usr/bin/env bash
+# remote-guard: refuse pushes that violate a branch's madnessRemotes policy.
+#
+# The policy lives in the repository's own config as
+# branch.<name>.madnessRemotes and is written by Madness Desktop. Values are
+# "none", "all", or a space separated list of permitted remote names. A branch
+# with no policy is not restricted.
+#
+# Note that git runs this once for the whole push, so a batch such as
+# \`git push --all\` is rejected in full if any single branch in it is blocked.
+# That is deliberate: a partial push is a worse outcome than a refused one.
+remote_name="$1"
+blocked=0
+
+while read -r local_ref _ _ _; do
+    # Deletions arrive as "(delete)"; removing a ref can't leak anything.
+    [ -z "$local_ref" ] && continue
+    [ "$local_ref" = "(delete)" ] && continue
+
+    case "$local_ref" in
+        refs/heads/*) branch="\${local_ref#refs/heads/}" ;;
+        *) continue ;;
+    esac
+
+    policy=$(git config --local --get "branch.$branch.madnessRemotes" 2>/dev/null) || continue
+    [ -z "$policy" ] && continue
+
+    case "$policy" in
+        all|ALL|All) continue ;;
+        none|NONE|None)
+            echo "MADNESS-REMOTE-BLOCKED: '$branch' is local only and must not be pushed."
+            blocked=1
+            continue
+            ;;
+    esac
+
+    if ! printf '%s\\n' $policy | grep -qxF "$remote_name"; then
+        echo "MADNESS-REMOTE-BLOCKED: '$branch' may only be pushed to: $policy (tried '$remote_name')."
+        blocked=1
+    fi
+done
+
+if [ "$blocked" -ne 0 ]; then
+    echo "Change the branch's remote policy in Madness Desktop, or run:"
+    echo "  git config --local --unset branch.<branch>.madnessRemotes"
+    exit 1
+fi
+exit 0
+`,
+}
+
 /** All bundled hook scripts available for loadouts. */
 export const BUILTIN_SCRIPTS: ReadonlyArray<HookScript> = [
   mqttContext,
@@ -250,6 +310,7 @@ export const BUILTIN_SCRIPTS: ReadonlyArray<HookScript> = [
   secretScan,
   autoPush,
   buildDev,
+  remoteGuard,
 ]
 
 /** Look up a builtin script by ID. */

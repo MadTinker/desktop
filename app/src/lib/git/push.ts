@@ -19,6 +19,18 @@ export type PushOptions = {
   readonly branch?: Branch
 
   readonly noVerify?: boolean
+
+  /**
+   * Whether to point the local branch's upstream at the branch being pushed to.
+   *
+   * When omitted this defaults to "yes if the branch isn't already tracking
+   * something on this remote", which is what you want when publishing a branch
+   * for the first time — and emphatically not what you want when pushing a
+   * branch that already tracks one remote to a *second* remote, since that
+   * would silently repoint its upstream. Callers pushing to a secondary remote
+   * should pass false.
+   */
+  readonly setUpstream?: boolean
 } & HookCallbackOptions
 
 /**
@@ -63,7 +75,18 @@ export async function push(
   if (tagsToPush !== null) {
     args.push(...tagsToPush)
   }
-  if (!remoteBranch) {
+
+  // Default preserves the historical behaviour: set upstream exactly when the
+  // branch isn't tracking anything yet. That's right for a first publish, but
+  // it also means the first remote a branch is published to becomes its
+  // permanent push target, so callers that let the user choose a remote need
+  // to be able to say "push there, don't rebind the branch".
+  //
+  // Git is happy to take --set-upstream and --force-with-lease together; the
+  // exclusivity below is this file's own long-standing choice, kept as-is.
+  const setUpstream = options?.setUpstream ?? remoteBranch === null
+
+  if (setUpstream) {
     args.push('--set-upstream')
   } else if (options?.forceWithLease) {
     args.push('--force-with-lease')

@@ -9,6 +9,7 @@ import {
   SelectionType,
   HistoryTabMode,
   CommitOptions,
+  IRepositoryState,
 } from '../lib/app-state'
 import { Dispatcher } from './dispatcher'
 import { AppStore, GitHubUserStore, IssuesStore } from '../lib/stores'
@@ -97,6 +98,9 @@ import { EditCopilotBYOKProviderDialog } from './copilot/edit-byok-provider-dial
 import { EditCopilotBYOKModelDialog } from './copilot/edit-byok-model-dialog'
 import { ConfirmDeleteCopilotBYOKProviderDialog } from './copilot/confirm-delete-byok-provider-dialog'
 import { SubmoduleManagementDialog } from './submodule-management/submodule-management-dialog'
+import { isRemoteAllowed } from '../models/remote-policy'
+import { BranchRemotePolicyDialog } from './remote-policy/branch-remote-policy-dialog'
+import { RemoteBlockedDialog } from './remote-policy/remote-blocked-dialog'
 import { ConfirmArchiveChatHistoryDialog } from './chat-history/confirm-archive-chat-history-dialog'
 import type { IBYOKProvider } from '../lib/copilot/byok'
 import { getConflictResolutionModelDisplay } from '../lib/copilot/conflict-resolution-model'
@@ -3359,6 +3363,33 @@ export class App extends React.Component<IAppProps, IAppState> {
           />
         )
       }
+      case PopupType.BranchRemotePolicy: {
+        return (
+          <BranchRemotePolicyDialog
+            key="branch-remote-policy"
+            repository={popup.repository}
+            dispatcher={this.props.dispatcher}
+            branchName={popup.branchName}
+            remotes={popup.remotes}
+            currentPolicy={popup.currentPolicy}
+            resolve={popup.resolve}
+            onDismissed={onPopupDismissedFn}
+          />
+        )
+      }
+      case PopupType.RemoteBlocked: {
+        return (
+          <RemoteBlockedDialog
+            key="remote-blocked"
+            repository={popup.repository}
+            dispatcher={this.props.dispatcher}
+            branchName={popup.branchName}
+            remoteName={popup.remoteName}
+            allowed={popup.allowed}
+            onDismissed={onPopupDismissedFn}
+          />
+        )
+      }
       default:
         return assertNever(popup, `Unknown popup type: ${popup}`)
     }
@@ -4046,6 +4077,35 @@ export class App extends React.Component<IAppProps, IAppState> {
     showContextualMenu(items)
   }
 
+  /**
+   * Whether the current branch is locked out of the remote a push would go to.
+   *
+   * An `unset` policy is not a block — it prompts on push instead — so it
+   * deliberately doesn't disable the button.
+   */
+  private getRemotePolicyBlock(state: IRepositoryState) {
+    const { tip } = state.branchesState
+
+    if (tip.kind !== TipState.Valid) {
+      return null
+    }
+
+    const branchName = tip.branch.name
+    const remoteName = tip.branch.upstreamRemoteName ?? state.remote?.name
+
+    if (remoteName === undefined || remoteName === null) {
+      return null
+    }
+
+    const allowed = state.remotePolicies.get(branchName) ?? { kind: 'unset' }
+
+    if (allowed.kind === 'unset' || isRemoteAllowed(allowed, remoteName)) {
+      return null
+    }
+
+    return { branchName, remoteName, allowed }
+  }
+
   private renderPushPullToolbarButton() {
     const selection = this.state.selectedState
     if (!selection || selection.type !== SelectionType.Repository) {
@@ -4098,6 +4158,8 @@ export class App extends React.Component<IAppProps, IAppState> {
      * are open */
     const enableFocusTrap = this.state.currentPopup === null
 
+    const remotePolicyBlock = this.getRemotePolicyBlock(state)
+
     return (
       <PushPullButton
         dispatcher={this.props.dispatcher}
@@ -4105,6 +4167,7 @@ export class App extends React.Component<IAppProps, IAppState> {
         aheadBehind={state.aheadBehind}
         numTagsToPush={state.tagsToPush !== null ? state.tagsToPush.length : 0}
         remoteName={remoteName}
+        remotePolicyBlock={remotePolicyBlock}
         lastFetched={state.lastFetched}
         networkActionInProgress={state.isPushPullFetchInProgress}
         progress={progress}

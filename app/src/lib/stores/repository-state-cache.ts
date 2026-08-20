@@ -429,6 +429,8 @@ function getInitialRepositoryState(): IRepositoryState {
     tagsToPush: null,
     aheadBehind: null,
     remote: null,
+    remotes: [],
+    remotePolicies: new Map(),
     isPushPullFetchInProgress: false,
     isCommitting: false,
     hookProgress: null,

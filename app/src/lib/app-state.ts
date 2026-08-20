@@ -24,6 +24,7 @@ import { CloningRepository } from '../models/cloning-repository'
 import { ICustomRepositoryGroup } from '../ui/repositories-list/repository-group-types'
 import { IMenu } from '../models/app-menu'
 import { IRemote } from '../models/remote'
+import { RemoteAllowList } from '../models/remote-policy'
 import { CloneRepositoryTab } from '../models/clone-repository-tab'
 import { BranchesTab } from '../models/branches-tab'
 import {
@@ -653,6 +654,24 @@ export interface IRepositoryState {
 
   /** The remote currently associated with the repository, if defined in the configuration */
   readonly remote: IRemote | null
+
+  /**
+   * Every remote configured for the repository.
+   *
+   * `remote` above is only ever one of these — the one the current branch
+   * tracks, or the default. Anything that needs to reason about a repository
+   * living on more than one host wants this list instead.
+   */
+  readonly remotes: ReadonlyArray<IRemote>
+
+  /**
+   * Push policy per branch, keyed by branch name.
+   *
+   * Branches absent from the map have no policy recorded; that is not the same
+   * as being unrestricted, so use `isRemoteAllowed` rather than checking for
+   * membership.
+   */
+  readonly remotePolicies: ReadonlyMap<string, RemoteAllowList>
 
   /** The state of the current branch in relation to its upstream. */
   readonly aheadBehind: IAheadBehind | null

@@ -1,0 +1,25 @@
+#branch-remote-policy {
+  .branch-remote-policy-remote {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-quarter, 2px);
+  }
+
+  .branch-remote-policy-url {
+    color: var(--text-secondary-color);
+    font-size: var(--font-size-sm);
+    word-break: break-all;
+  }
+
+  .branch-remote-policy-warning {
+    color: var(--status-warning-color, #f57c00);
+    font-size: var(--font-size-sm);
+  }
+
+  .branch-remote-policy-note,
+  .branch-remote-policy-empty {
+    color: var(--text-secondary-color);
+    font-size: var(--font-size-sm);
+    margin: 0;
+  }
+}

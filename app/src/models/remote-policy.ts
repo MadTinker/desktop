@@ -16,6 +16,17 @@ export type RemoteAllowList =
   /** Pushable only to the named remotes. */
   | { readonly kind: 'only'; readonly remotes: ReadonlyArray<string> }
 
+/**
+ * Prefix the `remote-guard` pre-push hook prints when it refuses a push.
+ *
+ * The app watches for this in a failed hook's output so it can present a
+ * policy explanation and hard-abort, rather than the generic "a hook failed,
+ * abort or ignore?" prompt — a block the user can click past isn't a block.
+ * It's deliberately distinctive so another project's pre-push hook saying the
+ * word "blocked" can't be mistaken for ours.
+ */
+export const RemoteGuardBlockMarker = 'MADNESS-REMOTE-BLOCKED:'
+
 /** The config variable each branch's policy is stored under. */
 export const RemotePolicyConfigKey = 'madnessRemotes'
 

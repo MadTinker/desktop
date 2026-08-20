@@ -9,6 +9,7 @@ interface IBranchContextMenuConfig {
   onViewPullRequestOnGitHub?: () => void
   onDeleteBranch?: (branchName: string) => void
   onCheckoutInNewWorktree?: (branch: Branch) => void
+  onEditRemotePolicy?: (branchName: string) => void
 }
 
 export function generateBranchContextMenuItems(
@@ -21,6 +22,7 @@ export function generateBranchContextMenuItems(
     onViewPullRequestOnGitHub,
     onDeleteBranch,
     onCheckoutInNewWorktree,
+    onEditRemotePolicy,
   } = config
   const items = new Array<IMenuItem>()
 
@@ -57,6 +59,16 @@ export function generateBranchContextMenuItems(
         ? 'Checkout in New Worktree…'
         : 'Checkout in new worktree…',
       action: () => onCheckoutInNewWorktree(branch),
+    })
+  }
+
+  if (onEditRemotePolicy !== undefined) {
+    items.push({
+      label: __DARWIN__ ? 'Remote Policy…' : 'Remote policy…',
+      action: () => onEditRemotePolicy(branch.name),
+      // A remote branch is a view onto a remote; the policy belongs to the
+      // local branch that gets pushed.
+      enabled: branch.type === BranchType.Local,
     })
   }
 

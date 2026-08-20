@@ -23,6 +23,7 @@ import {
   DefaultCommitMessage,
 } from '../../models/commit-message'
 import { ComparisonMode } from '../app-state'
+import { RemoteAllowList, isRemoteAllowed } from '../../models/remote-policy'
 
 import { IAppShell } from '../app-shell'
 import {
@@ -34,6 +35,7 @@ import {
   reset,
   GitResetMode,
   getRemotes,
+  getRemotePolicies,
   fetch as fetchRepo,
   fetchRefspec,
   getRecentBranches,
@@ -150,6 +152,8 @@ export class GitStore extends BaseStore {
   private _currentRemote: IRemote | null = null
 
   private _upstreamRemote: IRemote | null = null
+
+  private _remotePolicies = new Map<string, RemoteAllowList>()
 
   private _lastFetched: Date | null = null
 
@@ -1300,8 +1304,13 @@ export class GitStore extends BaseStore {
   }
 
   public async loadRemotes(): Promise<void> {
-    const remotes = await getRemotes(this.repository)
+    const [remotes, remotePolicies] = await Promise.all([
+      getRemotes(this.repository),
+      getRemotePolicies(this.repository),
+    ])
+
     this._remotes = remotes
+    this._remotePolicies = remotePolicies
     this._defaultRemote = findDefaultRemote(remotes)
 
     const currentRemoteName =
@@ -1406,6 +1415,32 @@ export class GitStore extends BaseStore {
   /** The list of configured remotes for the repository */
   public get remotes() {
     return this._remotes
+  }
+
+  /**
+   * The push policy for each branch that has one, keyed by branch name.
+   *
+   * Branches absent from this map have no policy; treat them as
+   * `{ kind: 'unset' }` rather than as unrestricted.
+   */
+  public get remotePolicies(): ReadonlyMap<string, RemoteAllowList> {
+    return this._remotePolicies
+  }
+
+  /** The push policy for a branch, defaulting to unset. */
+  public getRemotePolicy(branchName: string): RemoteAllowList {
+    return this._remotePolicies.get(branchName) ?? { kind: 'unset' }
+  }
+
+  /**
+   * The configured remotes this branch is permitted to be pushed to.
+   *
+   * An `unset` policy yields no remotes — the caller is expected to ask the
+   * user rather than read silence as permission.
+   */
+  public getAllowedRemotes(branchName: string): ReadonlyArray<IRemote> {
+    const allowed = this.getRemotePolicy(branchName)
+    return this._remotes.filter(r => isRemoteAllowed(allowed, r.name))
   }
 
   /**

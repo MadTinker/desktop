@@ -140,6 +140,7 @@ import {
   ICopilotResolutionSummary,
 } from '../../lib/copilot-conflict-resolution'
 import { WorktreeEntry } from '../../models/worktree'
+import { RemoteAllowList } from '../../models/remote-policy'
 
 /**
  * An error handler function.
@@ -280,10 +281,7 @@ export class Dispatcher {
   }
 
   /** Reset the current branch to a commit identified by a reflog entry. */
-  public resetReflogCommit(
-    repository: Repository,
-    sha: string
-  ): Promise<void> {
+  public resetReflogCommit(repository: Repository, sha: string): Promise<void> {
     return this.appStore._resetReflogCommit(repository, sha)
   }
 
@@ -4713,5 +4711,31 @@ export class Dispatcher {
       type: PopupType.SubmoduleManagement,
       repository,
     })
+  }
+
+  /** Open the dialog for choosing which remotes a branch may be pushed to. */
+  public showBranchRemotePolicy(
+    repository: Repository,
+    branchName: string
+  ): Promise<void> {
+    const { remotes, remotePolicies } =
+      this.repositoryStateManager.get(repository)
+
+    return this.appStore._showPopup({
+      type: PopupType.BranchRemotePolicy,
+      repository,
+      branchName,
+      remotes,
+      currentPolicy: remotePolicies.get(branchName) ?? { kind: 'unset' },
+    })
+  }
+
+  /** Record which remotes a branch may be pushed to. */
+  public setBranchRemotePolicy(
+    repository: Repository,
+    branchName: string,
+    allowed: RemoteAllowList
+  ): Promise<void> {
+    return this.appStore._setBranchRemotePolicy(repository, branchName, allowed)
   }
 }

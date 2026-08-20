@@ -487,6 +487,13 @@ import {
 import { resolveWithin } from '../path'
 import { WorktreeEntry } from '../../models/worktree'
 import type { Model } from '@github/copilot-sdk/dist/generated/rpc'
+import { RemoteAllowList, isRemoteAllowed } from '../../models/remote-policy'
+import { containsRemoteGuardBlock } from '../remote-guard-output'
+import {
+  clearRemotePolicy,
+  renameRemotePolicy,
+  setRemotePolicy,
+} from '../git/remote-policy'
 
 const LastSelectedRepositoryIDKey = 'last-selected-repository-id'
 
@@ -942,7 +949,9 @@ export class AppStore extends TypedBaseStore<IAppState> {
           this.emitUpdate()
         }
       })
-      .catch(err => log.error('[mqtt] failed to load password from keychain', err))
+      .catch(err =>
+        log.error('[mqtt] failed to load password from keychain', err)
+      )
     this.localAIConfig = loadLocalAIConfig()
 
     // Chat history archive watcher
@@ -1671,6 +1680,8 @@ export class AppStore extends TypedBaseStore<IAppState> {
       aheadBehind: gitStore.aheadBehind,
       tagsToPush: gitStore.tagsToPush,
       remote: gitStore.currentRemote,
+      remotes: gitStore.remotes,
+      remotePolicies: gitStore.remotePolicies,
       lastFetched: gitStore.lastFetched,
     }))
 
@@ -5622,6 +5633,10 @@ export class AppStore extends TypedBaseStore<IAppState> {
       if (stashEntry) {
         await moveStashEntry(repository, stashEntry, newName)
       }
+
+      // The push policy is keyed by branch name, so without this a rename
+      // quietly unlocks the branch.
+      await renameRemotePolicy(repository, branch.name, newName)
     })
 
     return this._refreshRepository(repository)
@@ -5688,6 +5703,12 @@ export class AppStore extends TypedBaseStore<IAppState> {
           includeUpstream
         )
       })
+
+      // Don't leave the deleted branch's policy behind in the config, where a
+      // later branch of the same name would silently inherit it.
+      await clearRemotePolicy(repository, branch.name).catch(e =>
+        log.warn(`Could not clear the remote policy for ${branch.name}`, e)
+      )
 
       return this._refreshRepository(repository)
     })
@@ -5826,6 +5847,28 @@ export class AppStore extends TypedBaseStore<IAppState> {
       }
 
       const remoteName = branch.upstreamRemoteName || remote.name
+      const gitStore = this.gitStoreCache.get(repository)
+
+      // Resolve the remote we're actually pushing to. `remote` here is the
+      // repository's current/default remote, which is not necessarily the one
+      // the branch tracks. This used to pair the branch's remote *name* with
+      // that remote's *url*, which hands envForRemoteOperation credentials and
+      // proxy settings for the wrong host as soon as a repository has more
+      // than one remote — it reported the mismatch as a non-fatal exception
+      // rather than resolving it. Look the real remote up by name instead.
+      const pushRemote: IRemote = gitStore.remotes.find(
+        r => r.name === remoteName
+      ) ?? { name: remoteName, url: remote.url }
+
+      const allowed = await this.resolveRemotePolicyForPush(
+        repository,
+        branch.name,
+        pushRemote.name
+      )
+
+      if (!allowed) {
+        return
+      }
 
       const pushTitle = `Pushing to ${remoteName}`
 
@@ -5868,17 +5911,6 @@ export class AppStore extends TypedBaseStore<IAppState> {
         repository,
       }
 
-      // See the comment in the original performPush for why we use safeRemote.
-      const safeRemote: IRemote = { name: remoteName, url: remote.url }
-
-      if (safeRemote.name !== remote.name) {
-        sendNonFatalException(
-          'remoteNameMismatch',
-          new Error('The current remote name differs from the branch remote')
-        )
-      }
-
-      const gitStore = this.gitStoreCache.get(repository)
       await gitStore.performFailableOperation(
         async () => {
           let aborted = false
@@ -5914,7 +5946,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
           // Phase 2 — push the main repository.
           await pushRepo(
             repository,
-            safeRemote,
+            pushRemote,
             branch.name,
             branch.upstreamWithoutRemote,
             gitStore.tagsToPush,
@@ -5937,7 +5969,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
 
           gitStore.clearTagsToPush()
 
-          await gitStore.fetchRemotes([safeRemote], false, fetchProgress => {
+          await gitStore.fetchRemotes([pushRemote], false, fetchProgress => {
             this.updatePushPullFetchProgress(repository, {
               ...fetchProgress,
               value:
@@ -8174,9 +8206,87 @@ export class AppStore extends TypedBaseStore<IAppState> {
     }
   }
 
+  /**
+   * Decide whether a push to `remoteName` may proceed under the branch's policy.
+   *
+   * Prompts when no policy has been recorded yet (the first push of a branch),
+   * and persists whatever the user chooses so they're only asked once. Returns
+   * false when the push must not happen — either it's forbidden, or the user
+   * dismissed the prompt without deciding.
+   */
+  private async resolveRemotePolicyForPush(
+    repository: Repository,
+    branchName: string,
+    remoteName: string
+  ): Promise<boolean> {
+    const gitStore = this.gitStoreCache.get(repository)
+    let allowed = gitStore.getRemotePolicy(branchName)
+
+    if (allowed.kind === 'unset') {
+      const chosen = await new Promise<RemoteAllowList | null>(resolve => {
+        this._showPopup({
+          type: PopupType.BranchRemotePolicy,
+          repository,
+          branchName,
+          remotes: gitStore.remotes,
+          currentPolicy: allowed,
+          resolve,
+        })
+      })
+
+      if (chosen === null) {
+        return false
+      }
+
+      await this._setBranchRemotePolicy(repository, branchName, chosen)
+      allowed = chosen
+    }
+
+    if (isRemoteAllowed(allowed, remoteName)) {
+      return true
+    }
+
+    this._showPopup({
+      type: PopupType.RemoteBlocked,
+      repository,
+      branchName,
+      remoteName,
+      allowed,
+    })
+
+    return false
+  }
+
+  /** Record which remotes a branch may be pushed to. */
+  public async _setBranchRemotePolicy(
+    repository: Repository,
+    branchName: string,
+    allowed: RemoteAllowList
+  ): Promise<void> {
+    try {
+      await setRemotePolicy(repository, branchName, allowed)
+    } catch (e) {
+      log.error(`Failed to set the remote policy for ${branchName}`, e)
+      this.emitError(e)
+      return
+    }
+
+    const gitStore = this.gitStoreCache.get(repository)
+    await gitStore.loadRemotes()
+    this.emitUpdate()
+  }
+
   private onHookFailure = (onAborted: () => void) => {
-    return (hookName: string, terminalOutput: TerminalOutput) =>
-      new Promise<'abort' | 'ignore'>(resolve => {
+    return (hookName: string, terminalOutput: TerminalOutput) => {
+      // The remote-guard pre-push hook enforces a policy the user set
+      // deliberately. Offering "ignore" would make the block a formality, so
+      // its refusal aborts outright and the reason is shown as-is.
+      if (containsRemoteGuardBlock(terminalOutput)) {
+        onAborted()
+        return Promise.resolve<'abort' | 'ignore'>('abort')
+      }
+
+      return new Promise<'abort' | 'ignore'>(resolve => {
         this._showPopup({
           type: PopupType.HookFailed,
           hookName,
@@ -8189,6 +8299,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
           },
         })
       })
+    }
   }
 
   public async _mergeBranch(

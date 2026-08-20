@@ -7,6 +7,7 @@ import { PullRequest } from './pull-request'
 import { Branch } from './branch'
 import { ReleaseNote, ReleaseSummary } from './release-notes'
 import { IRemote } from './remote'
+import { RemoteAllowList } from './remote-policy'
 import { RetryAction } from './retry-actions'
 import { WorkingDirectoryFileChange } from './status'
 import { PreferencesTab } from './preferences'
@@ -125,6 +126,8 @@ export enum PopupType {
   DeleteWorktreeFailed = 'DeleteWorktreeFailed',
   SubmoduleManagement = 'SubmoduleManagement',
   ConfirmArchiveChatHistory = 'ConfirmArchiveChatHistory',
+  BranchRemotePolicy = 'BranchRemotePolicy',
+  RemoteBlocked = 'RemoteBlocked',
 }
 
 interface IBasePopup {
@@ -559,6 +562,31 @@ export type PopupDetail =
       originalWorktree: WorktreeEntry | null
     }
   | { type: PopupType.SubmoduleManagement; repository: Repository }
+  | {
+      /**
+       * Asks which remotes a branch may be pushed to. Raised on the first push
+       * of a branch with no recorded policy.
+       */
+      type: PopupType.BranchRemotePolicy
+      repository: Repository
+      branchName: string
+      remotes: ReadonlyArray<IRemote>
+      currentPolicy: RemoteAllowList
+      /**
+       * Present when the dialog is blocking a push. Called with the chosen
+       * policy, or null if the user backed out, so the push can continue or
+       * abandon rather than pushing under a policy the user never confirmed.
+       */
+      resolve?: (allowed: RemoteAllowList | null) => void
+    }
+  | {
+      /** Explains a push refused by policy. Offers no way to push anyway. */
+      type: PopupType.RemoteBlocked
+      repository: Repository
+      branchName: string
+      remoteName: string
+      allowed: RemoteAllowList
+    }
   | {
       type: PopupType.ConfirmArchiveChatHistory
       candidates: ReadonlyArray<{

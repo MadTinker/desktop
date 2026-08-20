@@ -116,6 +116,7 @@ export class BranchDropdown extends React.Component<IBranchDropdownProps> {
         emoji={this.props.emoji}
         onDeleteBranch={this.onDeleteBranch}
         onRenameBranch={this.onRenameBranch}
+        onEditRemotePolicy={this.onEditRemotePolicy}
         onCheckoutInNewWorktree={
           this.props.worktreesEnabled ? this.onCheckoutInNewWorktree : undefined
         }
@@ -356,6 +357,13 @@ export class BranchDropdown extends React.Component<IBranchDropdownProps> {
       repository: this.props.repository,
       branch,
     })
+  }
+
+  private onEditRemotePolicy = (branchName: string) => {
+    this.props.dispatcher.showBranchRemotePolicy(
+      this.props.repository,
+      branchName
+    )
   }
 
   private onViewBranchOnGitHub = () => {

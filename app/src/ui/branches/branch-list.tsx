@@ -133,6 +133,9 @@ interface IBranchListProps {
   /** Optional: Callback for if delete context menu should exist */
   readonly onDeleteBranch?: (branchName: string) => void
 
+  /** Called to edit which remotes a branch may be pushed to. */
+  readonly onEditRemotePolicy?: (branchName: string) => void
+
   /** Optional: Callback to checkout a branch in a new worktree */
   readonly onCheckoutInNewWorktree?: (branch: Branch) => void
 }
@@ -287,13 +290,18 @@ export class BranchList extends React.Component<
   ) => {
     event.preventDefault()
 
-    const { onRenameBranch, onDeleteBranch, onCheckoutInNewWorktree } =
-      this.props
+    const {
+      onRenameBranch,
+      onDeleteBranch,
+      onCheckoutInNewWorktree,
+      onEditRemotePolicy,
+    } = this.props
 
     if (
       onRenameBranch === undefined &&
       onDeleteBranch === undefined &&
-      onCheckoutInNewWorktree === undefined
+      onCheckoutInNewWorktree === undefined &&
+      onEditRemotePolicy === undefined
     ) {
       return
     }
@@ -305,6 +313,7 @@ export class BranchList extends React.Component<
       onRenameBranch,
       onDeleteBranch,
       onCheckoutInNewWorktree,
+      onEditRemotePolicy,
     })
 
     showContextualMenu(items)

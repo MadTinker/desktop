@@ -7,19 +7,25 @@ export const BUILTIN_LOADOUTS: ReadonlyArray<HookLoadout> = [
     name: 'Mad Standard',
     description:
       'Core workshop hooks: MQTT context, todo prefixing, auto-pull on main, secret scanning',
-    scriptIds: ['mqtt-context', 'todo-prefix', 'auto-pull', 'secret-scan'],
-    builtin: true,
-  },
-  {
-    id: 'deploy-enabled',
-    name: 'Deploy Enabled',
-    description:
-      'Mad Standard plus auto-push for deployment-ready repos',
     scriptIds: [
       'mqtt-context',
       'todo-prefix',
       'auto-pull',
       'secret-scan',
+      'remote-guard',
+    ],
+    builtin: true,
+  },
+  {
+    id: 'deploy-enabled',
+    name: 'Deploy Enabled',
+    description: 'Mad Standard plus auto-push for deployment-ready repos',
+    scriptIds: [
+      'mqtt-context',
+      'todo-prefix',
+      'auto-pull',
+      'secret-scan',
+      'remote-guard',
       'auto-push',
     ],
     builtin: true,
@@ -34,6 +40,7 @@ export const BUILTIN_LOADOUTS: ReadonlyArray<HookLoadout> = [
       'todo-prefix',
       'auto-pull',
       'secret-scan',
+      'remote-guard',
       'auto-push',
       'build-dev',
     ],
@@ -43,7 +50,7 @@ export const BUILTIN_LOADOUTS: ReadonlyArray<HookLoadout> = [
     id: 'minimal',
     name: 'Minimal',
     description: 'Just the essentials: secret scanning and auto-pull on main',
-    scriptIds: ['secret-scan', 'auto-pull'],
+    scriptIds: ['secret-scan', 'auto-pull', 'remote-guard'],
     builtin: true,
   },
 ]
