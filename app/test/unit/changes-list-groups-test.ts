@@ -121,6 +121,22 @@ describe('changes list groups', () => {
     assert.strictEqual(collapsedFileIDs.size, 2)
   })
 
+  it('drops the header of a folder the filter emptied out', () => {
+    const { groups } = createGroupState(
+      [file('src/index.ts'), file('docs/readme.md')],
+      new Set(),
+      true
+    )
+
+    const docs = groups.find(
+      g => g.identifier === folderGroupIdentifier('docs')
+    )
+
+    // The list drops a group with no items unless it asked to be kept, which
+    // only a folded up folder does.
+    assert.strictEqual(docs?.showHeaderWhenEmpty, false)
+  })
+
   it('tells each file which folder header it sits under', () => {
     const { groups } = createGroupState(
       [file('src/lib/util.ts'), file('README.md')],
