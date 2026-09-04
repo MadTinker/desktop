@@ -11,6 +11,12 @@ import { IChangesFolder } from './changes-folder-tree'
 
 interface IChangesFolderHeaderProps {
   readonly folder: IChangesFolder
+  /**
+   * The files beneath this folder that the list is currently showing, which is
+   * every file in it unless a filter is narrowing the list down. The header
+   * counts and includes these rather than everything in the folder.
+   */
+  readonly visibleFiles: ReadonlyArray<WorkingDirectoryFileChange>
   readonly disableSelection: boolean
   readonly onToggle: (folder: IChangesFolder) => void
   readonly onIncludeChanged: (
@@ -30,7 +36,7 @@ export class ChangesFolderHeader extends React.Component<
 > {
   private get checkboxValue(): CheckboxValue {
     const selectionTypes = new Set(
-      this.props.folder.allFiles.map(f => f.selection.getSelectionType())
+      this.props.visibleFiles.map(f => f.selection.getSelectionType())
     )
 
     if (selectionTypes.size === 1) {
@@ -70,18 +76,18 @@ export class ChangesFolderHeader extends React.Component<
 
   private onCheckboxChange = (event: React.FormEvent<HTMLInputElement>) => {
     this.props.onIncludeChanged(
-      this.props.folder.allFiles,
+      this.props.visibleFiles,
       event.currentTarget.checked
     )
   }
 
   public render() {
-    const { folder, disableSelection } = this.props
-    const { allFiles, collapsed, depth, label, path } = folder
+    const { folder, disableSelection, visibleFiles } = this.props
+    const { collapsed, depth, label, path } = folder
 
-    const fileCount = `${formatNumber(allFiles.length)} changed file${plural(
-      allFiles.length
-    )}`
+    const fileCount = `${formatNumber(
+      visibleFiles.length
+    )} changed file${plural(visibleFiles.length)}`
 
     return (
       <div
@@ -114,7 +120,7 @@ export class ChangesFolderHeader extends React.Component<
           />
           <span className="folder-name">{label}</span>
           <span className="folder-file-count">
-            {formatNumber(allFiles.length)}
+            {formatNumber(visibleFiles.length)}
           </span>
         </button>
       </div>

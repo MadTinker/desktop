@@ -10,7 +10,8 @@ import {
   createGroupState,
   folderGroupIdentifier,
   RootGroupIdentifier,
-  shouldGroupByFolder,
+  fitMatchesToDisplayPath,
+  getEffectiveCollapsedFolders,
 } from '../../src/ui/changes/changes-list-groups'
 
 function file(
@@ -168,23 +169,63 @@ describe('changes list groups', () => {
   })
 })
 
-describe('shouldGroupByFolder', () => {
-  it('groups when the preference is on and nothing is being filtered', () => {
-    assert.strictEqual(shouldGroupByFolder(true, true, ''), true)
-    assert.strictEqual(shouldGroupByFolder(true, false, ''), true)
+describe('getEffectiveCollapsedFolders', () => {
+  const collapsed = new Set(['src', 'docs'])
+
+  it('honors the folds when nothing is being filtered', () => {
+    assert.strictEqual(
+      getEffectiveCollapsedFolders(collapsed, false),
+      collapsed
+    )
   })
 
-  it('falls back to the flat list while filtering by text', () => {
-    assert.strictEqual(shouldGroupByFolder(true, true, 'util'), false)
+  it('unfolds everything while a filter is on so matches are not hidden', () => {
+    assert.strictEqual(getEffectiveCollapsedFolders(collapsed, true).size, 0)
+  })
+})
+
+describe('fitMatchesToDisplayPath', () => {
+  const matches = (title: ReadonlyArray<number>) => ({ title, subtitle: [] })
+
+  it('leaves a row showing its full path alone', () => {
+    const result = fitMatchesToDisplayPath(
+      'src/util.ts',
+      'src/util.ts',
+      matches([0, 1])
+    )
+
+    assert.strictEqual(result.displayPath, 'src/util.ts')
+    assert.deepStrictEqual(result.matches?.title, [0, 1])
   })
 
-  it('never groups when the preference is off', () => {
-    assert.strictEqual(shouldGroupByFolder(false, true, ''), false)
-    assert.strictEqual(shouldGroupByFolder(false, false, ''), false)
-    assert.strictEqual(shouldGroupByFolder(false, true, 'util'), false)
+  it('moves the matched characters onto the file name', () => {
+    const result = fitMatchesToDisplayPath(
+      'src/lib/util.ts',
+      'util.ts',
+      matches([8, 9])
+    )
+
+    assert.strictEqual(result.displayPath, 'util.ts')
+    assert.deepStrictEqual(result.matches?.title, [0, 1])
   })
 
-  it('ignores stale filter text when the filter is hidden', () => {
-    assert.strictEqual(shouldGroupByFolder(true, false, 'util'), true)
+  it('falls back to the full path when the match is in the folder part', () => {
+    const result = fitMatchesToDisplayPath(
+      'src/lib/util.ts',
+      'util.ts',
+      matches([1, 9])
+    )
+
+    assert.strictEqual(result.displayPath, 'src/lib/util.ts')
+    assert.deepStrictEqual(result.matches?.title, [1, 9])
+  })
+
+  it('shortens rows that have no matches at all', () => {
+    const result = fitMatchesToDisplayPath('src/lib/util.ts', 'util.ts', {
+      title: [],
+      subtitle: [],
+    })
+
+    assert.strictEqual(result.displayPath, 'util.ts')
   })
 })

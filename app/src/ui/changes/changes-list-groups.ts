@@ -5,6 +5,7 @@ import {
   WorkingDirectoryFileChange,
 } from '../../models/status'
 import { IFilterListGroup, IFilterListItem } from '../lib/filter-list'
+import { IMatches } from '../../lib/fuzzy-find'
 import { buildChangesTree, IChangesFolder } from './changes-folder-tree'
 
 export interface IChangesListItem extends IFilterListItem {
@@ -39,16 +40,50 @@ export interface IChangesListGroupState {
 }
 
 /**
- * Whether the changes list should group the files into foldable folders.
- * Folding is a preference, and text filtering shows a flat list of full paths
- * so that the matched characters line up with what the user typed.
+ * The folders to treat as folded up while rendering. A fold hides the files
+ * inside it, which would swallow the very rows a filter is meant to surface,
+ * so filtering unfolds everything. The folds themselves are untouched and come
+ * back the moment the filter is cleared.
  */
-export function shouldGroupByFolder(
-  groupChangesByFolder: boolean,
-  showChangesFilter: boolean,
-  filterText: string
-) {
-  return groupChangesByFolder && (!showChangesFilter || filterText === '')
+export function getEffectiveCollapsedFolders(
+  collapsedFolders: ReadonlySet<string>,
+  filtersActive: boolean
+): ReadonlySet<string> {
+  return filtersActive ? EmptyCollapsedFolders : collapsedFolders
+}
+
+const EmptyCollapsedFolders: ReadonlySet<string> = new Set<string>()
+
+/**
+ * Line a set of matched characters up with the path a row actually displays.
+ *
+ * Matches are found against the full path but a row underneath a folder header
+ * only shows the file name, so the indices have to move with it. A match that
+ * lands in the folder part can't be shown on a file name at all, so those rows
+ * fall back to displaying the full path.
+ */
+export function fitMatchesToDisplayPath(
+  path: string,
+  displayPath: string,
+  matches: IMatches | undefined
+): { displayPath: string; matches: IMatches | undefined } {
+  const prefixLength = path.length - displayPath.length
+
+  if (prefixLength <= 0 || matches === undefined || !matches.title.length) {
+    return { displayPath, matches }
+  }
+
+  if (matches.title.some(i => i < prefixLength)) {
+    return { displayPath: path, matches }
+  }
+
+  return {
+    displayPath,
+    matches: {
+      title: matches.title.map(i => i - prefixLength),
+      subtitle: matches.subtitle,
+    },
+  }
 }
 
 export function createListItem(
