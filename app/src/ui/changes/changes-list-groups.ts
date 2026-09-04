@@ -172,3 +172,79 @@ export function createGroupState(
 
   return { groups, folders, collapsedFileIDs }
 }
+
+/** Where a folder header sits in the scrolled list. */
+export interface IFolderHeaderPosition {
+  readonly identifier: string
+  readonly top: number
+  readonly height: number
+}
+
+/**
+ * Where each folder header sits in the scrolled list, so that the one whose
+ * files are on screen can be pinned to the top of it. Every row is the same
+ * height and a group is a header row followed by its files, which is all the
+ * arithmetic this takes.
+ */
+export function getFolderHeaderLayout(
+  groups: ReadonlyArray<IFilterListGroup<IChangesListItem>>,
+  filteredItems: ReadonlyMap<string, IChangesListItem>,
+  filtersActive: boolean,
+  rowHeight: number
+): ReadonlyArray<IFolderHeaderPosition> {
+  const sections = new Array<IFolderHeaderPosition>()
+
+  let top = 0
+
+  for (const group of groups) {
+    const hasHeader = group.showHeader !== false
+    const visibleItems = filtersActive
+      ? group.items.filter(i => filteredItems.has(i.id)).length
+      : group.items.length
+
+    // Mirrors the filter list, which drops a group with nothing in it unless
+    // the group asked for its header to stay.
+    if (visibleItems === 0 && !(hasHeader && group.showHeaderWhenEmpty)) {
+      continue
+    }
+
+    const height = (hasHeader ? rowHeight : 0) + visibleItems * rowHeight
+
+    if (hasHeader) {
+      sections.push({ identifier: group.identifier, top, height })
+    }
+
+    top += height
+  }
+
+  return sections
+}
+
+/**
+ * The folder header to pin to the top of the list at the given scroll offset,
+ * along with how far to push it up as the next folder arrives underneath it.
+ * Null when the top of the list is a header of its own, or files that aren't
+ * in any folder.
+ */
+export function getPinnedFolderHeader(
+  sections: ReadonlyArray<IFolderHeaderPosition>,
+  scrollTop: number,
+  rowHeight: number
+): { identifier: string; offset: number } | null {
+  if (scrollTop <= 0) {
+    return null
+  }
+
+  const section = sections.find(
+    s => s.top < scrollTop && s.top + s.height > scrollTop
+  )
+
+  if (section === undefined) {
+    return null
+  }
+
+  return {
+    identifier: section.identifier,
+    offset: Math.min(0, section.top + section.height - scrollTop - rowHeight),
+  }
+}

@@ -12,6 +12,8 @@ import {
   RootGroupIdentifier,
   fitMatchesToDisplayPath,
   getEffectiveCollapsedFolders,
+  getFolderHeaderLayout,
+  getPinnedFolderHeader,
 } from '../../src/ui/changes/changes-list-groups'
 
 function file(
@@ -227,5 +229,78 @@ describe('fitMatchesToDisplayPath', () => {
     })
 
     assert.strictEqual(result.displayPath, 'util.ts')
+  })
+})
+
+describe('folder header pinning', () => {
+  const rowHeight = 10
+
+  // docs: header + 1 file, src: header + 2 files, then 1 file at the root
+  const files = [
+    file('docs/readme.md'),
+    file('src/index.ts'),
+    file('src/main.ts'),
+    file('LICENSE'),
+  ]
+
+  const layout = (collapsed: ReadonlySet<string> = new Set()) => {
+    const { groups } = createGroupState(files, collapsed, true)
+    return getFolderHeaderLayout(groups, new Map(), false, rowHeight)
+  }
+
+  it('stacks the folder headers up in the order they are rendered', () => {
+    assert.deepStrictEqual(layout(), [
+      { identifier: folderGroupIdentifier('docs'), top: 0, height: 20 },
+      { identifier: folderGroupIdentifier('src'), top: 20, height: 30 },
+    ])
+  })
+
+  it('gives a folded up folder just its header', () => {
+    assert.deepStrictEqual(layout(new Set(['src'])), [
+      { identifier: folderGroupIdentifier('docs'), top: 0, height: 20 },
+      { identifier: folderGroupIdentifier('src'), top: 20, height: 10 },
+    ])
+  })
+
+  it('counts only the matching files while a filter is on', () => {
+    const { groups } = createGroupState(files, new Set(), true)
+    const matched = new Map(
+      groups
+        .flatMap(g => g.items)
+        .filter(i => i.change.path !== 'src/main.ts')
+        .map(i => [i.id, i])
+    )
+
+    assert.deepStrictEqual(
+      getFolderHeaderLayout(groups, matched, true, rowHeight),
+      [
+        { identifier: folderGroupIdentifier('docs'), top: 0, height: 20 },
+        { identifier: folderGroupIdentifier('src'), top: 20, height: 20 },
+      ]
+    )
+  })
+
+  it('pins nothing at the top of the list', () => {
+    assert.strictEqual(getPinnedFolderHeader(layout(), 0, rowHeight), null)
+  })
+
+  it('pins the folder whose files are on screen', () => {
+    assert.deepStrictEqual(getPinnedFolderHeader(layout(), 25, rowHeight), {
+      identifier: folderGroupIdentifier('src'),
+      offset: 0,
+    })
+  })
+
+  it('pushes the pinned header off as the next folder arrives', () => {
+    // 15px in, the docs section (0-20) has 5px left, so the header showing on
+    // top of it is half way out of view.
+    assert.deepStrictEqual(getPinnedFolderHeader(layout(), 15, rowHeight), {
+      identifier: folderGroupIdentifier('docs'),
+      offset: -5,
+    })
+  })
+
+  it('pins nothing over the files that sit at the repository root', () => {
+    assert.strictEqual(getPinnedFolderHeader(layout(), 55, rowHeight), null)
   })
 })

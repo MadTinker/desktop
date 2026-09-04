@@ -18,6 +18,12 @@ interface IChangesFolderHeaderProps {
    */
   readonly visibleFiles: ReadonlyArray<WorkingDirectoryFileChange>
   readonly disableSelection: boolean
+  /**
+   * Whether this is the copy pinned to the top of the list while its folder's
+   * rows scroll past. The pinned copy duplicates a row that's already in the
+   * list, so it stays out of the tab order.
+   */
+  readonly pinned?: boolean
   readonly onToggle: (folder: IChangesFolder) => void
   readonly onIncludeChanged: (
     files: ReadonlyArray<WorkingDirectoryFileChange>,
@@ -82,7 +88,7 @@ export class ChangesFolderHeader extends React.Component<
   }
 
   public render() {
-    const { folder, disableSelection, visibleFiles } = this.props
+    const { folder, disableSelection, visibleFiles, pinned } = this.props
     const { collapsed, depth, label, path } = folder
 
     const fileCount = `${formatNumber(
@@ -108,6 +114,7 @@ export class ChangesFolderHeader extends React.Component<
           type="button"
           onClick={this.onToggle}
           onKeyDown={this.onKeyDown}
+          tabIndex={pinned ? -1 : undefined}
           // Lets the changes list move focus here when a file row folds its
           // folder up and the row the user was on disappears.
           data-folder-path={path}

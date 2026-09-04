@@ -80,6 +80,8 @@ import {
   createListItem,
   fitMatchesToDisplayPath,
   getEffectiveCollapsedFolders,
+  getFolderHeaderLayout,
+  getPinnedFolderHeader,
   IChangesListItem,
 } from './changes-list-groups'
 import { ChangesFolderHeader } from './changes-folder-header'
@@ -278,6 +280,8 @@ interface IFilterChangesListState {
   readonly folders: Map<string, IChangesFolder>
   /** The ids of files hidden only because their folder is folded up */
   readonly collapsedFileIDs: ReadonlySet<string>
+  /** How far the list is scrolled, used to pin a folder header on top of it */
+  readonly scrollTop: number
 }
 
 function getSelectedItemsFromProps(
@@ -414,6 +418,7 @@ export class FilterChangesList extends React.Component<
       selectedItems: getSelectedItemsFromProps(props),
       focusedRow: null,
       collapsedFolders,
+      scrollTop: props.changesListScrollTop ?? 0,
       ...groupState,
     }
   }
@@ -645,7 +650,10 @@ export class FilterChangesList extends React.Component<
     showContextualMenu(items)
   }
 
-  private renderFolderHeader = (identifier: string): JSX.Element | null => {
+  private renderFolderHeader = (
+    identifier: string,
+    pinned: boolean = false
+  ): JSX.Element | null => {
     const folder = this.state.folders.get(identifier)
 
     if (folder === undefined) {
@@ -664,6 +672,7 @@ export class FilterChangesList extends React.Component<
       <ChangesFolderHeader
         folder={folder}
         visibleFiles={visibleFiles}
+        pinned={pinned}
         disableSelection={isCommitting || rebaseConflictState !== null}
         onToggle={this.toggleFolder}
         onIncludeChanged={this.props.onIncludeChanged}
@@ -1175,6 +1184,47 @@ export class FilterChangesList extends React.Component<
 
   private onScroll = (scrollTop: number, _clientHeight: number) => {
     this.props.onChangesListScrolled(scrollTop)
+    this.setState({ scrollTop })
+  }
+
+  private getFolderHeaderLayout = memoizeOne(getFolderHeaderLayout)
+
+  /**
+   * The list is virtualized, so its rows can't be sticky. This lays a copy of
+   * the folder header whose files are on screen over the top of the list.
+   */
+  private renderPinnedFolderHeader = () => {
+    if (!isGroupingByFolder(this.props)) {
+      return null
+    }
+
+    const pinned = getPinnedFolderHeader(
+      this.getFolderHeaderLayout(
+        this.state.groups,
+        this.state.filteredItems,
+        areFiltersActive(this.props),
+        RowHeight
+      ),
+      this.state.scrollTop,
+      RowHeight
+    )
+
+    if (pinned === null) {
+      return null
+    }
+
+    return (
+      <div
+        className="pinned-folder-header"
+        style={{
+          height: RowHeight,
+          transform: `translateY(${pinned.offset}px)`,
+        }}
+        aria-hidden={true}
+      >
+        {this.renderFolderHeader(pinned.identifier, true)}
+      </div>
+    )
   }
 
   private renderCommitMessageForm = (): JSX.Element => {
@@ -1712,6 +1762,7 @@ export class FilterChangesList extends React.Component<
                 : undefined
             }
             renderGroupHeader={this.renderFolderHeader}
+            renderListOverlay={this.renderPinnedFolderHeader}
             invalidationProps={{
               workingDirectory: workingDirectory,
               isCommitting: isCommitting,
