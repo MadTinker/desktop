@@ -28,6 +28,8 @@ import {
   RevealInFileManagerLabel,
   OpenWithDefaultProgramLabel,
   CopyRelativeFilePathLabel,
+  CopyFolderPathLabel,
+  CopyRelativeFolderPathLabel,
   CopySelectedPathsLabel,
   CopySelectedRelativePathsLabel,
 } from '../lib/context-menu'
@@ -80,7 +82,11 @@ import {
   IChangesListItem,
 } from './changes-list-groups'
 import { ChangesFolderHeader } from './changes-folder-header'
-import { getAllFolderPaths, IChangesFolder } from './changes-folder-tree'
+import {
+  getAllFolderPaths,
+  getFolderTreePaths,
+  IChangesFolder,
+} from './changes-folder-tree'
 import {
   getCollapsedFolders,
   setCollapsedFolders,
@@ -516,6 +522,112 @@ export class FilterChangesList extends React.Component<
     this.setCollapsedFolders(new Set())
   }
 
+  private getFolderAndDescendantPaths(folder: IChangesFolder) {
+    return getFolderTreePaths(this.props.workingDirectory.files, folder.path)
+  }
+
+  private onCollapseFolderTree = (folder: IChangesFolder) => {
+    this.setCollapsedFolders(
+      new Set([
+        ...this.state.collapsedFolders,
+        ...this.getFolderAndDescendantPaths(folder),
+      ])
+    )
+  }
+
+  private onExpandFolderTree = (folder: IChangesFolder) => {
+    const collapsedFolders = new Set(this.state.collapsedFolders)
+    this.getFolderAndDescendantPaths(folder).forEach(p =>
+      collapsedFolders.delete(p)
+    )
+    this.setCollapsedFolders(collapsedFolders)
+  }
+
+  private onFolderContextMenu = (
+    folder: IChangesFolder,
+    event: React.MouseEvent<HTMLDivElement>
+  ) => {
+    event.preventDefault()
+
+    // The working directory has to be left alone while conflicts are being
+    // resolved or a commit is in flight, same as the file rows.
+    if (this.props.rebaseConflictState !== null || this.props.isCommitting) {
+      return
+    }
+
+    const { allFiles, path } = folder
+    const fileCount = allFiles.length
+    const paths = allFiles.map(f => f.path)
+    const descendants = this.getFolderAndDescendantPaths(folder)
+    const { externalEditorLabel } = this.props
+
+    const discardLabel = __DARWIN__
+      ? `Discard ${formatNumber(fileCount)} Changes in Folder`
+      : `Discard ${formatNumber(fileCount)} changes in folder`
+
+    const openInExternalEditor = externalEditorLabel
+      ? `Open in ${externalEditorLabel}`
+      : DefaultEditorLabel
+
+    // A folder holding nothing but deletions is gone from the working tree, so
+    // there's nothing to reveal or open.
+    const folderExistsOnDisk = allFiles.some(
+      f => f.status.kind !== AppFileStatusKind.Deleted
+    )
+
+    const items: ReadonlyArray<IMenuItem> = [
+      {
+        label: __DARWIN__ ? 'Include All in Folder' : 'Include all in folder',
+        action: () => this.props.onIncludeChanged(allFiles, true),
+      },
+      {
+        label: __DARWIN__ ? 'Exclude All in Folder' : 'Exclude all in folder',
+        action: () => this.props.onIncludeChanged(allFiles, false),
+      },
+      { type: 'separator' },
+      {
+        label: this.props.askForConfirmationOnDiscardChanges
+          ? `${discardLabel}…`
+          : discardLabel,
+        action: () => this.onDiscardChanges(paths),
+      },
+      { type: 'separator' },
+      {
+        label: __DARWIN__ ? 'Collapse Folder' : 'Collapse folder',
+        action: () => this.onCollapseFolderTree(folder),
+        enabled: descendants.some(p => !this.state.collapsedFolders.has(p)),
+      },
+      {
+        label: __DARWIN__ ? 'Expand Folder' : 'Expand folder',
+        action: () => this.onExpandFolderTree(folder),
+        enabled: descendants.some(p => this.state.collapsedFolders.has(p)),
+      },
+      { type: 'separator' },
+      {
+        label: CopyFolderPathLabel,
+        action: () =>
+          clipboard.writeText(Path.join(this.props.repository.path, path)),
+      },
+      {
+        label: CopyRelativeFolderPathLabel,
+        action: () => clipboard.writeText(Path.normalize(path)),
+      },
+      { type: 'separator' },
+      {
+        label: RevealInFileManagerLabel,
+        action: () => revealInFileManager(this.props.repository, path),
+        enabled: folderExistsOnDisk,
+      },
+      {
+        label: openInExternalEditor,
+        action: () => this.props.onOpenItemInExternalEditor(path),
+        enabled: folderExistsOnDisk,
+      },
+    ]
+
+    showContextualMenu(items)
+  }
+
   private renderFolderHeader = (identifier: string): JSX.Element | null => {
     const folder = this.state.folders.get(identifier)
 
@@ -531,6 +643,7 @@ export class FilterChangesList extends React.Component<
         disableSelection={isCommitting || rebaseConflictState !== null}
         onToggle={this.toggleFolder}
         onIncludeChanged={this.props.onIncludeChanged}
+        onContextMenu={this.onFolderContextMenu}
       />
     )
   }
