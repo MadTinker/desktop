@@ -88,7 +88,7 @@ import {
   IChangesFolder,
 } from './changes-folder-tree'
 import {
-  getCollapsedFolders,
+  getInitialCollapsedFolders,
   setCollapsedFolders,
 } from './collapsed-folders-store'
 import { HookProgress } from '../../lib/git'
@@ -384,7 +384,10 @@ export class FilterChangesList extends React.Component<
   public constructor(props: IFilterChangesListProps) {
     super(props)
 
-    const collapsedFolders = getCollapsedFolders(props.repository)
+    const collapsedFolders = getInitialCollapsedFolders(
+      props.repository,
+      props.workingDirectory.files
+    )
     const groupState = createGroupState(
       props.workingDirectory.files,
       collapsedFolders,
@@ -424,7 +427,10 @@ export class FilterChangesList extends React.Component<
     }
 
     const collapsedFolders = repositoryChanged
-      ? getCollapsedFolders(nextProps.repository)
+      ? getInitialCollapsedFolders(
+          nextProps.repository,
+          nextProps.workingDirectory.files
+        )
       : this.state.collapsedFolders
 
     this.setState({
