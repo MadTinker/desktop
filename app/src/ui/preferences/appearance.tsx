@@ -48,7 +48,9 @@ interface IAppearanceProps {
   readonly selectedMadnessTheme: MadnessTheme
   readonly onSelectedMadnessThemeChanged: (theme: MadnessTheme) => void
   readonly selectedPersonality: MadnessPersonality
-  readonly onSelectedPersonalityChanged: (personality: MadnessPersonality) => void
+  readonly onSelectedPersonalityChanged: (
+    personality: MadnessPersonality
+  ) => void
   readonly selectedTabSize: number
   readonly onSelectedTabSizeChanged: (tabSize: number) => void
   readonly selectedDateFormat: DateFormat
@@ -67,6 +69,9 @@ interface IAppearanceProps {
   readonly onUnderlineLinksChanged: (value: boolean) => void
   readonly showDiffCheckMarks: boolean
   readonly onShowDiffCheckMarksChanged: (value: boolean) => void
+  // Changes list
+  readonly groupChangesByFolder: boolean
+  readonly onGroupChangesByFolderChanged: (value: boolean) => void
 }
 
 interface IAppearanceState {
@@ -302,6 +307,41 @@ export class Appearance extends React.Component<
     )
   }
 
+  private onGroupChangesByFolderChanged = (
+    event: React.FormEvent<HTMLInputElement>
+  ) => {
+    this.props.onGroupChangesByFolderChanged(event.currentTarget.checked)
+  }
+
+  private renderChangesList() {
+    return (
+      <div className="appearance-section">
+        <h2>{__DARWIN__ ? 'Changes List' : 'Changes list'}</h2>
+
+        <Checkbox
+          label={
+            __DARWIN__ ? 'Group Files Into Folders' : 'Group files into folders'
+          }
+          value={
+            this.props.groupChangesByFolder
+              ? CheckboxValue.On
+              : CheckboxValue.Off
+          }
+          onChange={this.onGroupChangesByFolderChanged}
+          ariaDescribedBy="group-changes-by-folder-description"
+        />
+        <p
+          id="group-changes-by-folder-description"
+          className="git-settings-description"
+        >
+          When enabled, the changed files are grouped under folder headers that
+          fold their contents away. When disabled, the list stays a flat set of
+          full paths.
+        </p>
+      </div>
+    )
+  }
+
   private renderSelectedTabSize() {
     const availableTabSizes: number[] = [1, 2, 3, 4, 5, 6, 8, 10, 12]
 
@@ -330,10 +370,16 @@ export class Appearance extends React.Component<
     return (
       <div className="appearance-section madness-theme-section">
         <h2 id="madness-theme-heading">Color Theme</h2>
-        <div className="madness-theme-grid" role="group" aria-labelledby="madness-theme-heading">
+        <div
+          className="madness-theme-grid"
+          role="group"
+          aria-labelledby="madness-theme-heading"
+        >
           <button
             type="button"
-            className={`madness-swatch${!selectedMadnessTheme ? ' selected' : ''}`}
+            className={`madness-swatch${
+              !selectedMadnessTheme ? ' selected' : ''
+            }`}
             onClick={() => onSelectedMadnessThemeChanged('')}
             aria-pressed={!selectedMadnessTheme}
             title="No color theme"
@@ -350,7 +396,9 @@ export class Appearance extends React.Component<
               <button
                 type="button"
                 key={t}
-                className={`madness-swatch${selectedMadnessTheme === t ? ' selected' : ''}`}
+                className={`madness-swatch${
+                  selectedMadnessTheme === t ? ' selected' : ''
+                }`}
                 onClick={() => onSelectedMadnessThemeChanged(t)}
                 aria-pressed={selectedMadnessTheme === t}
                 title={madnessThemeLabels[t]}
@@ -489,8 +537,8 @@ export class Appearance extends React.Component<
           onChange={this.onNotificationsEnabledChanged}
         />
         <p className="git-settings-description">
-          Allows the display of notifications when high-signal events take
-          place in the current repository.{this.renderNotificationHint()}
+          Allows the display of notifications when high-signal events take place
+          in the current repository.{this.renderNotificationHint()}
         </p>
       </div>
     )
@@ -537,16 +585,14 @@ export class Appearance extends React.Component<
           id="underline-setting-description"
           className="git-settings-description"
         >
-          When enabled, Madness Desktop will underline links in commit
-          messages, comments, and other text fields. {this.renderExampleLink()}
+          When enabled, Madness Desktop will underline links in commit messages,
+          comments, and other text fields. {this.renderExampleLink()}
         </p>
 
         <Checkbox
           label="Show check marks in the diff"
           value={
-            this.props.showDiffCheckMarks
-              ? CheckboxValue.On
-              : CheckboxValue.Off
+            this.props.showDiffCheckMarks ? CheckboxValue.On : CheckboxValue.Off
           }
           onChange={this.onShowDiffCheckMarksChanged}
           ariaDescribedBy="diff-checkmarks-setting-description"
@@ -572,6 +618,7 @@ export class Appearance extends React.Component<
         {this.renderPersonalitySelector()}
         {this.renderFormatting()}
         {this.renderSelectedTabSize()}
+        {this.renderChangesList()}
         {this.renderNotifications()}
         {this.renderAccessibility()}
       </DialogContent>

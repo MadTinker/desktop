@@ -10,6 +10,7 @@ import {
   createGroupState,
   folderGroupIdentifier,
   RootGroupIdentifier,
+  shouldGroupByFolder,
 } from '../../src/ui/changes/changes-list-groups'
 
 function file(
@@ -136,5 +137,26 @@ describe('changes list groups', () => {
     const { groups } = createGroupState([file('src/index.ts')], new Set(), true)
 
     assert.deepStrictEqual(groups[0].items[0].text, ['src/index.ts'])
+  })
+})
+
+describe('shouldGroupByFolder', () => {
+  it('groups when the preference is on and nothing is being filtered', () => {
+    assert.strictEqual(shouldGroupByFolder(true, true, ''), true)
+    assert.strictEqual(shouldGroupByFolder(true, false, ''), true)
+  })
+
+  it('falls back to the flat list while filtering by text', () => {
+    assert.strictEqual(shouldGroupByFolder(true, true, 'util'), false)
+  })
+
+  it('never groups when the preference is off', () => {
+    assert.strictEqual(shouldGroupByFolder(false, true, ''), false)
+    assert.strictEqual(shouldGroupByFolder(false, false, ''), false)
+    assert.strictEqual(shouldGroupByFolder(false, true, 'util'), false)
+  })
+
+  it('ignores stale filter text when the filter is hidden', () => {
+    assert.strictEqual(shouldGroupByFolder(true, false, 'util'), true)
   })
 })

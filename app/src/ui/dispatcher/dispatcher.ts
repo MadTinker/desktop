@@ -4503,6 +4503,10 @@ export class Dispatcher {
     return this.appStore._updateShowDiffCheckMarks(diffCheckMarks)
   }
 
+  public setGroupChangesByFolderSetting(groupChangesByFolder: boolean) {
+    return this.appStore._updateGroupChangesByFolder(groupChangesByFolder)
+  }
+
   public setPreferAbsoluteDates(value: boolean) {
     return this.appStore._setPreferAbsoluteDates(value)
   }

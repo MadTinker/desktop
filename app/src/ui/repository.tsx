@@ -136,6 +136,9 @@ interface IRepositoryViewProps {
   /** Whether or not to show the changes filter */
   readonly showChangesFilter: boolean
 
+  /** Whether the changes list groups the files into foldable folders */
+  readonly groupChangesByFolder: boolean
+
   /** Whether to show the Reflog tab */
   readonly showReflogTab: boolean
 
@@ -375,6 +378,7 @@ export class RepositoryView extends React.Component<
         commitSpellcheckEnabled={this.props.commitSpellcheckEnabled}
         showCommitLengthWarning={this.props.showCommitLengthWarning}
         showChangesFilter={this.props.showChangesFilter}
+        groupChangesByFolder={this.props.groupChangesByFolder}
         omnispindleTodos={this.props.omnispindleTodos}
         omnispindleStatus={this.props.omnispindleStatus}
         omnispindleApiKey={this.props.omnispindleApiKey}

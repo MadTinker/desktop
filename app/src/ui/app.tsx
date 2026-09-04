@@ -2092,6 +2092,7 @@ export class App extends React.Component<IAppProps, IAppState> {
             onEditGlobalGitConfig={this.editGlobalGitConfig}
             underlineLinks={this.state.underlineLinks}
             showDiffCheckMarks={this.state.showDiffCheckMarks}
+            groupChangesByFolder={this.state.groupChangesByFolder}
             selectedCopilotModelsByAccount={
               this.state.selectedCopilotModelsByAccount
             }
@@ -4652,6 +4653,7 @@ export class App extends React.Component<IAppProps, IAppState> {
           onCherryPick={this.startCherryPickWithoutBranch}
           pullRequestSuggestedNextAction={state.pullRequestSuggestedNextAction}
           showChangesFilter={state.showChangesFilter}
+          groupChangesByFolder={state.groupChangesByFolder}
           showReflogTab={state.showReflogTab}
           omnispindleTodos={state.omnispindleTodos}
           omnispindleStatus={state.omnispindleStatus}

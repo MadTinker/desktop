@@ -33,6 +33,19 @@ export interface IChangesListGroupState {
   readonly collapsedFileIDs: ReadonlySet<string>
 }
 
+/**
+ * Whether the changes list should group the files into foldable folders.
+ * Folding is a preference, and text filtering shows a flat list of full paths
+ * so that the matched characters line up with what the user typed.
+ */
+export function shouldGroupByFolder(
+  groupChangesByFolder: boolean,
+  showChangesFilter: boolean,
+  filterText: string
+) {
+  return groupChangesByFolder && (!showChangesFilter || filterText === '')
+}
+
 export function createListItem(
   file: WorkingDirectoryFileChange,
   depth: number,

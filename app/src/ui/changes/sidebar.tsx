@@ -105,6 +105,9 @@ interface IChangesSidebarProps {
   /** Whether or not to show the changes filter */
   readonly showChangesFilter: boolean
 
+  /** Whether the changes list groups the files into foldable folders */
+  readonly groupChangesByFolder: boolean
+
   readonly omnispindleTodos: ReadonlyArray<IOmnispindleTodo>
   readonly omnispindleStatus: OmnispindleConnectionStatus
   readonly omnispindleApiKey: string
@@ -493,6 +496,7 @@ export class ChangesSidebar extends React.Component<IChangesSidebarProps, {}> {
           accounts={this.props.accounts}
           fileListFilter={this.props.changes.fileListFilter}
           showChangesFilter={this.props.showChangesFilter}
+          groupChangesByFolder={this.props.groupChangesByFolder}
           skipCommitHooks={this.props.skipCommitHooks}
           signOffCommits={this.props.signOffCommits}
           allowEmptyCommit={this.props.allowEmptyCommit}

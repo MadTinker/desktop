@@ -144,6 +144,7 @@ interface IPreferencesProps {
   readonly onEditGlobalGitConfig: () => void
   readonly underlineLinks: boolean
   readonly showDiffCheckMarks: boolean
+  readonly groupChangesByFolder: boolean
   readonly selectedCopilotModelsByAccount: CopilotModelSelectionsByAccount
   readonly copilotModelsByAccount: CopilotModelsByAccount
   readonly copilotQuotaSnapshotsByAccount: CopilotQuotaSnapshotsByAccount
@@ -215,6 +216,8 @@ interface IPreferencesState {
   readonly underlineLinks: boolean
 
   readonly showDiffCheckMarks: boolean
+
+  readonly groupChangesByFolder: boolean
 
   readonly selectedGitTabIndex?: number
   readonly enableGitHookEnv: boolean | undefined
@@ -317,6 +320,7 @@ export class Preferences extends React.Component<
       isLoadingGitConfig: true,
       underlineLinks: this.props.underlineLinks,
       showDiffCheckMarks: this.props.showDiffCheckMarks,
+      groupChangesByFolder: this.props.groupChangesByFolder,
       enableGitHookEnv: getHooksEnvEnabled(),
       cacheGitHookEnv: getCacheHooksEnv(),
       selectedGitHookEnvShell: getGitHookEnvShell(),
@@ -756,6 +760,8 @@ export class Preferences extends React.Component<
             onUnderlineLinksChanged={this.onUnderlineLinksChanged}
             showDiffCheckMarks={this.state.showDiffCheckMarks}
             onShowDiffCheckMarksChanged={this.onShowDiffCheckMarksChanged}
+            groupChangesByFolder={this.state.groupChangesByFolder}
+            onGroupChangesByFolderChanged={this.onGroupChangesByFolderChanged}
           />
         )
         break
@@ -1105,6 +1111,10 @@ export class Preferences extends React.Component<
     this.setState({ showDiffCheckMarks })
   }
 
+  private onGroupChangesByFolderChanged = (groupChangesByFolder: boolean) => {
+    this.setState({ groupChangesByFolder })
+  }
+
   private onSelectedCopilotModelChanged = (
     account: Account,
     feature: CopilotFeature,
@@ -1379,6 +1389,8 @@ export class Preferences extends React.Component<
     dispatcher.setUnderlineLinksSetting(this.state.underlineLinks)
 
     dispatcher.setDiffCheckMarksSetting(this.state.showDiffCheckMarks)
+
+    dispatcher.setGroupChangesByFolderSetting(this.state.groupChangesByFolder)
 
     dispatcher.setSelectedCopilotModelsByAccount(
       this.state.selectedCopilotModelsByAccount

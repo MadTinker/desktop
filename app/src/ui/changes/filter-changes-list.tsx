@@ -75,6 +75,7 @@ import {
 import { ChangesListFilterOptions } from './changes-list-filter-options'
 import {
   createGroupState,
+  shouldGroupByFolder,
   createListItem,
   IChangesListItem,
 } from './changes-list-groups'
@@ -230,6 +231,9 @@ interface IFilterChangesListProps {
   /** Whether or not to show the changes filter */
   readonly showChangesFilter: boolean
 
+  /** Whether the files are grouped into foldable folders */
+  readonly groupChangesByFolder: boolean
+
   /**
    * Whether or not to skip blocking commit hooks when creating commits
    * by means of passing the `--no-verify` flag to git commit
@@ -290,12 +294,12 @@ function getSelectedItemsFromProps(
   return selectedItems
 }
 
-/**
- * Text filtering shows a flat list of full paths; anything else groups the
- * changes into foldable folders.
- */
 function isGroupingByFolder(props: IFilterChangesListProps) {
-  return !props.showChangesFilter || props.fileListFilter.filterText === ''
+  return shouldGroupByFolder(
+    props.groupChangesByFolder,
+    props.showChangesFilter,
+    props.fileListFilter.filterText
+  )
 }
 
 /** Get checkbox value from includeAll status */
@@ -647,9 +651,9 @@ export class FilterChangesList extends React.Component<
       },
     ]
 
-    const folderCount = getAllFolderPaths(
-      this.props.workingDirectory.files
-    ).length
+    const folderCount = this.props.groupChangesByFolder
+      ? getAllFolderPaths(this.props.workingDirectory.files).length
+      : 0
 
     if (folderCount > 0) {
       items.push(

@@ -443,6 +443,9 @@ export interface IAppState {
   /** Whether or not the user will see check marks indicating a line is included in the check in the diff */
   readonly showDiffCheckMarks: boolean
 
+  /** Whether the changes list groups the files into foldable folders */
+  readonly groupChangesByFolder: boolean
+
   /** Whether the user prefers absolute dates over relative time in lists */
   readonly preferAbsoluteDates: boolean
 

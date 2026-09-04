@@ -623,6 +623,9 @@ export const underlineLinksDefault = true
 export const showDiffCheckMarksDefault = true
 export const showDiffCheckMarksKey = 'diff-check-marks-visible'
 
+export const groupChangesByFolderDefault = true
+export const groupChangesByFolderKey = 'changes-group-by-folder'
+
 const commitMessageGenerationDisclaimerLastSeenKey =
   'commit-message-generation-disclaimer-last-seen'
 
@@ -812,6 +815,8 @@ export class AppStore extends TypedBaseStore<IAppState> {
     | undefined = undefined
 
   private showDiffCheckMarks: boolean = showDiffCheckMarksDefault
+
+  private groupChangesByFolder: boolean = groupChangesByFolderDefault
 
   private preferAbsoluteDates: boolean = false
 
@@ -1557,6 +1562,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
       cachedRepoRulesets: this.cachedRepoRulesets,
       underlineLinks: this.underlineLinks,
       showDiffCheckMarks: this.showDiffCheckMarks,
+      groupChangesByFolder: this.groupChangesByFolder,
       preferAbsoluteDates: this.preferAbsoluteDates,
       updateState: updateStore.state,
       commitMessageGenerationDisclaimerLastSeen:
@@ -2973,6 +2979,11 @@ export class AppStore extends TypedBaseStore<IAppState> {
     this.showDiffCheckMarks = getBoolean(
       showDiffCheckMarksKey,
       showDiffCheckMarksDefault
+    )
+
+    this.groupChangesByFolder = getBoolean(
+      groupChangesByFolderKey,
+      groupChangesByFolderDefault
     )
 
     this.preferAbsoluteDates = getPreferAbsoluteDates()
@@ -11214,6 +11225,14 @@ export class AppStore extends TypedBaseStore<IAppState> {
     if (showDiffCheckMarks !== this.showDiffCheckMarks) {
       this.showDiffCheckMarks = showDiffCheckMarks
       setBoolean(showDiffCheckMarksKey, showDiffCheckMarks)
+      this.emitUpdate()
+    }
+  }
+
+  public _updateGroupChangesByFolder(groupChangesByFolder: boolean) {
+    if (groupChangesByFolder !== this.groupChangesByFolder) {
+      this.groupChangesByFolder = groupChangesByFolder
+      setBoolean(groupChangesByFolderKey, groupChangesByFolder)
       this.emitUpdate()
     }
   }
