@@ -1184,7 +1184,12 @@ export class FilterChangesList extends React.Component<
 
   private onScroll = (scrollTop: number, _clientHeight: number) => {
     this.props.onChangesListScrolled(scrollTop)
-    this.setState({ scrollTop })
+
+    // Only the pinned folder header cares where the list is scrolled to, so
+    // there's no reason to re-render a flat list on every scroll event.
+    if (this.props.groupChangesByFolder && this.state.folders.size > 0) {
+      this.setState({ scrollTop })
+    }
   }
 
   private getFolderHeaderLayout = memoizeOne(getFolderHeaderLayout)

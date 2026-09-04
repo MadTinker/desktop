@@ -152,7 +152,10 @@ export function createGroupState(
 
     groups.push({
       identifier,
-      showHeaderWhenEmpty: true,
+      // A folded up folder keeps its header - that header is the only thing
+      // left of it. A folder the filter emptied out is a different story: it
+      // has nothing to show and shouldn't take up a row.
+      showHeaderWhenEmpty: folder.collapsed,
       items: section.files.map(f =>
         // Renames and copies render the path they came from alongside the
         // current one, so shortening only the latter would read as a move
