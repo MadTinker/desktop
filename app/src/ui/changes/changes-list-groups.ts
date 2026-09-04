@@ -18,6 +18,11 @@ export interface IChangesListItem extends IFilterListItem {
    * sits underneath a folder header, in which case it's the file name.
    */
   readonly displayPath: string
+  /**
+   * The folder header the file sits under, or null when the file is at the
+   * repository root or the list isn't grouped into folders.
+   */
+  readonly folderPath: string | null
 }
 
 /** The identifier of the group holding files that aren't under any folder */
@@ -49,9 +54,17 @@ export function shouldGroupByFolder(
 export function createListItem(
   file: WorkingDirectoryFileChange,
   depth: number,
-  displayPath: string
+  displayPath: string,
+  folderPath: string | null = null
 ): IChangesListItem {
-  return { text: [file.path], id: file.id, change: file, depth, displayPath }
+  return {
+    text: [file.path],
+    id: file.id,
+    change: file,
+    depth,
+    displayPath,
+    folderPath,
+  }
 }
 
 /**
@@ -115,7 +128,8 @@ export function createGroupState(
           f.status.kind === AppFileStatusKind.Renamed ||
             f.status.kind === AppFileStatusKind.Copied
             ? f.path
-            : basename(f.path)
+            : basename(f.path),
+          folder.path
         )
       ),
     })

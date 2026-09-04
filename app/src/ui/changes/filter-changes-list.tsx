@@ -327,6 +327,7 @@ export class FilterChangesList extends React.Component<
   private includeAllCheckBoxRef = React.createRef<Checkbox>()
   private filterListRef =
     React.createRef<AugmentedSectionFilterList<IChangesListItem>>()
+  private changesListRef = React.createRef<HTMLDivElement>()
 
   /** Compute the 'Include All' checkbox value */
   private getCheckAllValue = memoizeOne(
@@ -440,17 +441,53 @@ export class FilterChangesList extends React.Component<
     this.props.onIncludeChanged(filteredItemPaths, include)
   }
 
-  private setCollapsedFolders(collapsedFolders: ReadonlySet<string>) {
+  private setCollapsedFolders(
+    collapsedFolders: ReadonlySet<string>,
+    afterUpdate?: () => void
+  ) {
     setCollapsedFolders(this.props.repository, collapsedFolders)
 
-    this.setState({
-      collapsedFolders,
-      ...createGroupState(
-        this.props.workingDirectory.files,
+    this.setState(
+      {
         collapsedFolders,
-        isGroupingByFolder(this.props)
-      ),
-    })
+        ...createGroupState(
+          this.props.workingDirectory.files,
+          collapsedFolders,
+          isGroupingByFolder(this.props)
+        ),
+      },
+      afterUpdate
+    )
+  }
+
+  /**
+   * Move keyboard focus onto a folder header. Used when folding a folder up
+   * from one of the file rows inside it, which takes the focused row away.
+   */
+  private focusFolderHeader(path: string) {
+    this.changesListRef.current
+      ?.querySelector<HTMLButtonElement>(
+        `.folder-toggle[data-folder-path="${CSS.escape(path)}"]`
+      )
+      ?.focus()
+  }
+
+  private collapseFolderOfItem(item: IChangesListItem) {
+    const { folderPath } = item
+
+    if (folderPath === null) {
+      return
+    }
+
+    if (this.state.collapsedFolders.has(folderPath)) {
+      this.focusFolderHeader(folderPath)
+      return
+    }
+
+    this.setCollapsedFolders(
+      new Set([...this.state.collapsedFolders, folderPath]),
+      () => this.focusFolderHeader(folderPath)
+    )
   }
 
   private toggleFolder = (folder: IChangesFolder) => {
@@ -1256,7 +1293,7 @@ export class FilterChangesList extends React.Component<
   }
 
   private onItemKeyDown = (
-    _item: IChangesListItem,
+    item: IChangesListItem,
     event: React.KeyboardEvent<HTMLDivElement>
   ) => {
     // The commit is already in-flight but this check prevents the
@@ -1266,6 +1303,14 @@ export class FilterChangesList extends React.Component<
       (event.key === 'Enter' || event.key === ' ')
     ) {
       event.preventDefault()
+    }
+
+    // Left folds up the folder the file sits in and moves focus onto its
+    // header, the way collapsing a tree node moves you to its parent. The file
+    // stays selected, so the diff doesn't change out from under the user.
+    if (event.key === 'ArrowLeft' && item.folderPath !== null) {
+      event.preventDefault()
+      this.collapseFolderOfItem(item)
     }
 
     return
@@ -1479,7 +1524,10 @@ export class FilterChangesList extends React.Component<
 
     return (
       <>
-        <div className="changes-list-container file-list filtered-changes-list">
+        <div
+          className="changes-list-container file-list filtered-changes-list"
+          ref={this.changesListRef}
+        >
           <AugmentedSectionFilterList<IChangesListItem>
             ref={this.filterListRef}
             id="changes-list"

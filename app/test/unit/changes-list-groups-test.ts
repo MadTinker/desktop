@@ -118,6 +118,34 @@ describe('changes list groups', () => {
     assert.strictEqual(collapsedFileIDs.size, 2)
   })
 
+  it('tells each file which folder header it sits under', () => {
+    const { groups } = createGroupState(
+      [file('src/lib/util.ts'), file('README.md')],
+      new Set(),
+      true
+    )
+
+    const items = groups.flatMap(g => g.items)
+
+    assert.deepStrictEqual(
+      items.map(i => [i.displayPath, i.folderPath]),
+      [
+        ['util.ts', 'src/lib'],
+        ['README.md', null],
+      ]
+    )
+  })
+
+  it('leaves the folder off every file when not grouping by folder', () => {
+    const { groups } = createGroupState(
+      [file('src/lib/util.ts')],
+      new Set(),
+      false
+    )
+
+    assert.strictEqual(groups[0].items[0].folderPath, null)
+  })
+
   it('shows the full path of a renamed file so the rename arrow still reads', () => {
     const renamed = file('src/new-name.ts', {
       kind: AppFileStatusKind.Renamed,

@@ -44,6 +44,22 @@ export class ChangesFolderHeader extends React.Component<
 
   private onToggle = () => this.props.onToggle(this.props.folder)
 
+  /**
+   * Fold and unfold with the arrow keys, the way a tree view does. Left folds
+   * an open folder up, right opens a folded one.
+   */
+  private onKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>) => {
+    const { collapsed } = this.props.folder
+
+    if (
+      (event.key === 'ArrowLeft' && !collapsed) ||
+      (event.key === 'ArrowRight' && collapsed)
+    ) {
+      event.preventDefault()
+      this.props.onToggle(this.props.folder)
+    }
+  }
+
   private onCheckboxChange = (event: React.FormEvent<HTMLInputElement>) => {
     this.props.onIncludeChanged(
       this.props.folder.allFiles,
@@ -76,6 +92,10 @@ export class ChangesFolderHeader extends React.Component<
           className="folder-toggle"
           type="button"
           onClick={this.onToggle}
+          onKeyDown={this.onKeyDown}
+          // Lets the changes list move focus here when a file row folds its
+          // folder up and the row the user was on disappears.
+          data-folder-path={path}
           aria-expanded={!collapsed}
           aria-label={`${path}, ${fileCount}`}
         >

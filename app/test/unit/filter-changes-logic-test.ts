@@ -50,6 +50,7 @@ function createTestItem(
     change,
     depth: 0,
     displayPath: path,
+    folderPath: null,
   }
 }
 
@@ -169,6 +170,7 @@ describe('filter-changes-logic', () => {
           ),
           depth: 0,
           displayPath: 'untracked.txt',
+          folderPath: null,
         }
 
         assert.equal(applyFilterOptions(untrackedFile, filters), true)
