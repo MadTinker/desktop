@@ -178,6 +178,19 @@ export function buildChangesTree(
   return sections
 }
 
+/**
+ * The folder itself and every folder beneath it, which is what folding a whole
+ * folder tree up (or open) acts on.
+ */
+export function getFolderTreePaths(
+  files: ReadonlyArray<WorkingDirectoryFileChange>,
+  folderPath: string
+): ReadonlyArray<string> {
+  return getAllFolderPaths(files).filter(
+    p => p === folderPath || p.startsWith(`${folderPath}/`)
+  )
+}
+
 /** Every folder path in the working directory, collapsed chains included. */
 export function getAllFolderPaths(
   files: ReadonlyArray<WorkingDirectoryFileChange>

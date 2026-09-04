@@ -8,6 +8,7 @@ import { DiffSelection, DiffSelectionType } from '../../src/models/diff'
 import {
   buildChangesTree,
   getAllFolderPaths,
+  getFolderTreePaths,
 } from '../../src/ui/changes/changes-folder-tree'
 
 function file(path: string) {
@@ -123,5 +124,29 @@ describe('changes-folder-tree', () => {
       'apple (1): apple/b.txt',
       'Zebra (1): Zebra/a.txt',
     ])
+  })
+})
+
+describe('getFolderTreePaths', () => {
+  it('returns the folder and every folder beneath it', () => {
+    const files = [
+      file('src/index.ts'),
+      file('src/lib/util.ts'),
+      file('src/lib/deep/thing.ts'),
+      file('srcs/other.ts'),
+      file('docs/readme.md'),
+    ]
+
+    assert.deepStrictEqual(getFolderTreePaths(files, 'src'), [
+      'src',
+      'src/lib',
+      'src/lib/deep',
+    ])
+  })
+
+  it('does not mistake a sibling with a shared prefix for a child', () => {
+    const files = [file('src/index.ts'), file('srcs/other.ts')]
+
+    assert.deepStrictEqual(getFolderTreePaths(files, 'src'), ['src'])
   })
 })

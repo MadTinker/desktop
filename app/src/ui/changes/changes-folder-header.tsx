@@ -17,6 +17,10 @@ interface IChangesFolderHeaderProps {
     files: ReadonlyArray<WorkingDirectoryFileChange>,
     include: boolean
   ) => void
+  readonly onContextMenu: (
+    folder: IChangesFolder,
+    event: React.MouseEvent<HTMLDivElement>
+  ) => void
 }
 
 /** The foldable header of a folder of changed files. */
@@ -60,6 +64,10 @@ export class ChangesFolderHeader extends React.Component<
     }
   }
 
+  private onContextMenu = (event: React.MouseEvent<HTMLDivElement>) => {
+    this.props.onContextMenu(this.props.folder, event)
+  }
+
   private onCheckboxChange = (event: React.FormEvent<HTMLInputElement>) => {
     this.props.onIncludeChanged(
       this.props.folder.allFiles,
@@ -79,6 +87,7 @@ export class ChangesFolderHeader extends React.Component<
       <div
         className="changes-folder-header"
         style={{ paddingLeft: `calc(var(--spacing) + ${depth * 12}px)` }}
+        onContextMenu={this.onContextMenu}
       >
         <Checkbox
           // The checkbox isn't tab reachable, the folder button next to it
