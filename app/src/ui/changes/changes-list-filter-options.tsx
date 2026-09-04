@@ -28,6 +28,9 @@ interface IChangesListFilterOptionsProps {
   readonly onFilterModifiedFiles: () => void
   readonly onFilterNewFiles: () => void
   readonly onClearAllFilters: () => void
+  /** Whether the changes list is grouped into foldable folders */
+  readonly groupChangesByFolder: boolean
+  readonly onGroupChangesByFolderChanged: (value: boolean) => void
 }
 
 interface IChangesListFilterOptionsState {
@@ -126,6 +129,14 @@ export class ChangesListFilterOptions extends React.Component<
     this.closeFilterOptions()
   }
 
+  // Unlike the filters this one stays open, so the list can be flattened and
+  // grouped again without chasing the button.
+  private onGroupChangesByFolderChanged = (
+    event: React.FormEvent<HTMLInputElement>
+  ) => {
+    this.props.onGroupChangesByFolderChanged(event.currentTarget.checked)
+  }
+
   // Opens the filter options popover, or closes it if it's already open.
   private toggleFilterOptionsOpen = () => {
     this.setState(prevState => ({
@@ -213,6 +224,24 @@ export class ChangesListFilterOptions extends React.Component<
             }
             onChange={this.onFilterDeletedFiles}
             label={`Deleted files (${deletedFilesCount})`}
+          />
+        </div>
+        <div className="filter-popover-header">
+          <h3 id="filter-view-options-header">View</h3>
+        </div>
+        <div
+          className="filter-options"
+          role="group"
+          aria-labelledby="filter-view-options-header"
+        >
+          <Checkbox
+            value={
+              this.props.groupChangesByFolder
+                ? CheckboxValue.On
+                : CheckboxValue.Off
+            }
+            onChange={this.onGroupChangesByFolderChanged}
+            label="Group into folders"
           />
         </div>
         {filtersActive && (

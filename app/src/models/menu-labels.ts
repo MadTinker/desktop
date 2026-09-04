@@ -67,4 +67,10 @@ export type MenuLabelsEvent = {
    * says "Show changes filter" or "Hide changes filter".
    */
   readonly isChangesFilterVisible?: boolean
+
+  /**
+   * Whether or not the changes list is grouped into folders. Decides whether
+   * the menu item offers to group the changes or to flatten them back out.
+   */
+  readonly isGroupingChangesByFolder?: boolean
 }
