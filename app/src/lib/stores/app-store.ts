@@ -401,6 +401,7 @@ import {
 } from '../../models/chat-history-archive'
 import { isAttributableEmailFor } from '../email'
 import { TrashNameLabel } from '../../ui/lib/context-menu'
+import { clearCollapsedFolders } from '../../ui/changes/collapsed-folders-store'
 import { GitError as DugiteError } from 'dugite'
 import {
   ErrorWithMetadata,
@@ -9231,6 +9232,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
       } else {
         await this.repositoriesStore.removeRepository(repository)
         this.cleanupRemovedRepositoryFromGroups(repository.id)
+        clearCollapsedFolders(repository)
       }
     } catch (err) {
       this.emitError(err)
