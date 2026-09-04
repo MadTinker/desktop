@@ -71,6 +71,12 @@ interface IAugmentedSectionFilterListProps<T extends IFilterListItem> {
   readonly renderPreList?: () => JSX.Element | null
 
   /**
+   * Called to render content layered over the list itself, e.g. a group header
+   * pinned to the top of the list while its rows are scrolled through.
+   */
+  readonly renderListOverlay?: () => JSX.Element | null
+
+  /**
    * This function will be called when a pointer device is pressed and then
    * released on a selectable row. Note that this follows the conventions
    * of button elements such that pressing Enter or Space on a keyboard
@@ -397,7 +403,10 @@ export class AugmentedSectionFilterList<
 
         {this.renderFilterRow()}
 
-        <div className="filter-list-container">{this.renderContent()}</div>
+        <div className="filter-list-container">
+          {this.renderContent()}
+          {this.props.renderListOverlay?.()}
+        </div>
       </div>
     )
   }
