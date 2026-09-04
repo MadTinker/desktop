@@ -77,8 +77,9 @@ import {
 import { ChangesListFilterOptions } from './changes-list-filter-options'
 import {
   createGroupState,
-  shouldGroupByFolder,
   createListItem,
+  fitMatchesToDisplayPath,
+  getEffectiveCollapsedFolders,
   IChangesListItem,
 } from './changes-list-groups'
 import { ChangesFolderHeader } from './changes-folder-header'
@@ -301,11 +302,20 @@ function getSelectedItemsFromProps(
 }
 
 function isGroupingByFolder(props: IFilterChangesListProps) {
-  return shouldGroupByFolder(
-    props.groupChangesByFolder,
-    props.showChangesFilter,
-    props.fileListFilter.filterText
-  )
+  return props.groupChangesByFolder
+}
+
+/** Whether anything the user typed or ticked is narrowing the list down */
+function areFiltersActive(props: IFilterChangesListProps) {
+  return props.showChangesFilter && hasActiveFilters(props.fileListFilter)
+}
+
+/** The folds to honor while rendering; filtering unfolds everything. */
+function effectiveCollapsedFolders(
+  props: IFilterChangesListProps,
+  collapsedFolders: ReadonlySet<string>
+) {
+  return getEffectiveCollapsedFolders(collapsedFolders, areFiltersActive(props))
 }
 
 /** Get checkbox value from includeAll status */
@@ -390,7 +400,7 @@ export class FilterChangesList extends React.Component<
     )
     const groupState = createGroupState(
       props.workingDirectory.files,
-      collapsedFolders,
+      effectiveCollapsedFolders(props, collapsedFolders),
       isGroupingByFolder(props)
     )
 
@@ -421,7 +431,8 @@ export class FilterChangesList extends React.Component<
         nextProps.workingDirectory.files,
         this.props.workingDirectory.files
       ) &&
-      isGroupingByFolder(nextProps) === isGroupingByFolder(this.props)
+      isGroupingByFolder(nextProps) === isGroupingByFolder(this.props) &&
+      areFiltersActive(nextProps) === areFiltersActive(this.props)
     ) {
       return
     }
@@ -438,7 +449,7 @@ export class FilterChangesList extends React.Component<
       collapsedFolders,
       ...createGroupState(
         nextProps.workingDirectory.files,
-        collapsedFolders,
+        effectiveCollapsedFolders(nextProps, collapsedFolders),
         isGroupingByFolder(nextProps)
       ),
     })
@@ -464,7 +475,7 @@ export class FilterChangesList extends React.Component<
         collapsedFolders,
         ...createGroupState(
           this.props.workingDirectory.files,
-          collapsedFolders,
+          effectiveCollapsedFolders(this.props, collapsedFolders),
           isGroupingByFolder(this.props)
         ),
       },
@@ -643,9 +654,16 @@ export class FilterChangesList extends React.Component<
 
     const { rebaseConflictState, isCommitting } = this.props
 
+    // While a filter is on, the header counts and includes only the files the
+    // filter left behind - ticking it shouldn't reach files the user can't see.
+    const visibleFiles = areFiltersActive(this.props)
+      ? folder.allFiles.filter(f => this.state.filteredItems.has(f.id))
+      : folder.allFiles
+
     return (
       <ChangesFolderHeader
         folder={folder}
+        visibleFiles={visibleFiles}
         disableSelection={isCommitting || rebaseConflictState !== null}
         onToggle={this.toggleFolder}
         onIncludeChanged={this.props.onIncludeChanged}
@@ -696,6 +714,14 @@ export class FilterChangesList extends React.Component<
     const disableSelection =
       isCommitting || rebaseConflictState !== null || isUncommittableSubmodule
 
+    // The matched characters were found in the full path, so they have to be
+    // moved onto whatever this row ends up showing.
+    const { displayPath, matches: displayMatches } = fitMatchesToDisplayPath(
+      file.path,
+      changeListItem.displayPath,
+      matches
+    )
+
     const checkboxTooltip = isUncommittableSubmodule
       ? 'This submodule change cannot be added to a commit in this repository because it contains changes that have not been committed.'
       : isPartiallyCommittableSubmodule
@@ -712,9 +738,9 @@ export class FilterChangesList extends React.Component<
         disableSelection={disableSelection}
         checkboxTooltip={checkboxTooltip}
         focused={this.state.focusedRow === changeListItem.id}
-        matches={matches}
+        matches={displayMatches}
         depth={changeListItem.depth}
-        displayPath={changeListItem.displayPath}
+        displayPath={displayPath}
       />
     )
   }
