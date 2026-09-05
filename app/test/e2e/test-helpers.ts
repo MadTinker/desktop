@@ -62,3 +62,33 @@ export function getSmokeRepoHeadMessage() {
 export function getSmokeRepoCurrentBranch() {
   return readGitOutput(['branch', '--show-current'], smokeRepoPath)
 }
+
+// ── Second repository (terminal persistence tests) ──────────────────
+
+export const secondRepoPath = path.join(
+  os.tmpdir(),
+  'github-desktop-e2e-second-repository'
+)
+export const secondRepoName = path.basename(secondRepoPath)
+
+/**
+ * A second, minimal repository. The terminal-persistence suite needs two
+ * repositories so it can swap between them and prove each keeps its own live
+ * shells.
+ */
+export function ensureSecondTestRepository() {
+  fs.rmSync(secondRepoPath, { recursive: true, force: true })
+  fs.mkdirSync(secondRepoPath, { recursive: true })
+
+  runGit(['init'], secondRepoPath)
+  runGit(['config', 'user.name', 'Madness Desktop E2E'], secondRepoPath)
+  runGit(['config', 'user.email', 'desktop-e2e@example.com'], secondRepoPath)
+
+  fs.writeFileSync(
+    path.join(secondRepoPath, 'README.md'),
+    '# Madness Desktop Second Repo\n'
+  )
+
+  runGit(['add', 'README.md'], secondRepoPath)
+  runGit(['commit', '-m', 'Initial commit'], secondRepoPath)
+}
