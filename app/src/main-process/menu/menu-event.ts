@@ -50,6 +50,7 @@ export type MenuEvent =
   | 'decrease-active-resizable-width'
   | 'increase-active-resizable-width'
   | 'toggle-changes-filter'
+  | 'toggle-group-changes-by-folder'
   | 'show-keybindings'
   | TestMenuEvent
 

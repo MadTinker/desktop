@@ -650,6 +650,10 @@ export class App extends React.Component<IAppProps, IAppState> {
         return this.resizeActiveResizable('decrease-active-resizable-width')
       case 'toggle-changes-filter':
         return this.toggleChangesFilterVisibility()
+      case 'toggle-group-changes-by-folder':
+        return this.props.dispatcher.setGroupChangesByFolderSetting(
+          !this.state.groupChangesByFolder
+        )
       case 'show-keybindings':
         return this.props.dispatcher.showPopup({
           type: PopupType.Preferences,

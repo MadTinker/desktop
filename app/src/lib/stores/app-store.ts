@@ -3311,6 +3311,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
       hasCurrentPullRequest: currentPullRequest !== null,
       askForConfirmationWhenStashingAllChanges,
       isChangesFilterVisible: this.showChangesFilter,
+      isGroupingChangesByFolder: this.groupChangesByFolder,
     })
   }
 
@@ -11233,6 +11234,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
     if (groupChangesByFolder !== this.groupChangesByFolder) {
       this.groupChangesByFolder = groupChangesByFolder
       setBoolean(groupChangesByFolderKey, groupChangesByFolder)
+      this.updateMenuLabelsForSelectedRepository()
       this.emitUpdate()
     }
   }

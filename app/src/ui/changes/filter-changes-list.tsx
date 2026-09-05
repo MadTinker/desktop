@@ -508,6 +508,10 @@ export class FilterChangesList extends React.Component<
     )
   }
 
+  private onGroupChangesByFolderChanged = (value: boolean) => {
+    this.props.dispatcher.setGroupChangesByFolderSetting(value)
+  }
+
   private onExpandAllFolders = () => {
     this.setCollapsedFolders(new Set())
   }
@@ -1480,6 +1484,8 @@ export class FilterChangesList extends React.Component<
             onFilterNewFiles={this.onFilterNewFiles}
             onClearAllFilters={this.onClearAllFilters}
             workingDirectory={this.props.workingDirectory}
+            groupChangesByFolder={this.props.groupChangesByFolder}
+            onGroupChangesByFolderChanged={this.onGroupChangesByFolderChanged}
           />
         </span>
         <TextBox

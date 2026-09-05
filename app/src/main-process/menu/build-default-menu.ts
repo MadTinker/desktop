@@ -71,6 +71,7 @@ export function buildDefaultMenuTemplate({
   isStashedChangesVisible = false,
   askForConfirmationWhenStashingAllChanges = true,
   isChangesFilterVisible = true,
+  isGroupingChangesByFolder = true,
   hotkeyBindings,
 }: DefaultMenuParams): Electron.MenuItemConstructorOptions[] {
   contributionTargetDefaultBranch = truncateWithEllipsis(
@@ -101,7 +102,11 @@ export function buildDefaultMenuTemplate({
         {
           label: 'Settings…',
           id: 'preferences',
-          accelerator: getAccelerator('show-preferences', hotkeyBindings, 'CmdOrCtrl+,'),
+          accelerator: getAccelerator(
+            'show-preferences',
+            hotkeyBindings,
+            'CmdOrCtrl+,'
+          ),
           click: emit('show-preferences'),
         },
         separator,
@@ -132,19 +137,31 @@ export function buildDefaultMenuTemplate({
         label: __DARWIN__ ? 'New Repository…' : 'New &repository…',
         id: 'new-repository',
         click: emit('create-repository'),
-        accelerator: getAccelerator('create-repository', hotkeyBindings, 'CmdOrCtrl+N'),
+        accelerator: getAccelerator(
+          'create-repository',
+          hotkeyBindings,
+          'CmdOrCtrl+N'
+        ),
       },
       separator,
       {
         label: __DARWIN__ ? 'Add Local Repository…' : 'Add &local repository…',
         id: 'add-local-repository',
-        accelerator: getAccelerator('add-local-repository', hotkeyBindings, 'CmdOrCtrl+O'),
+        accelerator: getAccelerator(
+          'add-local-repository',
+          hotkeyBindings,
+          'CmdOrCtrl+O'
+        ),
         click: emit('add-local-repository'),
       },
       {
         label: __DARWIN__ ? 'Clone Repository…' : 'Clo&ne repository…',
         id: 'clone-repository',
-        accelerator: getAccelerator('clone-repository', hotkeyBindings, 'CmdOrCtrl+Shift+O'),
+        accelerator: getAccelerator(
+          'clone-repository',
+          hotkeyBindings,
+          'CmdOrCtrl+Shift+O'
+        ),
         click: emit('clone-repository'),
       },
     ],
@@ -159,7 +176,11 @@ export function buildDefaultMenuTemplate({
       {
         label: '&Options…',
         id: 'preferences',
-        accelerator: getAccelerator('show-preferences', hotkeyBindings, 'CmdOrCtrl+,'),
+        accelerator: getAccelerator(
+          'show-preferences',
+          hotkeyBindings,
+          'CmdOrCtrl+,'
+        ),
         click: emit('show-preferences'),
       },
       separator,
@@ -184,7 +205,11 @@ export function buildDefaultMenuTemplate({
       { role: 'paste', label: __DARWIN__ ? 'Paste' : '&Paste' },
       {
         label: __DARWIN__ ? 'Select All' : 'Select &all',
-        accelerator: getAccelerator('select-all', hotkeyBindings, 'CmdOrCtrl+A'),
+        accelerator: getAccelerator(
+          'select-all',
+          hotkeyBindings,
+          'CmdOrCtrl+A'
+        ),
         click: emit('select-all'),
       },
       separator,
@@ -203,31 +228,51 @@ export function buildDefaultMenuTemplate({
       {
         label: __DARWIN__ ? 'Show Changes' : '&Changes',
         id: 'show-changes',
-        accelerator: getAccelerator('show-changes', hotkeyBindings, 'CmdOrCtrl+1'),
+        accelerator: getAccelerator(
+          'show-changes',
+          hotkeyBindings,
+          'CmdOrCtrl+1'
+        ),
         click: emit('show-changes'),
       },
       {
         label: __DARWIN__ ? 'Show History' : '&History',
         id: 'show-history',
-        accelerator: getAccelerator('show-history', hotkeyBindings, 'CmdOrCtrl+2'),
+        accelerator: getAccelerator(
+          'show-history',
+          hotkeyBindings,
+          'CmdOrCtrl+2'
+        ),
         click: emit('show-history'),
       },
       {
         label: __DARWIN__ ? 'Show Repository List' : 'Repository &list',
         id: 'show-repository-list',
-        accelerator: getAccelerator('choose-repository', hotkeyBindings, 'CmdOrCtrl+T'),
+        accelerator: getAccelerator(
+          'choose-repository',
+          hotkeyBindings,
+          'CmdOrCtrl+T'
+        ),
         click: emit('choose-repository'),
       },
       {
         label: __DARWIN__ ? 'Show Branches List' : '&Branches list',
         id: 'show-branches-list',
-        accelerator: getAccelerator('show-branches', hotkeyBindings, 'CmdOrCtrl+B'),
+        accelerator: getAccelerator(
+          'show-branches',
+          hotkeyBindings,
+          'CmdOrCtrl+B'
+        ),
         click: emit('show-branches'),
       },
       {
         label: __DARWIN__ ? 'Show Worktrees List' : 'Wor&ktrees list',
         id: 'show-worktrees-list',
-        accelerator: getAccelerator('show-worktrees', hotkeyBindings, 'CmdOrCtrl+Alt+W'),
+        accelerator: getAccelerator(
+          'show-worktrees',
+          hotkeyBindings,
+          'CmdOrCtrl+Alt+W'
+        ),
         click: emit('show-worktrees'),
         visible: enableWorktreeSupport(),
       },
@@ -235,13 +280,21 @@ export function buildDefaultMenuTemplate({
       {
         label: __DARWIN__ ? 'Go to Summary' : 'Go to &Summary',
         id: 'go-to-commit-message',
-        accelerator: getAccelerator('go-to-commit-message', hotkeyBindings, 'CmdOrCtrl+G'),
+        accelerator: getAccelerator(
+          'go-to-commit-message',
+          hotkeyBindings,
+          'CmdOrCtrl+G'
+        ),
         click: emit('go-to-commit-message'),
       },
       {
         label: getStashedChangesLabel(isStashedChangesVisible),
         id: 'toggle-stashed-changes',
-        accelerator: getAccelerator('show-stashed-changes', hotkeyBindings, 'Ctrl+H'),
+        accelerator: getAccelerator(
+          'show-stashed-changes',
+          hotkeyBindings,
+          'Ctrl+H'
+        ),
         click: isStashedChangesVisible
           ? emit('hide-stashed-changes')
           : emit('show-stashed-changes'),
@@ -253,8 +306,24 @@ export function buildDefaultMenuTemplate({
               isChangesFilterVisible ? 'Hide' : 'Show'
             } Toggle Chan&ges Filter`,
         id: 'toggle-changes-filter',
-        accelerator: getAccelerator('toggle-changes-filter', hotkeyBindings, 'CmdOrCtrl+L'),
+        accelerator: getAccelerator(
+          'toggle-changes-filter',
+          hotkeyBindings,
+          'CmdOrCtrl+L'
+        ),
         click: emit('toggle-changes-filter'),
+      },
+      {
+        label: __DARWIN__
+          ? `${isGroupingChangesByFolder ? 'Flatten' : 'Group'} Changed Files`
+          : `${isGroupingChangesByFolder ? 'Flatten' : 'Group'} Chan&ged Files`,
+        id: 'toggle-group-changes-by-folder',
+        accelerator: getAccelerator(
+          'toggle-group-changes-by-folder',
+          hotkeyBindings,
+          'CmdOrCtrl+Shift+L'
+        ),
+        click: emit('toggle-group-changes-by-folder'),
       },
       {
         label: __DARWIN__ ? 'Toggle Full Screen' : 'Toggle &full screen',
@@ -281,7 +350,11 @@ export function buildDefaultMenuTemplate({
           ? 'Expand Active Resizable'
           : 'Expand active resizable',
         id: 'increase-active-resizable-width',
-        accelerator: getAccelerator('increase-active-resizable-width', hotkeyBindings, 'CmdOrCtrl+9'),
+        accelerator: getAccelerator(
+          'increase-active-resizable-width',
+          hotkeyBindings,
+          'CmdOrCtrl+9'
+        ),
         click: emit('increase-active-resizable-width'),
       },
       {
@@ -289,7 +362,11 @@ export function buildDefaultMenuTemplate({
           ? 'Contract Active Resizable'
           : 'Contract active resizable',
         id: 'decrease-active-resizable-width',
-        accelerator: getAccelerator('decrease-active-resizable-width', hotkeyBindings, 'CmdOrCtrl+8'),
+        accelerator: getAccelerator(
+          'decrease-active-resizable-width',
+          hotkeyBindings,
+          'CmdOrCtrl+8'
+        ),
         click: emit('decrease-active-resizable-width'),
       },
       separator,
@@ -345,26 +422,42 @@ export function buildDefaultMenuTemplate({
       {
         id: 'pull',
         label: __DARWIN__ ? 'Pull' : 'Pu&ll',
-        accelerator: getAccelerator('pull', hotkeyBindings, 'CmdOrCtrl+Shift+P'),
+        accelerator: getAccelerator(
+          'pull',
+          hotkeyBindings,
+          'CmdOrCtrl+Shift+P'
+        ),
         click: emit('pull'),
       },
       {
         id: 'fetch',
         label: __DARWIN__ ? 'Fetch' : '&Fetch',
-        accelerator: getAccelerator('fetch', hotkeyBindings, 'CmdOrCtrl+Shift+T'),
+        accelerator: getAccelerator(
+          'fetch',
+          hotkeyBindings,
+          'CmdOrCtrl+Shift+T'
+        ),
         click: emit('fetch'),
       },
       {
         label: removeRepoLabel,
         id: 'remove-repository',
-        accelerator: getAccelerator('remove-repository', hotkeyBindings, 'CmdOrCtrl+Backspace'),
+        accelerator: getAccelerator(
+          'remove-repository',
+          hotkeyBindings,
+          'CmdOrCtrl+Backspace'
+        ),
         click: emit('remove-repository'),
       },
       separator,
       {
         id: 'view-repository-on-github',
         label: __DARWIN__ ? 'View on GitHub' : '&View on GitHub',
-        accelerator: getAccelerator('view-repository-on-github', hotkeyBindings, 'CmdOrCtrl+Shift+G'),
+        accelerator: getAccelerator(
+          'view-repository-on-github',
+          hotkeyBindings,
+          'CmdOrCtrl+Shift+G'
+        ),
         click: emit('view-repository-on-github'),
       },
       {
@@ -372,7 +465,11 @@ export function buildDefaultMenuTemplate({
           ? `Open in ${selectedShell ?? 'Shell'}`
           : `O&pen in ${selectedShell ?? 'shell'}`,
         id: 'open-in-shell',
-        accelerator: getAccelerator('open-in-shell', hotkeyBindings, 'CmdOrCtrl+Shift+`'),
+        accelerator: getAccelerator(
+          'open-in-shell',
+          hotkeyBindings,
+          'CmdOrCtrl+Shift+`'
+        ),
         click: emit('open-in-shell'),
       },
       {
@@ -380,13 +477,15 @@ export function buildDefaultMenuTemplate({
           ? 'Toggle Integrated Terminal'
           : 'Toggle Integrated &terminal',
         id: 'toggle-integrated-terminal',
-        accelerator: getAccelerator('toggle-integrated-terminal', hotkeyBindings, 'Ctrl+`'),
+        accelerator: getAccelerator(
+          'toggle-integrated-terminal',
+          hotkeyBindings,
+          'Ctrl+`'
+        ),
         click: emit('toggle-integrated-terminal'),
       },
       {
-        label: __DARWIN__
-          ? 'Toggle Dotfiles Panel'
-          : 'Toggle &dotfiles Panel',
+        label: __DARWIN__ ? 'Toggle Dotfiles Panel' : 'Toggle &dotfiles Panel',
         id: 'toggle-dotfiles-panel',
         accelerator: getAccelerator(
           'toggle-dotfiles-panel',
@@ -402,7 +501,11 @@ export function buildDefaultMenuTemplate({
           ? 'Show in E&xplorer'
           : 'Show in your File Manager',
         id: 'open-working-directory',
-        accelerator: getAccelerator('open-working-directory', hotkeyBindings, 'CmdOrCtrl+Shift+F'),
+        accelerator: getAccelerator(
+          'open-working-directory',
+          hotkeyBindings,
+          'CmdOrCtrl+Shift+F'
+        ),
         click: emit('open-working-directory'),
       },
       {
@@ -410,13 +513,21 @@ export function buildDefaultMenuTemplate({
           ? `Open in ${selectedExternalEditor ?? 'External Editor'}`
           : `&Open in ${selectedExternalEditor ?? 'external editor'}`,
         id: 'open-external-editor',
-        accelerator: getAccelerator('open-external-editor', hotkeyBindings, 'CmdOrCtrl+Shift+A'),
+        accelerator: getAccelerator(
+          'open-external-editor',
+          hotkeyBindings,
+          'CmdOrCtrl+Shift+A'
+        ),
         click: emit('open-external-editor'),
       },
       {
         label: __DARWIN__ ? 'Open With…' : 'Open &with…',
         id: 'open-with-external-editor',
-        accelerator: getAccelerator('open-with-external-editor', hotkeyBindings, 'CmdOrCtrl+Shift+Alt+A'),
+        accelerator: getAccelerator(
+          'open-with-external-editor',
+          hotkeyBindings,
+          'CmdOrCtrl+Shift+Alt+A'
+        ),
         click: emit('open-with-external-editor'),
       },
       separator,
@@ -425,7 +536,11 @@ export function buildDefaultMenuTemplate({
         label: __DARWIN__
           ? 'Create Issue on GitHub'
           : 'Create &issue on GitHub',
-        accelerator: getAccelerator('create-issue-in-repository-on-github', hotkeyBindings, 'CmdOrCtrl+I'),
+        accelerator: getAccelerator(
+          'create-issue-in-repository-on-github',
+          hotkeyBindings,
+          'CmdOrCtrl+I'
+        ),
         click: emit('create-issue-in-repository-on-github'),
       },
       separator,
@@ -453,26 +568,42 @@ export function buildDefaultMenuTemplate({
     {
       label: __DARWIN__ ? 'New Branch…' : 'New &branch…',
       id: 'create-branch',
-      accelerator: getAccelerator('create-branch', hotkeyBindings, 'CmdOrCtrl+Shift+N'),
+      accelerator: getAccelerator(
+        'create-branch',
+        hotkeyBindings,
+        'CmdOrCtrl+Shift+N'
+      ),
       click: emit('create-branch'),
     },
     {
       label: __DARWIN__ ? 'Rename…' : '&Rename…',
       id: 'rename-branch',
-      accelerator: getAccelerator('rename-branch', hotkeyBindings, 'CmdOrCtrl+Shift+R'),
+      accelerator: getAccelerator(
+        'rename-branch',
+        hotkeyBindings,
+        'CmdOrCtrl+Shift+R'
+      ),
       click: emit('rename-branch'),
     },
     {
       label: __DARWIN__ ? 'Delete…' : '&Delete…',
       id: 'delete-branch',
-      accelerator: getAccelerator('delete-branch', hotkeyBindings, 'CmdOrCtrl+Shift+D'),
+      accelerator: getAccelerator(
+        'delete-branch',
+        hotkeyBindings,
+        'CmdOrCtrl+Shift+D'
+      ),
       click: emit('delete-branch'),
     },
     separator,
     {
       label: __DARWIN__ ? 'Discard All Changes…' : 'Discard all changes…',
       id: 'discard-all-changes',
-      accelerator: getAccelerator('discard-all-changes', hotkeyBindings, 'CmdOrCtrl+Shift+Backspace'),
+      accelerator: getAccelerator(
+        'discard-all-changes',
+        hotkeyBindings,
+        'CmdOrCtrl+Shift+Backspace'
+      ),
       click: emit('discard-all-changes'),
     },
     {
@@ -480,7 +611,11 @@ export function buildDefaultMenuTemplate({
         ? confirmStashAllChangesLabel
         : stashAllChangesLabel,
       id: 'stash-all-changes',
-      accelerator: getAccelerator('stash-all-changes', hotkeyBindings, 'CmdOrCtrl+Shift+S'),
+      accelerator: getAccelerator(
+        'stash-all-changes',
+        hotkeyBindings,
+        'CmdOrCtrl+Shift+S'
+      ),
       click: emit('stash-all-changes'),
     },
     separator,
@@ -489,13 +624,21 @@ export function buildDefaultMenuTemplate({
         ? `Update from ${contributionTargetDefaultBranch}`
         : `&Update from ${contributionTargetDefaultBranch}`,
       id: 'update-branch-with-contribution-target-branch',
-      accelerator: getAccelerator('update-branch-with-contribution-target-branch', hotkeyBindings, 'CmdOrCtrl+Shift+U'),
+      accelerator: getAccelerator(
+        'update-branch-with-contribution-target-branch',
+        hotkeyBindings,
+        'CmdOrCtrl+Shift+U'
+      ),
       click: emit('update-branch-with-contribution-target-branch'),
     },
     {
       label: __DARWIN__ ? 'Compare to Branch' : '&Compare to branch',
       id: 'compare-to-branch',
-      accelerator: getAccelerator('compare-to-branch', hotkeyBindings, 'CmdOrCtrl+Shift+B'),
+      accelerator: getAccelerator(
+        'compare-to-branch',
+        hotkeyBindings,
+        'CmdOrCtrl+Shift+B'
+      ),
       click: emit('compare-to-branch'),
     },
     {
@@ -503,7 +646,11 @@ export function buildDefaultMenuTemplate({
         ? 'Merge into Current Branch…'
         : '&Merge into current branch…',
       id: 'merge-branch',
-      accelerator: getAccelerator('merge-branch', hotkeyBindings, 'CmdOrCtrl+Shift+M'),
+      accelerator: getAccelerator(
+        'merge-branch',
+        hotkeyBindings,
+        'CmdOrCtrl+Shift+M'
+      ),
       click: emit('merge-branch'),
     },
     {
@@ -511,26 +658,42 @@ export function buildDefaultMenuTemplate({
         ? 'Squash and Merge into Current Branch…'
         : 'Squas&h and merge into current branch…',
       id: 'squash-and-merge-branch',
-      accelerator: getAccelerator('squash-and-merge-branch', hotkeyBindings, 'CmdOrCtrl+Shift+H'),
+      accelerator: getAccelerator(
+        'squash-and-merge-branch',
+        hotkeyBindings,
+        'CmdOrCtrl+Shift+H'
+      ),
       click: emit('squash-and-merge-branch'),
     },
     {
       label: __DARWIN__ ? 'Rebase Current Branch…' : 'R&ebase current branch…',
       id: 'rebase-branch',
-      accelerator: getAccelerator('rebase-branch', hotkeyBindings, 'CmdOrCtrl+Shift+E'),
+      accelerator: getAccelerator(
+        'rebase-branch',
+        hotkeyBindings,
+        'CmdOrCtrl+Shift+E'
+      ),
       click: emit('rebase-branch'),
     },
     separator,
     {
       label: __DARWIN__ ? 'Compare on GitHub' : 'Compare on &GitHub',
       id: 'compare-on-github',
-      accelerator: getAccelerator('compare-on-github', hotkeyBindings, 'CmdOrCtrl+Shift+C'),
+      accelerator: getAccelerator(
+        'compare-on-github',
+        hotkeyBindings,
+        'CmdOrCtrl+Shift+C'
+      ),
       click: emit('compare-on-github'),
     },
     {
       label: __DARWIN__ ? 'View Branch on GitHub' : 'View branch on GitHub',
       id: 'branch-on-github',
-      accelerator: getAccelerator('branch-on-github', hotkeyBindings, 'CmdOrCtrl+Alt+B'),
+      accelerator: getAccelerator(
+        'branch-on-github',
+        hotkeyBindings,
+        'CmdOrCtrl+Alt+B'
+      ),
       click: emit('branch-on-github'),
     },
   ]
@@ -538,14 +701,22 @@ export function buildDefaultMenuTemplate({
   branchSubmenu.push({
     label: __DARWIN__ ? 'Preview Pull Request' : 'Preview pull request',
     id: 'preview-pull-request',
-    accelerator: getAccelerator('preview-pull-request', hotkeyBindings, 'CmdOrCtrl+Alt+P'),
+    accelerator: getAccelerator(
+      'preview-pull-request',
+      hotkeyBindings,
+      'CmdOrCtrl+Alt+P'
+    ),
     click: emit('preview-pull-request'),
   })
 
   branchSubmenu.push({
     label: pullRequestLabel,
     id: 'create-pull-request',
-    accelerator: getAccelerator('open-pull-request', hotkeyBindings, 'CmdOrCtrl+R'),
+    accelerator: getAccelerator(
+      'open-pull-request',
+      hotkeyBindings,
+      'CmdOrCtrl+R'
+    ),
     click: emit('open-pull-request'),
   })
 
